@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "446184658118",
+    "project_id": "perkscanreact",
+    "storage_bucket": "perkscanreact.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:446184658118:android:961bb670069ddf05a733c7",
+        "android_client_info": {
+          "package_name": "com.perkscan.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDeUAiw6Sq_-tnYMKx_1tRoJEcBZ6IQ6bA"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
