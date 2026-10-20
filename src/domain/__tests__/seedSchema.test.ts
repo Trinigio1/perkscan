@@ -42,6 +42,18 @@ describe('seedFileSchema rules', () => {
     expect(seedFileSchema.safeParse(s).success).toBe(true);
   });
 
+  it('rejects an amount on a benefit still marked TODO_VERIFY', () => {
+    const s = base();
+    s.cards[0].benefits[0].amount = 15;
+    expect(seedFileSchema.safeParse(s).success).toBe(false);
+  });
+
+  it('rejects an annual fee on a card still marked TODO_VERIFY', () => {
+    const s = base();
+    s.cards[0].annual_fee = 100;
+    expect(seedFileSchema.safeParse(s).success).toBe(false);
+  });
+
   it('rejects duplicate ids and mismatched prefixes', () => {
     const s = base();
     s.cards[0].benefits.push({ ...s.cards[0].benefits[0] });

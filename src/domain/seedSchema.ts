@@ -30,6 +30,9 @@ export const benefitSchema = z
     if (b.type !== 'protection' && (b.max_coverage !== null || b.coverage_window_days !== null)) {
       ctx.addIssue({ code: 'custom', path: ['max_coverage'], message: 'Coverage fields are only for protections' });
     }
+    if (b.status === 'TODO_VERIFY' && (b.amount !== null || b.max_coverage !== null || b.amount_schedule !== null)) {
+      ctx.addIssue({ code: 'custom', path: ['status'], message: 'Amounts can only be set on verified benefits — set status "active", source_url and last_verified' });
+    }
     if (b.status === 'active') {
       if (!b.source_url) ctx.addIssue({ code: 'custom', path: ['source_url'], message: 'Verified benefits need a source_url' });
       if (!b.last_verified) ctx.addIssue({ code: 'custom', path: ['last_verified'], message: 'Verified benefits need last_verified' });
@@ -51,6 +54,9 @@ export const cardSchema = z
     benefits: z.array(benefitSchema),
   })
   .superRefine((c, ctx) => {
+    if (c.status === 'TODO_VERIFY' && c.annual_fee !== null) {
+      ctx.addIssue({ code: 'custom', path: ['annual_fee'], message: 'Set status "active" and last_verified when you verify the annual fee' });
+    }
     if (c.status === 'active' && (c.annual_fee === null || !c.last_verified || !c.source_url)) {
       ctx.addIssue({ code: 'custom', path: ['status'], message: 'A verified card needs annual_fee, source_url and last_verified' });
     }
