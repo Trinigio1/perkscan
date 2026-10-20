@@ -64,6 +64,38 @@ export function benefitIcon(name: string, type?: 'credit' | 'protection' | 'perk
   return { icon: 'pricetag', tone: 'green' };
 }
 
+export type OfferIconName = 'ticket' | 'gift' | 'wallet' | 'star' | 'hourglass' | 'return-down-back' | 'document-text' | 'trending-down' | 'school' | 'shield-checkmark' | 'pricetags';
+
+/** Icon for a non-credit opportunity type. */
+export function offerIcon(type: string): { icon: OfferIconName; tone: IconTone } {
+  switch (type) {
+    case 'promo': return { icon: 'ticket', tone: 'orange' };
+    case 'gift_card': return { icon: 'gift', tone: 'pink' };
+    case 'store_credit': return { icon: 'wallet', tone: 'pink' };
+    case 'points': return { icon: 'star', tone: 'purple' };
+    case 'free_trial': return { icon: 'hourglass', tone: 'blue' };
+    case 'return_window': return { icon: 'return-down-back', tone: 'gray' };
+    case 'settlement': return { icon: 'document-text', tone: 'teal' };
+    case 'price_drop': return { icon: 'trending-down', tone: 'green' };
+    case 'student': return { icon: 'school', tone: 'purple' };
+    case 'protection': return { icon: 'shield-checkmark', tone: 'blue' };
+    default: return { icon: 'pricetags', tone: 'green' };
+  }
+}
+
+export const OFFER_TYPE_LABELS: Record<string, string> = {
+  promo: 'Promo code',
+  gift_card: 'Gift card',
+  store_credit: 'Store credit',
+  points: 'Points',
+  free_trial: 'Free trial',
+  return_window: 'Return window',
+  settlement: 'Settlement',
+  price_drop: 'Price drop',
+  student: 'Student offer',
+  protection: 'Card protection',
+};
+
 /** "Good morning" etc. for the home greeting. */
 export function greeting(now: Date): string {
   const h = now.getHours();

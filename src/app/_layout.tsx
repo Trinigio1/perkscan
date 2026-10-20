@@ -60,6 +60,9 @@ function RootNavigator() {
         <Stack.Screen name="card/[id]/index" options={{ ...header, title: '' }} />
         <Stack.Screen name="card/[id]/worth-it" options={{ ...modal, title: 'Worth the fee?' }} />
         <Stack.Screen name="add-card" options={{ ...modal, title: 'Add cards' }} />
+        <Stack.Screen name="offer/[id]" options={{ ...modal, title: '' }} />
+        <Stack.Screen name="inbox" options={{ ...header, title: 'Inbox' }} />
+        <Stack.Screen name="connect-gmail" options={{ ...header, title: '' }} />
       </Stack.Protected>
     </Stack>
   );

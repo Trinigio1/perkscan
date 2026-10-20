@@ -8,7 +8,8 @@ import type { Opportunity, Recovered } from '@/domain/types';
 
 const PREF_KEY = 'reminders_enabled';
 const CHANNEL = 'credit-reminders';
-const PREFIX = 'credit-';
+// 'credit-' was the Phase 1 prefix; still cancel those so old reminders don't linger.
+const PREFIXES = ['remind-', 'credit-'];
 
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
@@ -35,7 +36,7 @@ export async function requestReminderPermission(): Promise<boolean> {
   if (Platform.OS === 'web' || !Device.isDevice) return false;
   if (Platform.OS === 'android') {
     await Notifications.setNotificationChannelAsync(CHANNEL, {
-      name: 'Credit reminders',
+      name: 'Expiry reminders',
       importance: AndroidImportance.DEFAULT,
     });
   }
@@ -48,7 +49,7 @@ export async function requestReminderPermission(): Promise<boolean> {
 async function cancelCreditReminders() {
   const scheduled = await Notifications.getAllScheduledNotificationsAsync();
   await Promise.all(
-    scheduled.filter((n) => n.identifier.startsWith(PREFIX)).map((n) => Notifications.cancelScheduledNotificationAsync(n.identifier)),
+    scheduled.filter((n) => PREFIXES.some((p) => n.identifier.startsWith(p))).map((n) => Notifications.cancelScheduledNotificationAsync(n.identifier)),
   );
 }
 

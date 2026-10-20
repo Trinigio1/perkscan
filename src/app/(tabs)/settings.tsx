@@ -1,3 +1,4 @@
+import { router } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { Alert, Linking, Platform, View } from 'react-native';
 import { DISCLAIMER_FULL } from '@/components/Disclaimer';
@@ -79,13 +80,18 @@ export default function Settings() {
       </Panel>
 
       <Group title="Preferences">
-        <ListRow icon="notifications" tone="orange" title="Credit reminders" subtitle="7 and 2 days before a credit resets" toggle={reminders && Platform.OS !== 'web'} onToggle={toggleReminders} />
+        <ListRow icon="notifications" tone="orange" title="Reminders" subtitle="7 and 2 days before credits and offers expire" toggle={reminders && Platform.OS !== 'web'} onToggle={toggleReminders} />
         <ListRow icon="school" tone="purple" title="I’m a student" subtitle="Student discounts arrive later" toggle={!!data.profile?.is_student} onToggle={toggleStudent} />
+      </Group>
+
+      <Group title="Email">
+        <ListRow icon="mail" tone="blue" title="Connect Gmail" subtitle="Find offers in emails you label “PerkScan”" onPress={() => router.push('/connect-gmail')} />
+        <ListRow icon="file-tray-full" tone="gray" title="Inbox" subtitle="Emails PerkScan has read" onPress={() => router.push('/inbox')} />
       </Group>
 
       <Group title="About the numbers">
         <ListRow icon="shield-checkmark" tone="green" title="Verified benefits" subtitle="Unverified amounts count as $0" value={`${verified} of ${data.benefits.length}`} />
-        <ListRow icon="lock-closed" tone="blue" title="Your privacy" subtitle="Only card names and last 4 digits. Never sold or shared." />
+        <ListRow icon="lock-closed" tone="blue" title="Your privacy" subtitle="Card names and last 4 digits only. Email text is deleted once read. Never sold or shared." />
       </Group>
 
       <Group title="Legal">
@@ -105,7 +111,7 @@ export default function Settings() {
         <ListRow icon="download" tone="gray" title="Export or delete my data" subtitle="Coming in a later update" />
       </Group>
 
-      <T variant="caption" faint center>PerkScan · Phase 1 preview</T>
+      <T variant="caption" faint center>PerkScan · Phase 2 preview</T>
     </Screen>
   );
 }

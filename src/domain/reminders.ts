@@ -17,9 +17,20 @@ export interface PlannedReminder {
   body: string;
 }
 
+const NOUN: Record<string, string> = {
+  promo: 'code',
+  gift_card: 'gift card',
+  store_credit: 'store credit',
+  points: 'points',
+  free_trial: 'free trial',
+  return_window: 'return window',
+  settlement: 'settlement claim',
+};
+
 /**
- * Plans "expiring soon" reminders for open card credits that still have value
- * (or whose value is unverified). Fires at 10:00 local time N days before expiry.
+ * Plans "expiring soon" reminders for open opportunities: card credits that still
+ * have value (or an unverified amount), and offers from email with a deadline.
+ * Fires at 10:00 local time N days before expiry.
  */
 export function planCreditReminders(opportunities: Opportunity[], recovered: Recovered[], now: Date): PlannedReminder[] {
   const recoveredByOpp = new Map<string, number>();
@@ -27,7 +38,7 @@ export function planCreditReminders(opportunities: Opportunity[], recovered: Rec
 
   const out: PlannedReminder[] = [];
   for (const opp of opportunities) {
-    if (opp.type !== 'card_credit' || opp.status !== 'open' || !opp.expires_at) continue;
+    if (opp.status !== 'open' || !opp.expires_at) continue;
     const remaining = remainingValue(opp, recoveredByOpp);
     if (opp.value_estimate !== null && remaining <= 0) continue;
 
@@ -36,14 +47,27 @@ export function planCreditReminders(opportunities: Opportunity[], recovered: Rec
       const fireAt = new Date(expires.getTime() - days * DAY_MS);
       fireAt.setHours(REMINDER_HOUR, 0, 0, 0);
       if (fireAt.getTime() <= now.getTime() || fireAt.getTime() >= expires.getTime()) continue;
-      const amount = opp.value_estimate === null ? 'Your' : `${formatMoney(remaining)} of your`;
-      out.push({
-        id: `credit-${opp.id}-${days}d`,
-        opportunityId: opp.id,
-        fireAt,
-        title: days <= 2 ? `${opp.title} resets in ${days} days` : `${opp.title} resets in a week`,
-        body: `${amount} ${opp.title} expires soon. Use it or lose it.`,
-      });
+      const when = days <= 2 ? `in ${days} days` : 'in a week';
+      if (opp.type === 'card_credit') {
+        const amount = opp.value_estimate === null ? 'Your' : `${formatMoney(remaining)} of your`;
+        out.push({
+          id: `remind-${opp.id}-${days}d`,
+          opportunityId: opp.id,
+          fireAt,
+          title: `${opp.title} resets ${when}`,
+          body: `${amount} ${opp.title} expires soon. Use it or lose it.`,
+        });
+      } else {
+        const who = opp.merchant ? `${opp.merchant} ` : '';
+        const noun = NOUN[opp.type] ?? 'offer';
+        out.push({
+          id: `remind-${opp.id}-${days}d`,
+          opportunityId: opp.id,
+          fireAt,
+          title: opp.type === 'free_trial' ? `${who}trial ends ${when}` : `Your ${who}${noun} expires ${when}`,
+          body: opp.type === 'free_trial' ? 'Cancel before then if you don’t want to be charged.' : opp.title,
+        });
+      }
     }
   }
   out.sort((a, b) => a.fireAt.getTime() - b.fireAt.getTime());

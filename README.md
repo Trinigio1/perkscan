@@ -5,7 +5,8 @@ Finds money you're already owed and shows it as one number: **"You left $X on th
 Expo (React Native) + TypeScript + Expo Router on the front end, Supabase (Postgres, Auth, RLS) on the back end.
 The earlier Firebase prototype lives untouched in `legacy/` for reference.
 
-- What's built so far and how to test it: [`PHASE_1_NOTES.md`](PHASE_1_NOTES.md)
+- What's built so far and how to test it: [`PHASE_1_NOTES.md`](PHASE_1_NOTES.md), [`PHASE_2_NOTES.md`](PHASE_2_NOTES.md)
+- Connect Gmail: [`gmail/README.md`](gmail/README.md)
 - Card benefits (edit + verify these): [`seed/card_benefits.json`](seed/card_benefits.json)
 
 ## Project layout
@@ -66,6 +67,7 @@ scripts/            build-seed.ts (validates the JSON, writes supabase/seed.sql)
 | `npm run seed:build` | Validate `seed/card_benefits.json` and regenerate `supabase/seed.sql` |
 | `npx supabase db push --include-seed` | Apply new migrations and seed to your linked project |
 | `npm run test:db` | pgTAP tests against a database with the migrations applied (`npx supabase test db` also works) |
+| `npm run test:inbox` | End-to-end inbox test with a fake model (needs Deno and the same env vars as `test:rls`) |
 | `npm run test:rls` | Two-user RLS check through the API (needs `SUPABASE_URL`, `SUPABASE_PUBLISHABLE_KEY`, `SUPABASE_SERVICE_ROLE_KEY`) |
 
 ## Updating card benefits

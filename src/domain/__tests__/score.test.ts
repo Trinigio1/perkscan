@@ -59,6 +59,11 @@ describe('computeScore', () => {
     expect(s.unverifiedCount).toBe(2);
   });
 
+  it('does not count offers without a dollar value as unverified', () => {
+    const s = computeScore([opp({ type: 'free_trial', category: 'returns_trials', value_estimate: null, expires_at: '2026-10-25T00:00:00Z' })], [], NOW);
+    expect(s.unverifiedCount).toBe(0);
+  });
+
   it('sums recovered this year and all time', () => {
     const s = computeScore([], [rec('a', 10, '2026-02-01T00:00:00Z'), rec('b', 5.5, '2025-12-15T00:00:00Z')], NOW);
     expect(s.recoveredThisYear).toBe(10);

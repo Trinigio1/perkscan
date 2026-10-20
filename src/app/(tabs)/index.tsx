@@ -3,7 +3,7 @@ import { router } from 'expo-router';
 import { useMemo, useState } from 'react';
 import { Pressable, RefreshControl, ScrollView, View } from 'react-native';
 import { CardArt } from '@/components/CardArt';
-import { CreditRow } from '@/components/CreditRow';
+import { OpportunityRow } from '@/components/OfferRow';
 import { Hero } from '@/components/Hero';
 import { Button, Empty, ErrorNote, IconBubble, Money, Note, Panel, ProgressBar, Row, Screen, SectionHeader, T } from '@/components/ui';
 import { formatMoney } from '@/domain/format';
@@ -26,8 +26,9 @@ const CATEGORY_ICON: Record<OpportunityCategory, { icon: IconName; tone: IconTon
   returns_trials: { icon: 'return-down-back', tone: 'gray' },
 };
 
-// Categories that have a data source in this build. Others light up in later phases.
-const LIVE = new Set<OpportunityCategory>(['card_credits']);
+// Categories with no data source yet; everything else is live.
+const NOT_YET = new Set<OpportunityCategory>(['card_protections', 'student']);
+const ROUTE: Partial<Record<OpportunityCategory, '/credits' | '/offers'>> = { card_credits: '/credits' };
 
 export default function Home() {
   const c = useColors();
@@ -58,8 +59,10 @@ export default function Home() {
     setRefreshing(false);
   };
 
-  const live = score.byCategory.filter((x) => LIVE.has(x.category));
-  const soon = score.byCategory.filter((x) => !LIVE.has(x.category));
+  // Show credits always, and other categories once something has been found for them.
+  const live = score.byCategory.filter((x) => x.category === 'card_credits' || (!NOT_YET.has(x.category) && x.count > 0));
+  const soon = score.byCategory.filter((x) => NOT_YET.has(x.category));
+  const emailFound = score.byCategory.some((x) => x.category !== 'card_credits' && x.count > 0);
 
   return (
     <Screen refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={c.accent} />}>
@@ -118,13 +121,17 @@ export default function Home() {
         />
       ) : (
         <>
-          <SectionHeader title={score.atRiskItems.length ? 'Use it before it resets' : 'Up next'} action="See all" onAction={() => router.push('/credits')} />
+          <SectionHeader
+            title={!score.atRiskItems.length ? 'Up next' : upNext.every((o) => o.type === 'card_credit') ? 'Use it before it resets' : 'Expiring soon'}
+            action="See all"
+            onAction={() => router.push(upNext.some((o) => o.type !== 'card_credit') ? '/offers' : '/credits')}
+          />
           <Panel style={{ paddingVertical: space.xs }}>
             {upNext.length === 0 ? (
               <T muted style={{ paddingVertical: space.md }}>You’re all caught up for this period.</T>
             ) : (
               upNext.map((o) => (
-                <CreditRow
+                <OpportunityRow
                   key={o.id}
                   opp={o}
                   benefit={o.benefit_id ? benefitById.get(o.benefit_id) : undefined}
@@ -164,15 +171,31 @@ export default function Home() {
       <SectionHeader title="Where the money is" />
       <Panel>
         {live.map((cat) => (
-          <Row key={cat.category} gap={space.md} style={{ paddingVertical: space.xs }}>
-            <IconBubble icon={CATEGORY_ICON[cat.category].icon} tone={CATEGORY_ICON[cat.category].tone} size={36} />
-            <T variant="subheading" style={{ flex: 1 }}>{CATEGORY_LABELS[cat.category]}</T>
-            <View style={{ alignItems: 'flex-end' }}>
-              <T variant="label" color={cat.leftOnTable > 0 ? c.danger : c.text}>{formatMoney(cat.leftOnTable)} missed</T>
-              <T variant="caption" muted>{formatMoney(cat.available + cat.atRisk)} available</T>
-            </View>
-          </Row>
+          <Pressable key={cat.category} onPress={() => router.push(ROUTE[cat.category] ?? '/offers')}>
+            <Row gap={space.md} style={{ paddingVertical: space.xs }}>
+              <IconBubble icon={CATEGORY_ICON[cat.category].icon} tone={CATEGORY_ICON[cat.category].tone} size={36} />
+              <T variant="subheading" style={{ flex: 1 }}>{CATEGORY_LABELS[cat.category]}</T>
+              <View style={{ alignItems: 'flex-end' }}>
+                <T variant="label" color={cat.leftOnTable > 0 ? c.danger : c.text}>{formatMoney(cat.leftOnTable)} missed</T>
+                <T variant="caption" muted>
+                  {cat.available + cat.atRisk > 0 ? `${formatMoney(cat.available + cat.atRisk)} available` : `${cat.count} active`}
+                </T>
+              </View>
+            </Row>
+          </Pressable>
         ))}
+        {!emailFound ? (
+          <Pressable onPress={() => router.push('/connect-gmail')}>
+            <Row gap={space.md} style={{ paddingVertical: space.xs }}>
+              <IconBubble icon="mail" tone="blue" size={36} />
+              <View style={{ flex: 1 }}>
+                <T variant="subheading">Promos, gift cards & trials</T>
+                <T variant="caption" muted>Connect Gmail to find them</T>
+              </View>
+              <Ionicons name="chevron-forward" size={18} color={c.textFaint} />
+            </Row>
+          </Pressable>
+        ) : null}
         <View style={{ height: 1, backgroundColor: c.border, marginVertical: space.sm }} />
         <Row style={{ alignItems: 'flex-start' }}>
           <Ionicons name="sparkles" size={14} color={c.textFaint} style={{ marginTop: 2 }} />

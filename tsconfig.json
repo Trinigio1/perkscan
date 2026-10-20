@@ -9,5 +9,5 @@
     }
   },
   "include": ["**/*.ts", "**/*.tsx", ".expo/types/**/*.ts", "expo-env.d.ts"],
-  "exclude": ["node_modules", "legacy", "supabase/functions"]
+  "exclude": ["node_modules", "legacy", "supabase/functions", "supabase/tests/inbox_e2e.test.ts"]
 }

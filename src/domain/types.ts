@@ -77,7 +77,31 @@ export interface Opportunity {
   benefit_id: string | null;
   period_start: string | null;
   action_steps: { step: string; url?: string }[];
+  merchant?: string | null;
+  code?: string | null;
+  source_message_id?: string | null;
   created_at: string;
+}
+
+export type ParseStatus = 'pending' | 'parsing' | 'parsed' | 'failed' | 'ignored';
+
+export interface InboundMessage {
+  id: string;
+  source: 'email' | 'sms' | 'share';
+  received_at: string;
+  parse_status: ParseStatus;
+  parse_error: string | null;
+  kind: string | null;
+  summary: string | null;
+  from_domain: string | null;
+}
+
+export interface IngestToken {
+  id: string;
+  label: string;
+  created_at: string;
+  last_used_at: string | null;
+  revoked_at: string | null;
 }
 
 export interface Recovered {

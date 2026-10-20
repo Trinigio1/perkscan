@@ -21,7 +21,7 @@ export interface Score {
   recoveredThisYear: number;
   recoveredAllTime: number;
   byCategory: CategoryScore[];
-  /** Open or missed opportunities whose value isn't verified, so they count as $0. */
+  /** Open or missed card credits whose amount isn't verified, so they count as $0. */
   unverifiedCount: number;
   /** Share of this year's finished value you actually used: recovered / (recovered + left). Null with no history. */
   captureRate: number | null;
@@ -78,9 +78,9 @@ export function computeScore(opportunities: Opportunity[], recovered: Recovered[
       leftOnTable += remaining;
       cat.leftOnTable += remaining;
       cat.count += 1;
-      if (opp.value_estimate === null) unverifiedCount += 1;
+      if (opp.type === 'card_credit' && opp.value_estimate === null) unverifiedCount += 1;
     } else if (opp.status === 'open') {
-      if (opp.value_estimate === null) unverifiedCount += 1;
+      if (opp.type === 'card_credit' && opp.value_estimate === null) unverifiedCount += 1;
       cat.count += 1;
       if (isAtRisk(opp, now)) {
         atRiskThisWeek += remaining;
