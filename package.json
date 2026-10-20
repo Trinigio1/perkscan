@@ -58,14 +58,16 @@
     "test:db": "bash supabase/tests/run-db-tests.sh",
     "seed:build": "tsx scripts/build-seed.ts",
     "lint": "expo lint",
-    "test:rls": "tsx supabase/tests/rls-two-users.ts"
+    "test:rls": "tsx supabase/tests/rls-two-users.ts",
+    "test:inbox": "deno test -A --config supabase/functions/deno.json supabase/tests/inbox_e2e.test.ts"
   },
   "private": true,
   "jest": {
     "preset": "jest-expo",
     "testPathIgnorePatterns": [
       "/node_modules/",
-      "/legacy/"
+      "/legacy/",
+      "/supabase/tests/"
     ],
     "modulePathIgnorePatterns": [
       "<rootDir>/legacy/"

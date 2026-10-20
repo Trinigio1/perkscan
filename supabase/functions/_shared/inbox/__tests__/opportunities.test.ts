@@ -1,0 +1,57 @@
+import { toRows } from '../opportunities.ts';
+import type { Offer, ParsedEmail } from '../schema.ts';
+
+const TODAY = '2026-04-10';
+const offer = (o: Partial<Offer>): Offer => ({
+  type: 'promo', title: 'Deal', amount: null, percent_off: null, code: null, expires_on: null,
+  min_spend: null, points: null, claim_url: null, details: null, ...o,
+});
+const email = (p: Partial<ParsedEmail>): ParsedEmail => ({ kind: 'promo', merchant: 'Acme', summary: '', receipt: null, offers: [], ...p });
+
+describe('toRows', () => {
+  it('turns a promo code into an opportunity with steps', () => {
+    const { opportunities } = toRows(email({ offers: [offer({ title: '$20 off $100', amount: 20, code: 'SAVE20', min_spend: 100, expires_on: '2026-04-30' })] }), TODAY);
+    expect(opportunities).toHaveLength(1);
+    expect(opportunities[0]).toMatchObject({ type: 'promo', value_estimate: 20, code: 'SAVE20', expires_at: '2026-04-30T23:59:59Z', dedupe_key: 'promo:acme:save20:2026-04-30' });
+    expect(opportunities[0]!.action_steps.map((s) => s.step).join(' ')).toContain('SAVE20');
+  });
+
+  it('skips offers that already expired or carry no value, code or deadline', () => {
+    const { opportunities } = toRows(email({ offers: [offer({ amount: 10, expires_on: '2026-04-01' }), offer({ title: 'Big sale!' })] }), TODAY);
+    expect(opportunities).toHaveLength(0);
+  });
+
+  it('never gives free trials a dollar value', () => {
+    const { opportunities } = toRows(email({ offers: [offer({ type: 'free_trial', title: 'Trial ends', amount: 14.99, expires_on: '2026-04-20' })] }), TODAY);
+    expect(opportunities[0]).toMatchObject({ type: 'free_trial', value_estimate: null });
+    expect(opportunities[0]!.action_steps.map((s) => s.step).join(' ')).toContain('$14.99');
+  });
+
+  it('keeps settlement claim links only as a step', () => {
+    const { opportunities } = toRows(email({ offers: [offer({ type: 'settlement', title: 'Settlement', amount: 50, claim_url: 'https://claims.example.com', expires_on: '2026-09-01' })] }), TODAY);
+    expect(opportunities[0]!.action_steps.some((s) => s.url === 'https://claims.example.com')).toBe(true);
+    expect(opportunities[0]!.action_steps[0]!.step).toContain('never files');
+  });
+
+  it('builds a receipt and a return-window reminder from a window in days', () => {
+    const rows = toRows(
+      email({
+        kind: 'receipt',
+        receipt: { total: 101.99, currency: 'USD', purchase_date: '2026-04-05', card_last_four: '4242', order_number: 'A1', return_by: null, return_window_days: 30, items: [] },
+      }),
+      TODAY,
+    );
+    expect(rows.receipt).toMatchObject({ merchant: 'Acme', total: 101.99, last_four: '4242', return_by: '2026-05-05' });
+    expect(rows.opportunities[0]).toMatchObject({ type: 'return_window', value_estimate: null, expires_at: '2026-05-05T23:59:59Z' });
+  });
+
+  it('removes duplicate offers within one email', () => {
+    const o = offer({ amount: 5, code: 'FIVE' });
+    expect(toRows(email({ offers: [o, { ...o }] }), TODAY).opportunities).toHaveLength(1);
+  });
+
+  it('labels points by quantity when the title has no number', () => {
+    const { opportunities } = toRows(email({ offers: [offer({ type: 'points', title: 'Your points', points: 12500, expires_on: '2026-06-01' })] }), TODAY);
+    expect(opportunities[0]).toMatchObject({ title: '12,500 points', value_estimate: null });
+  });
+});
