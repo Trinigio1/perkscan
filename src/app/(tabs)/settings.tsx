@@ -1,18 +1,31 @@
 import { useEffect, useState } from 'react';
-import { Alert, Switch, View } from 'react-native';
+import { Alert, Linking, Platform, View } from 'react-native';
 import { DISCLAIMER_FULL } from '@/components/Disclaimer';
-import { Button, ErrorNote, Panel, Row, Screen, T } from '@/components/ui';
+import { ListRow } from '@/components/ListRow';
+import { ErrorNote, Panel, Row, Screen, T } from '@/components/ui';
 import { signOut, useAuth } from '@/lib/auth';
 import { updateProfile } from '@/lib/cards';
 import { useData } from '@/lib/data';
 import { remindersEnabled, requestReminderPermission, setRemindersEnabled, syncReminders } from '@/lib/notifications';
+import { useToast } from '@/lib/toast';
 import { space, useColors } from '@/theme';
+
+function Group({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <View style={{ gap: space.sm }}>
+      <T variant="overline" muted style={{ paddingHorizontal: space.xs }}>{title}</T>
+      <Panel style={{ paddingVertical: space.xs }}>{children}</Panel>
+    </View>
+  );
+}
 
 export default function Settings() {
   const c = useColors();
+  const toast = useToast();
   const { session } = useAuth();
   const { data, refresh } = useData();
   const [reminders, setReminders] = useState(true);
+  const [showLegal, setShowLegal] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -30,8 +43,15 @@ export default function Settings() {
   };
 
   const toggleReminders = async (v: boolean) => {
+    if (Platform.OS === 'web') {
+      toast('Reminders work in the phone app', { tone: 'info' });
+      return;
+    }
     if (v && !(await requestReminderPermission())) {
-      Alert.alert('Notifications are off', 'Turn on notifications for PerkScan in your phone settings to get reminders.');
+      Alert.alert('Notifications are off', 'Turn on notifications for PerkScan in your phone settings to get reminders.', [
+        { text: 'Not now', style: 'cancel' },
+        { text: 'Open settings', onPress: () => Linking.openSettings() },
+      ]);
       return;
     }
     setReminders(v);
@@ -39,62 +59,53 @@ export default function Settings() {
     if (v) await syncReminders(data.opportunities, data.recovered);
   };
 
-  const verifiedDates = data.benefits.map((b) => b.last_verified).filter(Boolean).sort();
-  const unverified = data.benefits.filter((b) => b.status === 'TODO_VERIFY').length;
+  const email = session?.user.email ?? 'Signed in';
+  const verified = data.benefits.filter((b) => b.status === 'active').length;
 
   return (
-    <Screen>
-      <T variant="title">Settings</T>
+    <Screen title="Settings">
       {error ? <ErrorNote message={error} /> : null}
 
       <Panel>
-        <T variant="label" faint>Signed in as</T>
-        <T variant="heading">{session?.user.email ?? 'Apple / Google account'}</T>
-      </Panel>
-
-      <Panel>
-        <Row>
-          <View style={{ flex: 1 }}><T variant="heading">I’m a student</T></View>
-          <Switch value={!!data.profile?.is_student} onValueChange={toggleStudent} trackColor={{ true: c.accent }} />
-        </Row>
-        <Row>
-          <View style={{ flex: 1, gap: 2 }}>
-            <T variant="heading">Credit reminders</T>
-            <T variant="caption" muted>7 and 2 days before an unused credit resets.</T>
+        <Row gap={space.md}>
+          <View style={{ width: 52, height: 52, borderRadius: 26, backgroundColor: c.accentSoft, alignItems: 'center', justifyContent: 'center' }}>
+            <T variant="title" color={c.accentStrong}>{email.slice(0, 1).toUpperCase()}</T>
           </View>
-          <Switch value={reminders} onValueChange={toggleReminders} trackColor={{ true: c.accent }} />
+          <View style={{ flex: 1 }}>
+            <T variant="caption" muted>Signed in as</T>
+            <T variant="subheading" numberOfLines={1}>{email}</T>
+          </View>
         </Row>
       </Panel>
 
-      <Panel>
-        <T variant="heading">About the numbers</T>
-        <T variant="caption" muted>
-          {unverified} of {data.benefits.length} catalog benefits are not verified yet and count as $0.
-          {verifiedDates.length ? ` Latest verification: ${verifiedDates[verifiedDates.length - 1]}.` : ''}
-        </T>
-      </Panel>
+      <Group title="Preferences">
+        <ListRow icon="notifications" tone="orange" title="Credit reminders" subtitle="7 and 2 days before a credit resets" toggle={reminders && Platform.OS !== 'web'} onToggle={toggleReminders} />
+        <ListRow icon="school" tone="purple" title="I’m a student" subtitle="Student discounts arrive later" toggle={!!data.profile?.is_student} onToggle={toggleStudent} />
+      </Group>
 
-      <Panel>
-        <T variant="heading">Disclaimer</T>
-        {DISCLAIMER_FULL.map((p) => (
-          <T key={p} variant="caption" muted>{p}</T>
-        ))}
-      </Panel>
+      <Group title="About the numbers">
+        <ListRow icon="shield-checkmark" tone="green" title="Verified benefits" subtitle="Unverified amounts count as $0" value={`${verified} of ${data.benefits.length}`} />
+        <ListRow icon="lock-closed" tone="blue" title="Your privacy" subtitle="Only card names and last 4 digits. Never sold or shared." />
+      </Group>
 
-      <Panel>
-        <T variant="heading">Privacy & terms</T>
-        <T variant="caption" muted>
-          PerkScan stores only your card names, last four digits, and the benefits you track. We never store full card
-          numbers and never sell or share your data. Full privacy policy and terms will be published before launch.
-        </T>
-      </Panel>
+      <Group title="Legal">
+        <ListRow icon="document-text" tone="gray" title="Disclaimer" subtitle="What PerkScan does and doesn’t do" onPress={() => setShowLegal(!showLegal)} />
+        {showLegal ? (
+          <View style={{ gap: space.sm, paddingBottom: space.sm }}>
+            {DISCLAIMER_FULL.map((p) => (
+              <T key={p} variant="caption" muted>{p}</T>
+            ))}
+          </View>
+        ) : null}
+        <ListRow icon="reader" tone="gray" title="Privacy policy & terms" subtitle="Published before launch" />
+      </Group>
 
-      <View style={{ gap: space.sm }}>
-        <Button title="Sign out" kind="secondary" icon="log-out-outline" onPress={signOut} />
-        <T variant="caption" faint style={{ textAlign: 'center' }}>
-          Export and delete-my-data arrive in a later update.
-        </T>
-      </View>
+      <Group title="Account">
+        <ListRow icon="log-out" tone="gray" title="Sign out" onPress={signOut} />
+        <ListRow icon="download" tone="gray" title="Export or delete my data" subtitle="Coming in a later update" />
+      </Group>
+
+      <T variant="caption" faint center>PerkScan · Phase 1 preview</T>
     </Screen>
   );
 }

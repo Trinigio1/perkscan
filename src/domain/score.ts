@@ -23,6 +23,8 @@ export interface Score {
   byCategory: CategoryScore[];
   /** Open or missed opportunities whose value isn't verified, so they count as $0. */
   unverifiedCount: number;
+  /** Share of this year's finished value you actually used: recovered / (recovered + left). Null with no history. */
+  captureRate: number | null;
 }
 
 /** What's left of an opportunity after any recovered amount. Unknown values count as 0. */
@@ -114,5 +116,7 @@ export function computeScore(opportunities: Opportunity[], recovered: Recovered[
       available: round2(c.available),
     })),
     unverifiedCount,
+    captureRate:
+      recoveredThisYear + leftOnTable > 0 ? Math.round((recoveredThisYear / (recoveredThisYear + leftOnTable)) * 100) / 100 : null,
   };
 }

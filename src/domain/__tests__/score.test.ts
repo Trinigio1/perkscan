@@ -75,6 +75,13 @@ describe('computeScore', () => {
     expect(s.byCategory).toHaveLength(8);
   });
 
+  it('reports the share of value captured this year', () => {
+    const missed = opp({ status: 'expired', value_estimate: 30, expires_at: '2026-09-01T00:00:00Z' });
+    const used = opp({ status: 'claimed', value_estimate: 10, expires_at: '2026-09-01T00:00:00Z' });
+    expect(computeScore([missed, used], [rec(used.id, 10)], NOW).captureRate).toBe(0.25);
+    expect(computeScore([], [], NOW).captureRate).toBeNull();
+  });
+
   it('avoids floating point drift', () => {
     const s = computeScore([
       opp({ status: 'expired', value_estimate: 0.1, expires_at: '2026-10-01T00:00:00Z' }),

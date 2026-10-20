@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { View } from 'react-native';
 import { CardDetailsForm } from '@/components/CardDetailsForm';
 import { emptyDraft, validateDraft, type CardDraft } from '@/domain/cardDraft';
+import { Steps } from '@/components/Steps';
 import { Button, ErrorNote, Screen, T } from '@/components/ui';
 import { addUserCards } from '@/lib/cards';
 import { useData } from '@/lib/data';
@@ -37,9 +38,9 @@ export default function CardDetails() {
 
   return (
     <Screen>
+      <Steps step={2} total={3} />
       <View style={{ gap: space.xs }}>
-        <T variant="label" faint>Step 2 of 3</T>
-        <T variant="title">Card details</T>
+        <T variant="display">A few details</T>
         <T muted>Just the last 4 digits — that’s all we ever store.</T>
       </View>
       {drafts.map((d, i) => {
@@ -57,7 +58,7 @@ export default function CardDetails() {
         );
       })}
       {error ? <ErrorNote message={error} /> : null}
-      <Button title="Save cards" onPress={save} loading={busy} />
+      <Button title="Save cards" icon="checkmark" onPress={save} loading={busy} />
       <Button title="Back" kind="ghost" onPress={() => router.back()} />
     </Screen>
   );

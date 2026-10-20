@@ -74,7 +74,7 @@
 
 | Check | Result |
 |---|---|
-| `npm test`: score, worth-it, reminders, formatting, seed rules, card form | **51/51 pass** |
+| `npm test`: score, worth-it, reminders, formatting, seed rules, card form, visuals | **66/66 pass** |
 | `npm run test:db`: pgTAP for period math, RLS, sync, mark-used, expiry | **57/57 pass** |
 | `npm run test:rls`: two real signed-in users through Supabase Auth + REST | **20/20 pass** |
 | `tsc --noEmit`, `expo lint` | clean |
@@ -122,6 +122,26 @@ Google sign-in also needs the Google client ID and secret pasted into the Supaba
 11. [ ] **RLS with a second user:** sign in with a second email on another device or after signing out. You see
         none of the first user's cards. Or run `npm run test:rls` with your service role key.
 12. [ ] Google sign-in (if configured): the browser opens, you pick an account, and you're sent back to the app signed in.
+
+## Redesign (after Phase 1)
+
+"Fintech premium" look across every screen:
+- **Typography and layout:** Inter font, rounded panels with soft shadows, light and dark themes.
+- **Home:** a dark-green gradient hero with an animated count-up number and a "credits you used" bar.
+- **Card art:** stylised art for each card. Colours only evoke the real card; no issuer logos are used.
+- **Icons:** an icon for each credit (Uber → car, Resy → restaurant…).
+- **Onboarding:** a welcome screen, step progress, and a card picker with card art.
+- **Sign-in:** 6-box code entry.
+- **Credit screen:** a big progress ring, quick partial-amount chips ($25 / $50 / $75), and a success toast with haptics.
+- **Wallet and worth-the-fee:** a card-art wallet, and worth-the-fee shown as comparison bars.
+- **Settings:** a grouped, iOS-style layout.
+- **Loading:** skeleton placeholders instead of spinners.
+
+New packages: `expo-linear-gradient`, `react-native-svg`, `@expo-google-fonts/inter`. All work in Expo Go.
+Run `npm install` after pulling.
+
+Fixed along the way: "Remove card" did nothing on web, because the phone-style confirm popup doesn't show buttons
+in a browser. It now uses the browser's own confirm dialog there.
 
 ## Known gaps and decisions to review
 

@@ -1,12 +1,12 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Tabs } from 'expo-router/js-tabs';
-import type { ColorValue } from 'react-native';
+import { Platform, type ColorValue } from 'react-native';
 import type { IconName } from '@/components/ui';
-import { useColors } from '@/theme';
+import { font, useColors } from '@/theme';
 
-const icon = (name: IconName) =>
-  function TabIcon({ color, size }: { color: ColorValue; size: number }) {
-    return <Ionicons name={name} color={color as string} size={size} />;
+const icon = (on: IconName, off: IconName) =>
+  function TabIcon({ color, focused }: { color: ColorValue; focused: boolean; size: number }) {
+    return <Ionicons name={focused ? on : off} color={color as string} size={24} />;
   };
 
 export default function TabsLayout() {
@@ -17,14 +17,20 @@ export default function TabsLayout() {
         headerShown: false,
         tabBarActiveTintColor: c.accent,
         tabBarInactiveTintColor: c.textFaint,
-        tabBarStyle: { backgroundColor: c.surface, borderTopColor: c.border },
+        tabBarLabelStyle: { fontFamily: font.semibold, fontSize: 11 },
+        tabBarStyle: {
+          backgroundColor: c.surface,
+          borderTopColor: c.border,
+          height: Platform.OS === 'ios' ? 88 : 64,
+          paddingTop: 6,
+        },
         sceneStyle: { backgroundColor: c.bg },
       }}
     >
-      <Tabs.Screen name="index" options={{ title: 'Home', tabBarIcon: icon('cash-outline') }} />
-      <Tabs.Screen name="credits" options={{ title: 'Credits', tabBarIcon: icon('pricetags-outline') }} />
-      <Tabs.Screen name="wallet" options={{ title: 'Wallet', tabBarIcon: icon('card-outline') }} />
-      <Tabs.Screen name="settings" options={{ title: 'Settings', tabBarIcon: icon('settings-outline') }} />
+      <Tabs.Screen name="index" options={{ title: 'Home', tabBarIcon: icon('home', 'home-outline') }} />
+      <Tabs.Screen name="credits" options={{ title: 'Credits', tabBarIcon: icon('pricetags', 'pricetags-outline') }} />
+      <Tabs.Screen name="wallet" options={{ title: 'Wallet', tabBarIcon: icon('wallet', 'wallet-outline') }} />
+      <Tabs.Screen name="settings" options={{ title: 'Settings', tabBarIcon: icon('settings', 'settings-outline') }} />
     </Tabs>
   );
 }

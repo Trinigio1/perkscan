@@ -1,19 +1,23 @@
-import * as Haptics from 'expo-haptics';
+import { Ionicons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
-import { Linking, View } from 'react-native';
+import { Linking, Pressable, View } from 'react-native';
+import { CardArt } from '@/components/CardArt';
 import { Disclaimer } from '@/components/Disclaimer';
-import { Badge, Button, ErrorNote, Field, Money, Panel, Row, Screen, T } from '@/components/ui';
+import { Badge, Button, Chip, ErrorNote, Field, IconBubble, Money, Panel, ProgressRing, Row, Screen, T } from '@/components/ui';
 import { formatMoney, lastDayLabel, PERIOD_LABELS, relativeDays } from '@/domain/format';
+import { benefitIcon } from '@/domain/visuals';
 import { markCredit } from '@/lib/credits';
 import { useData, useLookups } from '@/lib/data';
-import { space, useColors } from '@/theme';
+import { useToast } from '@/lib/toast';
+import { radius, space, useColors } from '@/theme';
 
 export default function CreditDetail() {
   const c = useColors();
+  const toast = useToast();
   const { id } = useLocalSearchParams<{ id: string }>();
   const { data, refresh } = useData();
-  const { benefitById, recoveredByOpp, userCardLabel } = useLookups();
+  const { benefitById, recoveredByOpp, userCardById, cardById } = useLookups();
   const [partial, setPartial] = useState('');
   const [showPartial, setShowPartial] = useState(false);
   const [busy, setBusy] = useState<string | null>(null);
@@ -30,18 +34,24 @@ export default function CreditDetail() {
   }
 
   const benefit = opp.benefit_id ? benefitById.get(opp.benefit_id) : undefined;
+  const uc = opp.user_card_id ? userCardById.get(opp.user_card_id) : undefined;
+  const card = uc ? cardById.get(uc.card_id) : undefined;
   const recovered = recoveredByOpp.get(opp.id) ?? 0;
   const value = opp.value_estimate;
   const now = new Date();
   const expires = opp.expires_at ? new Date(opp.expires_at) : null;
+  const used = opp.status === 'claimed';
+  const missed = opp.status === 'expired' || (!!expires && expires <= now);
+  const soon = !!expires && !used && !missed && expires.getTime() - now.getTime() < 7 * 86_400_000;
+  const { icon, tone } = benefitIcon(opp.title, 'credit');
 
-  const act = async (key: string, fn: () => Promise<void>) => {
+  const act = async (key: string, fn: () => Promise<void>, message: string) => {
     setBusy(key);
     setError(null);
     try {
       await fn();
       await refresh();
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
+      toast(message);
       router.back();
     } catch (e) {
       setError((e as Error).message);
@@ -50,67 +60,90 @@ export default function CreditDetail() {
     }
   };
 
-  const savePartial = () => {
-    const amount = Number(partial.replace(/[^0-9.]/g, ''));
+  const savePartial = (raw = partial) => {
+    const amount = Number(String(raw).replace(/[^0-9.]/g, ''));
     if (!Number.isFinite(amount) || amount <= 0) return setError('Enter how much you used, e.g. 12.50');
     const full = value !== null && amount >= value;
-    act('partial', () => markCredit(opp.id, full, amount));
+    act('partial', () => markCredit(opp.id, full, amount), `Nice — ${formatMoney(value !== null ? Math.min(amount, value) : amount)} recovered`);
   };
 
   return (
     <Screen edges={[]}>
-      <View style={{ gap: space.xs }}>
-        <T variant="label" faint>{userCardLabel(opp.user_card_id)}</T>
-        <T variant="title">{opp.title}</T>
-        <Row style={{ flexWrap: 'wrap' }}>
-          {opp.status === 'claimed' ? <Badge label="Used" tone="good" icon="checkmark" /> : null}
-          {opp.status === 'expired' ? <Badge label="Missed" tone="bad" /> : null}
+      <View style={{ alignItems: 'center', gap: space.sm }}>
+        <IconBubble icon={icon} tone={tone} size={64} />
+        <T variant="title" center>{opp.title}</T>
+        {card && uc ? (
+          <Row gap={space.sm}>
+            <CardArt cardId={card.id} issuer={card.issuer} name={card.product_name} size="sm" style={{ width: 30, height: 19, borderRadius: 3 }} />
+            <T variant="caption" muted>{uc.nickname || card.product_name.replace(/®/g, '')} ·· {uc.last_four}</T>
+          </Row>
+        ) : null}
+        <Row style={{ flexWrap: 'wrap', justifyContent: 'center' }}>
+          {used ? <Badge label="Used" tone="good" icon="checkmark" /> : null}
+          {missed && !used ? <Badge label="Missed" tone="bad" /> : null}
           {benefit ? <Badge label={PERIOD_LABELS[benefit.period]} /> : null}
-          {benefit?.enrollment_required ? <Badge label="Enrollment required" icon="alert-circle-outline" tone="warn" /> : null}
+          {benefit?.enrollment_required ? <Badge label="Enrollment required" icon="alert-circle" tone="warn" /> : null}
         </Row>
       </View>
 
-      <Panel>
+      <Panel style={{ alignItems: 'center', paddingVertical: space.xl }}>
         {value === null ? (
           <>
             <T variant="heading">Amount not verified</T>
-            <T variant="caption" muted>
-              We haven’t confirmed this credit’s amount with the issuer yet, so it counts as $0 in your totals. You can
-              still mark it used.
+            <T variant="caption" muted center>
+              We haven’t confirmed this credit’s amount with the issuer yet, so it counts as $0 in your totals. You can still mark it used.
             </T>
           </>
         ) : (
-          <>
-            <T variant="label" muted>This period</T>
-            <Money value={value} size={44} />
-            {recovered > 0 ? <T muted>{formatMoney(recovered)} used · {formatMoney(Math.max(0, value - recovered))} left</T> : null}
-          </>
+          <ProgressRing value={value ? recovered / value : 0} done={used} size={150} stroke={12} color={soon ? c.warn : c.accent}>
+            <View style={{ alignItems: 'center' }}>
+              <Money value={used ? value : Math.max(0, value - recovered)} size={32} />
+              <T variant="caption" muted>{used ? 'used' : recovered > 0 ? `left of ${formatMoney(value)}` : 'this period'}</T>
+            </View>
+          </ProgressRing>
         )}
         {expires ? (
-          <T variant="caption" color={opp.status === 'open' && expires.getTime() - now.getTime() < 7 * 86_400_000 ? c.warn : c.textMuted}>
-            {opp.status === 'expired' || expires <= now
-              ? `Reset ${relativeDays(expires, now)} (last day was ${lastDayLabel(opp.expires_at!)})`
-              : `Use by ${lastDayLabel(opp.expires_at!)} — resets ${relativeDays(expires, now)}`}
-          </T>
+          <Row style={{ marginTop: space.md, backgroundColor: soon ? c.warnSoft : missed && !used ? c.dangerSoft : c.surfaceAlt, borderRadius: radius.pill, paddingHorizontal: 12, paddingVertical: 6 }} gap={6}>
+            <Ionicons name="time" size={14} color={soon ? c.warn : missed && !used ? c.danger : c.textMuted} />
+            <T variant="label" color={soon ? c.warn : missed && !used ? c.danger : c.textMuted}>
+              {missed ? `Reset ${relativeDays(expires, now)} · last day was ${lastDayLabel(opp.expires_at!)}` : `Use by ${lastDayLabel(opp.expires_at!)} · resets ${relativeDays(expires, now)}`}
+            </T>
+          </Row>
         ) : null}
       </Panel>
 
       {error ? <ErrorNote message={error} /> : null}
 
       <View style={{ gap: space.sm }}>
-        {opp.status !== 'claimed' ? (
-          <Button title="I used all of it" icon="checkmark-circle-outline" loading={busy === 'full'} disabled={!!busy} onPress={() => act('full', () => markCredit(opp.id, true))} />
+        {!used ? (
+          <Button
+            title="I used all of it"
+            icon="checkmark-circle"
+            loading={busy === 'full'}
+            disabled={!!busy}
+            onPress={() => act('full', () => markCredit(opp.id, true), value !== null ? `Nice — ${formatMoney(value)} recovered` : 'Marked as used')}
+          />
         ) : null}
-        {showPartial ? (
-          <Panel>
-            <Field label="How much did you use?" value={partial} onChangeText={setPartial} placeholder="$0.00" keyboardType="decimal-pad" autoFocus />
-            <Button title="Save" loading={busy === 'partial'} disabled={!!busy} onPress={savePartial} />
-          </Panel>
-        ) : opp.status !== 'claimed' ? (
+        {!used && !showPartial ? (
           <Button title="I used part of it" kind="secondary" disabled={!!busy} onPress={() => setShowPartial(true)} />
         ) : null}
-        {opp.status === 'claimed' || recovered > 0 ? (
-          <Button title="Mark as not used" kind="ghost" loading={busy === 'reset'} disabled={!!busy} onPress={() => act('reset', () => markCredit(opp.id, false, null))} />
+        {showPartial && !used ? (
+          <Panel>
+            <T variant="subheading">How much did you use?</T>
+            {value !== null ? (
+              <Row style={{ flexWrap: 'wrap' }}>
+                {[0.25, 0.5, 0.75].map((f) => {
+                  const amt = Math.round(value * f * 100) / 100;
+                  return <Chip key={f} label={formatMoney(amt)} selected={partial === String(amt)} onPress={() => setPartial(String(amt))} />;
+                })}
+              </Row>
+            ) : null}
+            <Field label="Amount" value={partial} onChangeText={setPartial} placeholder="$0.00" keyboardType="decimal-pad" />
+            <Button title="Save" loading={busy === 'partial'} disabled={!!busy || !partial} onPress={() => savePartial()} />
+          </Panel>
+        ) : null}
+        {used || recovered > 0 ? (
+          <Button title="Mark as not used" kind="ghost" loading={busy === 'reset'} disabled={!!busy} onPress={() => act('reset', () => markCredit(opp.id, false, null), 'Reset to unused')} />
         ) : null}
       </View>
 
@@ -118,20 +151,30 @@ export default function CreditDetail() {
         <Panel>
           <T variant="heading">How to use it</T>
           {opp.action_steps.map((s, i) => (
-            <Row key={i} style={{ alignItems: 'flex-start' }}>
-              <T variant="label" muted>{i + 1}.</T>
-              <T style={{ flex: 1 }}>{s.step}</T>
-              {s.url ? <Button title="Open" kind="ghost" icon="open-outline" onPress={() => Linking.openURL(s.url!)} /> : null}
+            <Row key={i} gap={space.md} style={{ alignItems: 'flex-start', paddingVertical: 4 }}>
+              <View style={{ width: 24, height: 24, borderRadius: 12, backgroundColor: c.accentSoft, alignItems: 'center', justifyContent: 'center' }}>
+                <T variant="caption" color={c.accentStrong}>{i + 1}</T>
+              </View>
+              {s.url ? (
+                <Pressable onPress={() => Linking.openURL(s.url!)} style={{ flex: 1 }}>
+                  <Row gap={4}>
+                    <T color={c.accent} style={{ textDecorationLine: 'underline' }}>{s.step}</T>
+                    <Ionicons name="open-outline" size={14} color={c.accent} />
+                  </Row>
+                </Pressable>
+              ) : (
+                <T style={{ flex: 1 }}>{s.step}</T>
+              )}
             </Row>
           ))}
         </Panel>
       ) : null}
 
-      {benefit?.terms_summary || benefit?.notes ? (
+      {benefit?.terms_summary ? (
         <Panel>
           <T variant="heading">Terms</T>
-          {benefit.terms_summary ? <T variant="caption" muted>{benefit.terms_summary}</T> : null}
-          {benefit.last_verified ? <T variant="caption" faint>Last verified {benefit.last_verified}</T> : <T variant="caption" faint>Not yet verified against the issuer’s terms.</T>}
+          <T variant="caption" muted>{benefit.terms_summary}</T>
+          <T variant="caption" faint>{benefit.last_verified ? `Last verified ${benefit.last_verified}` : 'Not yet verified against the issuer’s terms.'}</T>
         </Panel>
       ) : null}
 

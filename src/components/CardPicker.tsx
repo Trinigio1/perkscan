@@ -1,11 +1,13 @@
 import { Ionicons } from '@expo/vector-icons';
+import * as Haptics from 'expo-haptics';
 import { useMemo, useState } from 'react';
-import { Pressable, TextInput, View } from 'react-native';
+import { Platform, Pressable, TextInput, View } from 'react-native';
 import type { Card } from '@/domain/types';
-import { radius, space, useColors } from '@/theme';
+import { font, radius, space, useColors } from '@/theme';
+import { CardArt } from './CardArt';
 import { T } from './ui';
 
-/** Searchable multi-select over the card catalog. */
+/** Searchable multi-select over the card catalog, grouped by issuer. */
 export function CardPicker({
   cards,
   selected,
@@ -27,16 +29,21 @@ export function CardPicker({
 
   return (
     <View style={{ gap: space.sm }}>
-      <View style={{ flexDirection: 'row', alignItems: 'center', gap: space.sm, backgroundColor: c.surface, borderRadius: radius.md, borderWidth: 1, borderColor: c.border, paddingHorizontal: space.md }}>
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: space.sm, backgroundColor: c.surface, borderRadius: radius.pill, borderWidth: 1, borderColor: c.border, paddingHorizontal: space.lg }}>
         <Ionicons name="search" size={18} color={c.textFaint} />
         <TextInput
           value={q}
           onChangeText={setQ}
-          placeholder="Search cards"
+          placeholder="Search cards or banks"
           placeholderTextColor={c.textFaint}
-          style={{ flex: 1, paddingVertical: 12, fontSize: 16, color: c.text }}
+          style={{ flex: 1, paddingVertical: 13, fontSize: 16, fontFamily: font.medium, color: c.text }}
           autoCorrect={false}
         />
+        {q ? (
+          <Pressable onPress={() => setQ('')} hitSlop={10}>
+            <Ionicons name="close-circle" size={18} color={c.textFaint} />
+          </Pressable>
+        ) : null}
       </View>
       {shown.map((card) => {
         const on = selected.includes(card.id);
@@ -46,31 +53,36 @@ export function CardPicker({
             key={card.id}
             accessibilityRole="checkbox"
             accessibilityState={{ checked: on }}
-            onPress={() => onToggle(card.id)}
+            accessibilityLabel={card.product_name}
+            onPress={() => {
+              if (Platform.OS !== 'web') Haptics.selectionAsync().catch(() => {});
+              onToggle(card.id);
+            }}
             style={({ pressed }) => ({
               flexDirection: 'row',
               alignItems: 'center',
               gap: space.md,
-              padding: space.lg,
-              borderRadius: radius.md,
+              padding: space.md,
+              borderRadius: radius.lg,
               backgroundColor: on ? c.accentSoft : c.surface,
-              borderWidth: 1,
+              borderWidth: on ? 2 : 1,
               borderColor: on ? c.accent : c.border,
-              opacity: pressed ? 0.85 : 1,
+              transform: [{ scale: pressed ? 0.98 : 1 }],
             })}
           >
-            <View style={{ flex: 1, gap: 2 }}>
-              <T variant="label" faint>{card.issuer}</T>
-              <T variant="heading">{card.product_name}</T>
-              {owned ? <T variant="caption" muted>Already in your wallet — add another if you have two.</T> : null}
+            <CardArt cardId={card.id} issuer={card.issuer} name={card.product_name} size="sm" />
+            <View style={{ flex: 1, gap: 1 }}>
+              <T variant="caption" muted>{card.issuer}</T>
+              <T variant="subheading" numberOfLines={1}>{card.product_name.replace(/®/g, '')}</T>
+              {owned ? <T variant="caption" faint>In your wallet · tap to add another</T> : null}
             </View>
-            <Ionicons name={on ? 'checkmark-circle' : 'ellipse-outline'} size={26} color={on ? c.accent : c.textFaint} />
+            <Ionicons name={on ? 'checkmark-circle' : 'add-circle-outline'} size={26} color={on ? c.accent : c.textFaint} />
           </Pressable>
         );
       })}
       {shown.length === 0 ? (
-        <T muted style={{ textAlign: 'center', padding: space.lg }}>
-          No match. More cards are coming — the catalog is curated so every benefit can be verified.
+        <T muted center style={{ padding: space.lg }}>
+          No match yet. We add cards one at a time so every benefit can be checked against the issuer.
         </T>
       ) : null}
     </View>

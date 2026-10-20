@@ -6,9 +6,11 @@ import { CardPicker } from '@/components/CardPicker';
 import { Button, ErrorNote, Screen, T } from '@/components/ui';
 import { addUserCards } from '@/lib/cards';
 import { useData } from '@/lib/data';
+import { useToast } from '@/lib/toast';
 
 export default function AddCard() {
   const { data, refresh } = useData();
+  const toast = useToast();
   const [selected, setSelected] = useState<string[]>([]);
   const [drafts, setDrafts] = useState<CardDraft[] | null>(null);
   const [showErrors, setShowErrors] = useState(false);
@@ -18,14 +20,14 @@ export default function AddCard() {
   if (!drafts) {
     return (
       <Screen edges={[]}>
-        <T muted>Pick the cards you want to add.</T>
+        <T muted>Pick the cards you want to add. You can pick several.</T>
         <CardPicker
           cards={data.cards}
           selected={selected}
           ownedIds={data.userCards.map((u) => u.card_id)}
           onToggle={(id) => setSelected(selected.includes(id) ? selected.filter((x) => x !== id) : [...selected, id])}
         />
-        <Button title="Next" disabled={!selected.length} onPress={() => setDrafts(selected.map(emptyDraft))} />
+        <Button title={selected.length ? `Next · ${selected.length} selected` : 'Pick a card'} icon={selected.length ? 'arrow-forward' : undefined} disabled={!selected.length} onPress={() => setDrafts(selected.map(emptyDraft))} />
       </Screen>
     );
   }
@@ -39,6 +41,7 @@ export default function AddCard() {
     try {
       await addUserCards(drafts);
       await refresh();
+      toast(drafts.length > 1 ? `${drafts.length} cards added` : 'Card added');
       router.back();
     } catch (e) {
       setError((e as Error).message);
@@ -63,7 +66,7 @@ export default function AddCard() {
         ) : null;
       })}
       {error ? <ErrorNote message={error} /> : null}
-      <Button title="Save" onPress={save} loading={busy} />
+      <Button title="Save" icon="checkmark" onPress={save} loading={busy} />
       <Button title="Back" kind="ghost" onPress={() => setDrafts(null)} />
     </Screen>
   );

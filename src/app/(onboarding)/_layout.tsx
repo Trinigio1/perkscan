@@ -7,6 +7,7 @@ export default function OnboardingLayout() {
   return (
     <OnboardingProvider>
       <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: c.bg } }}>
+        <Stack.Screen name="welcome" />
         <Stack.Screen name="pick-cards" />
         <Stack.Screen name="details" />
         <Stack.Screen name="finish" />

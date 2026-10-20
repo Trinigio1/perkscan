@@ -131,7 +131,7 @@ export function useLookups() {
     const userCardLabel = (id: string | null) => {
       const uc = id ? userCardById.get(id) : undefined;
       if (!uc) return '';
-      return uc.nickname || `${cardById.get(uc.card_id)?.product_name ?? 'Card'} ·· ${uc.last_four}`;
+      return uc.nickname || `${(cardById.get(uc.card_id)?.product_name ?? 'Card').replace(/®/g, '')} ·· ${uc.last_four}`;
     };
     return { cardById, benefitById, userCardById, recoveredByOpp, userCardLabel };
   }, [data]);

@@ -1,3 +1,9 @@
+import { Inter_400Regular } from '@expo-google-fonts/inter/400Regular';
+import { Inter_500Medium } from '@expo-google-fonts/inter/500Medium';
+import { Inter_600SemiBold } from '@expo-google-fonts/inter/600SemiBold';
+import { Inter_700Bold } from '@expo-google-fonts/inter/700Bold';
+import { Inter_800ExtraBold } from '@expo-google-fonts/inter/800ExtraBold';
+import { useFonts } from 'expo-font';
 import { DarkTheme, DefaultTheme, Stack, ThemeProvider } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useColorScheme } from 'react-native';
@@ -6,12 +12,12 @@ import { Loading, Screen, T } from '@/components/ui';
 import { AuthProvider, useAuth } from '@/lib/auth';
 import { DataProvider, useData } from '@/lib/data';
 import { isConfigured } from '@/lib/env';
-import { useColors } from '@/theme';
+import { ToastProvider } from '@/lib/toast';
+import { font, useColors } from '@/theme';
 
 function NotConfigured() {
   return (
-    <Screen>
-      <T variant="title">Almost there</T>
+    <Screen title="Almost there">
       <T muted>
         PerkScan can’t find its Supabase settings. Copy .env.example to .env, fill in EXPO_PUBLIC_SUPABASE_URL and
         EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY, then restart with `npx expo start --clear`.
@@ -29,21 +35,29 @@ function RootNavigator() {
 
   const signedIn = !!session;
   const onboarded = !!data.profile?.onboarded_at;
-  const modal = { presentation: 'modal' as const, headerShown: true, headerStyle: { backgroundColor: c.surface }, headerTintColor: c.text };
+  const header = {
+    headerShown: true,
+    headerStyle: { backgroundColor: c.bg },
+    headerTintColor: c.text,
+    headerShadowVisible: false,
+    headerTitleStyle: { fontFamily: font.bold },
+    headerBackButtonDisplayMode: 'minimal' as const,
+  };
+  const modal = { ...header, presentation: 'modal' as const, headerStyle: { backgroundColor: c.bg } };
 
   return (
     <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: c.bg } }}>
       <Stack.Screen name="auth/callback" />
-      <Stack.Protected guard={!signedIn} redirectTo={onboarded ? '/' : '/pick-cards'}>
+      <Stack.Protected guard={!signedIn} redirectTo={onboarded ? '/' : '/welcome'}>
         <Stack.Screen name="(auth)" />
       </Stack.Protected>
       <Stack.Protected guard={signedIn && !onboarded} redirectTo={signedIn ? '/' : '/sign-in'}>
         <Stack.Screen name="(onboarding)" />
       </Stack.Protected>
-      <Stack.Protected guard={signedIn && onboarded} redirectTo={signedIn ? '/pick-cards' : '/sign-in'}>
+      <Stack.Protected guard={signedIn && onboarded} redirectTo={signedIn ? '/welcome' : '/sign-in'}>
         <Stack.Screen name="(tabs)" />
-        <Stack.Screen name="credit/[id]" options={{ ...modal, title: 'Credit' }} />
-        <Stack.Screen name="card/[id]/index" options={{ headerShown: true, title: 'Card', headerStyle: { backgroundColor: c.bg }, headerTintColor: c.text, headerShadowVisible: false }} />
+        <Stack.Screen name="credit/[id]" options={{ ...modal, title: '' }} />
+        <Stack.Screen name="card/[id]/index" options={{ ...header, title: '' }} />
         <Stack.Screen name="card/[id]/worth-it" options={{ ...modal, title: 'Worth the fee?' }} />
         <Stack.Screen name="add-card" options={{ ...modal, title: 'Add cards' }} />
       </Stack.Protected>
@@ -53,19 +67,25 @@ function RootNavigator() {
 
 export default function RootLayout() {
   const scheme = useColorScheme();
+  const [fontsLoaded, fontError] = useFonts({ Inter_400Regular, Inter_500Medium, Inter_600SemiBold, Inter_700Bold, Inter_800ExtraBold });
+  // If fonts fail to load we still render with the system font rather than blocking the app.
+  if (!fontsLoaded && !fontError) return null;
+
   return (
     <SafeAreaProvider>
       <ThemeProvider value={scheme === 'dark' ? DarkTheme : DefaultTheme}>
         <StatusBar style="auto" />
-        {isConfigured ? (
-          <AuthProvider>
-            <DataProvider>
-              <RootNavigator />
-            </DataProvider>
-          </AuthProvider>
-        ) : (
-          <NotConfigured />
-        )}
+        <ToastProvider>
+          {isConfigured ? (
+            <AuthProvider>
+              <DataProvider>
+                <RootNavigator />
+              </DataProvider>
+            </AuthProvider>
+          ) : (
+            <NotConfigured />
+          )}
+        </ToastProvider>
       </ThemeProvider>
     </SafeAreaProvider>
   );

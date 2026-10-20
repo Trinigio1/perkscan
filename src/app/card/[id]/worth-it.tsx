@@ -1,9 +1,12 @@
+import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams } from 'expo-router';
 import { useMemo, useState } from 'react';
 import { View } from 'react-native';
+import { CardArt } from '@/components/CardArt';
 import { Disclaimer } from '@/components/Disclaimer';
-import { Badge, Money, Panel, Row, Screen, Segmented, T } from '@/components/ui';
+import { Badge, IconBubble, Note, Panel, ProgressBar, Row, Screen, Segmented, T } from '@/components/ui';
 import { formatMoney } from '@/domain/format';
+import { benefitIcon } from '@/domain/visuals';
 import { annualCreditValue, computeWorthIt, historicalUseRate, type Verdict } from '@/domain/worthIt';
 import { useData, useLookups } from '@/lib/data';
 import { space, useColors } from '@/theme';
@@ -58,63 +61,78 @@ export default function WorthIt() {
     card.annual_fee,
     credits.map((b) => ({ benefitId: b.id, name: b.name, annualValue: annualCreditValue(b), useRate: rates[b.id] ?? 0.5 })),
   );
-  const tone = result.verdict === 'worth_it' ? c.accent : result.verdict === 'not_worth_it' ? c.danger : c.warn;
+  const tone = result.verdict === 'worth_it' ? c.accent : result.verdict === 'not_worth_it' ? c.danger : result.verdict === 'borderline' ? c.warn : c.textMuted;
+  const verdictIcon = result.verdict === 'worth_it' ? 'thumbs-up' : result.verdict === 'not_worth_it' ? 'thumbs-down' : result.verdict === 'borderline' ? 'swap-horizontal' : 'help';
+  const scale = Math.max(card.annual_fee ?? 0, result.maxValue, 1);
 
   return (
     <Screen edges={[]}>
-      <View style={{ gap: 2 }}>
-        <T variant="label" faint>{card.issuer}</T>
-        <T variant="title">{uc.nickname || card.product_name}</T>
-      </View>
-
-      <Panel>
-        <T variant="heading" color={result.verdict === 'unknown' ? c.textMuted : tone}>{VERDICT_COPY[result.verdict]}</T>
-        {result.net !== null && result.verdict !== 'unknown' ? (
-          <>
-            <Money value={Math.abs(result.net)} size={44} color={tone} />
-            <T muted>
-              {result.net >= 0 ? 'more' : 'less'} in credits than the {formatMoney(result.annualFee!)} fee, at the usage you set below
-            </T>
-          </>
-        ) : (
-          <T variant="caption" muted>
-            {card.annual_fee === null
-              ? 'This card’s annual fee hasn’t been verified yet.'
-              : 'None of this card’s credit amounts are verified yet, so we can’t compare them with the fee.'}
-          </T>
-        )}
-      </Panel>
-
-      <Row style={{ alignItems: 'stretch' }}>
-        <Panel style={{ flex: 1 }}>
-          <T variant="caption" muted>Annual fee</T>
-          <T variant="heading">{card.annual_fee === null ? '—' : formatMoney(card.annual_fee)}</T>
-        </Panel>
-        <Panel style={{ flex: 1 }}>
-          <T variant="caption" muted>If you use it all</T>
-          <T variant="heading">{formatMoney(result.maxValue)}</T>
-        </Panel>
-        <Panel style={{ flex: 1 }}>
-          <T variant="caption" muted>Used this year</T>
-          <T variant="heading" color={c.accent}>{formatMoney(recoveredThisYear)}</T>
-        </Panel>
+      <Row gap={space.md}>
+        <CardArt cardId={card.id} issuer={card.issuer} name={card.product_name} size="sm" />
+        <View style={{ flex: 1 }}>
+          <T variant="caption" muted>{card.issuer}</T>
+          <T variant="subheading" numberOfLines={1}>{uc.nickname || card.product_name.replace(/®/g, '')}</T>
+        </View>
       </Row>
 
-      {result.breakEvenRate !== null && card.annual_fee ? (
-        <T muted>You break even if you use about {Math.ceil(result.breakEvenRate * 100)}% of the verified credit value.</T>
-      ) : null}
+      <Panel style={{ gap: space.md }}>
+        <Row gap={space.md}>
+          <View style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: tone, alignItems: 'center', justifyContent: 'center' }}>
+            <Ionicons name={verdictIcon} size={22} color="#FFFFFF" />
+          </View>
+          <View style={{ flex: 1 }}>
+            <T variant="heading" color={tone}>{VERDICT_COPY[result.verdict]}</T>
+            {result.net !== null && result.verdict !== 'unknown' ? (
+              <T muted>
+                {formatMoney(Math.abs(result.net))} {result.net >= 0 ? 'more' : 'less'} than the fee, at the usage below
+              </T>
+            ) : (
+              <T variant="caption" muted>
+                {card.annual_fee === null
+                  ? 'This card’s annual fee hasn’t been verified yet.'
+                  : 'None of this card’s credit amounts are verified yet, so we can’t compare them with the fee.'}
+              </T>
+            )}
+          </View>
+        </Row>
 
-      <Panel>
+        {card.annual_fee !== null ? (
+          <View style={{ gap: space.sm }}>
+            <Bar label="Annual fee" value={card.annual_fee} max={scale} color={c.textMuted} />
+            <Bar label="What you’d use" value={result.expectedValue} max={scale} color={c.accent} />
+            <Bar label="If you used everything" value={result.maxValue} max={scale} color={c.surfaceSunken} textColor={c.textMuted} />
+          </View>
+        ) : null}
+
+        <Row gap={space.lg}>
+          <View style={{ flex: 1 }}>
+            <T variant="caption" muted>Used this year</T>
+            <T variant="heading" color={c.accentStrong}>{formatMoney(recoveredThisYear)}</T>
+          </View>
+          {result.breakEvenRate !== null && card.annual_fee ? (
+            <View style={{ flex: 1 }}>
+              <T variant="caption" muted>Break-even usage</T>
+              <T variant="heading">{Math.ceil(result.breakEvenRate * 100)}%</T>
+            </View>
+          ) : null}
+        </Row>
+      </Panel>
+
+      <View style={{ gap: 2 }}>
         <T variant="heading">How much will you really use?</T>
         <T variant="caption" muted>Starts from your history on this card. Be honest — unused credits are worth $0.</T>
+      </View>
+      <Panel style={{ gap: space.md }}>
         {credits.length === 0 ? <T muted>This card has no recurring credits.</T> : null}
         {credits.map((b) => {
           const annual = annualCreditValue(b);
+          const { icon, tone: t } = benefitIcon(b.name, 'credit');
           return (
-            <View key={b.id} style={{ gap: space.sm, paddingVertical: space.sm }}>
-              <Row>
-                <T variant="label" style={{ flex: 1 }}>{b.name}</T>
-                {annual === null ? <Badge label="Not verified" /> : <T variant="label">{formatMoney(annual)}/yr</T>}
+            <View key={b.id} style={{ gap: space.sm }}>
+              <Row gap={space.md}>
+                <IconBubble icon={icon} tone={t} size={32} />
+                <T variant="subheading" style={{ flex: 1 }} numberOfLines={1}>{b.name}</T>
+                {annual === null ? <Badge label="Not verified" /> : <T variant="label" muted>{formatMoney(annual)}/yr</T>}
               </Row>
               {annual !== null ? (
                 <Segmented options={RATES} value={rates[b.id] ?? 0.5} onChange={(v) => setRates({ ...rates, [b.id]: v })} />
@@ -125,15 +143,26 @@ export default function WorthIt() {
       </Panel>
 
       {result.unverifiedCount > 0 ? (
-        <T variant="caption" muted>
+        <Note icon="shield-checkmark-outline">
           {result.unverifiedCount} credit{result.unverifiedCount > 1 ? 's are' : ' is'} left out because the amount isn’t verified yet.
-        </T>
+        </Note>
       ) : null}
-      <T variant="caption" muted>
-        Only statement credits are counted. Points, lounge access, insurance and other perks aren’t, so cards that earn a
-        lot of points may be worth more to you than this shows.
-      </T>
+      <Note icon="bulb-outline">
+        Only statement credits are counted. Points, lounge access, insurance and other perks aren’t, so a card that earns lots of points may be worth more to you than this shows.
+      </Note>
       <Disclaimer text="This is an estimate to help you think it through, not financial advice. Check current terms with your issuer before you keep, downgrade, or cancel a card." />
     </Screen>
+  );
+}
+
+function Bar({ label, value, max, color, textColor }: { label: string; value: number; max: number; color: string; textColor?: string }) {
+  return (
+    <View style={{ gap: 4 }}>
+      <Row>
+        <T variant="caption" muted style={{ flex: 1 }}>{label}</T>
+        <T variant="label" color={textColor}>{formatMoney(value)}</T>
+      </Row>
+      <ProgressBar value={value / max} color={color} height={10} />
+    </View>
   );
 }
