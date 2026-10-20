@@ -1,4 +1,5 @@
 import { draftToRow, type CardDraft } from '@/domain/cardDraft';
+import { friendlyDbError } from './dbErrors';
 import { supabase } from './supabase';
 
 export async function addUserCards(drafts: CardDraft[]) {
@@ -19,9 +20,10 @@ export function deviceTimeZone(): string {
 
 /** Saves profile settings; falls back to UTC if the device reports a zone Postgres doesn't know. */
 export async function updateProfile(userId: string, patch: { is_student?: boolean; onboarded_at?: string; timezone?: string }) {
-  let { error } = await supabase.from('profiles').update(patch).eq('id', userId);
+  let { data, error } = await supabase.from('profiles').update(patch).eq('id', userId).select('id');
   if (error?.code === '22023' && patch.timezone) {
-    ({ error } = await supabase.from('profiles').update({ ...patch, timezone: 'UTC' }).eq('id', userId));
+    ({ data, error } = await supabase.from('profiles').update({ ...patch, timezone: 'UTC' }).eq('id', userId).select('id'));
   }
-  if (error) throw new Error(error.message);
+  if (error) throw new Error(friendlyDbError('profile', error));
+  if (!data?.length) throw new Error(friendlyDbError('profile', { message: 'No profile row', code: 'PGRST116' }));
 }

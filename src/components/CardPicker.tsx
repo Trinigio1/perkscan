@@ -80,7 +80,11 @@ export function CardPicker({
           </Pressable>
         );
       })}
-      {shown.length === 0 ? (
+      {cards.length === 0 ? (
+        <T muted center style={{ padding: space.lg }}>
+          The card catalog is empty. In VS Code run: npx supabase db push --include-seed
+        </T>
+      ) : shown.length === 0 ? (
         <T muted center style={{ padding: space.lg }}>
           No match yet. We add cards one at a time so every benefit can be checked against the issuer.
         </T>

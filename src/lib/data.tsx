@@ -1,8 +1,10 @@
-import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { createContext, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { AppState } from 'react-native';
+import { singleFlight } from '@/domain/singleFlight';
 import type { BenefitUsage, Card, CardBenefit, Opportunity, Profile, Recovered, UserCard } from '@/domain/types';
 import { useAuth } from './auth';
 import { deviceTimeZone } from './cards';
+import { friendlyDbError } from './dbErrors';
 import { syncReminders } from './notifications';
 import { supabase } from './supabase';
 
@@ -16,18 +18,24 @@ export interface AppData {
   usage: BenefitUsage[];
 }
 
+export interface RefreshResult {
+  data: AppData | null;
+  error: string | null;
+}
+
 interface DataState {
   data: AppData;
   loading: boolean;
   error: string | null;
-  refresh: () => Promise<void>;
+  /** Reloads everything. Always reflects writes made before the call. */
+  refresh: () => Promise<RefreshResult>;
 }
 
 const empty: AppData = { profile: null, cards: [], benefits: [], userCards: [], opportunities: [], recovered: [], usage: [] };
-const DataContext = createContext<DataState>({ data: empty, loading: true, error: null, refresh: async () => {} });
+const DataContext = createContext<DataState>({ data: empty, loading: true, error: null, refresh: async () => ({ data: null, error: null }) });
 
-function must<T>(res: { data: T | null; error: { message: string } | null }): T {
-  if (res.error) throw new Error(res.error.message);
+function must<T>(what: string, res: { data: T | null; error: { message: string; code?: string } | null }): T {
+  if (res.error) throw new Error(friendlyDbError(what, res.error));
   return res.data as T;
 }
 
@@ -39,7 +47,7 @@ async function load(userId: string): Promise<AppData> {
 
   // Creates/expires card-credit rows for today before reading them.
   const sync = await supabase.rpc('sync_my_card_credits');
-  if (sync.error) throw new Error(sync.error.message);
+  if (sync.error) throw new Error(friendlyDbError('sync_my_card_credits', sync.error));
 
   const yearStart = new Date(new Date().getFullYear(), 0, 1).toISOString();
   const [profile, cards, benefits, userCards, opportunities, recovered, usage] = await Promise.all([
@@ -55,13 +63,13 @@ async function load(userId: string): Promise<AppData> {
   // numeric columns arrive as numbers from PostgREST; normalize defensively.
   const num = (v: unknown) => (v === null || v === undefined ? null : Number(v));
   return {
-    profile: must(profile),
-    cards: must(cards).map((c: Card) => ({ ...c, annual_fee: num(c.annual_fee) })),
-    benefits: must(benefits).map((b: CardBenefit) => ({ ...b, amount: num(b.amount), max_coverage: num(b.max_coverage) })),
-    userCards: must(userCards),
-    opportunities: must(opportunities).map((o: Opportunity) => ({ ...o, value_estimate: num(o.value_estimate) })),
-    recovered: must(recovered).map((r: Recovered) => ({ ...r, amount: Number(r.amount) })),
-    usage: must(usage).map((u: BenefitUsage) => ({ ...u, amount_used: num(u.amount_used) })),
+    profile: must('profile', profile),
+    cards: must('cards', cards).map((c: Card) => ({ ...c, annual_fee: num(c.annual_fee) })),
+    benefits: must('card_benefits', benefits).map((b: CardBenefit) => ({ ...b, amount: num(b.amount), max_coverage: num(b.max_coverage) })),
+    userCards: must('user_cards', userCards),
+    opportunities: must('opportunities', opportunities).map((o: Opportunity) => ({ ...o, value_estimate: num(o.value_estimate) })),
+    recovered: must('recovered', recovered).map((r: Recovered) => ({ ...r, amount: Number(r.amount) })),
+    usage: must('benefit_usage', usage).map((u: BenefitUsage) => ({ ...u, amount_used: num(u.amount_used) })),
   };
 }
 
@@ -73,32 +81,31 @@ export function DataProvider({ children }: { children: ReactNode }) {
   const [loadedFor, setLoadedFor] = useState<string | null | undefined>(undefined);
   const loading = loadedFor !== (userId ?? null);
   const [error, setError] = useState<string | null>(null);
-  const inflight = useRef<{ userId: string | null; promise: Promise<void>; token: object } | null>(null);
   const currentUser = useRef<string | null>(null);
   useEffect(() => {
     currentUser.current = userId ?? null;
   }, [userId]);
 
-  const refresh = useCallback(async () => {
+  // One loader per signed-in user. Calls during a load queue one more load, so a
+  // refresh after a write (e.g. finishing onboarding) never returns stale data.
+  const refresh = useMemo(() => {
     const forUser = userId ?? null;
-    if (inflight.current?.userId === forUser) return inflight.current.promise;
-    const token = {};
-    const promise = (async () => {
+    return singleFlight(async (): Promise<RefreshResult> => {
       try {
         const next = forUser ? await load(forUser) : empty;
-        if (currentUser.current !== forUser) return; // user changed while loading
+        if (currentUser.current !== forUser) return { data: null, error: null }; // user changed while loading
         setData(next);
         setError(null);
         if (forUser) syncReminders(next.opportunities, next.recovered).catch(() => {});
+        return { data: next, error: null };
       } catch (e) {
-        if (currentUser.current === forUser) setError(e instanceof Error ? e.message : String(e));
+        const message = e instanceof Error ? e.message : String(e);
+        if (currentUser.current === forUser) setError(message);
+        return { data: null, error: message };
       } finally {
         if (currentUser.current === forUser) setLoadedFor(forUser);
-        if (inflight.current?.token === token) inflight.current = null;
       }
-    })();
-    inflight.current = { userId: forUser, promise, token };
-    return promise;
+    });
   }, [userId]);
 
   useEffect(() => {

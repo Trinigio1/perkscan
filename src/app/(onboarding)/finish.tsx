@@ -29,7 +29,12 @@ export default function Finish() {
         timezone: deviceTimeZone(),
         onboarded_at: new Date().toISOString(),
       });
-      await refresh(); // the navigator moves to Home once onboarded_at is set
+      // The navigator moves to Home once the reloaded profile shows onboarded_at.
+      const r = await refresh();
+      if (!r.data?.profile?.onboarded_at) {
+        setError(r.error ?? 'Your settings didn’t save. Check your connection and try again.');
+        setBusy(false);
+      }
     } catch (e) {
       setError((e as Error).message);
       setBusy(false);
