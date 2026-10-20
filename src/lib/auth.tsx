@@ -46,11 +46,24 @@ export async function verifyEmailCode(email: string, token: string) {
   if (error) throw error;
 }
 
-/** Completes a magic-link or OAuth redirect: perkscan://auth/callback?code=… */
+/**
+ * Completes a sign-in redirect to …/auth/callback.
+ * - Email links carry ?token_hash=…&type=email (see supabase/templates). These work in any
+ *   browser or app that opens them, unlike PKCE codes.
+ * - Google returns ?code=…, which must be exchanged in the same app that started the flow.
+ */
 export async function completeAuthFromUrl(url: string) {
   const { queryParams } = Linking.parse(url);
   const errorDescription = queryParams?.error_description;
   if (typeof errorDescription === 'string') throw new Error(errorDescription);
+
+  const tokenHash = queryParams?.token_hash;
+  if (typeof tokenHash === 'string') {
+    const { error } = await supabase.auth.verifyOtp({ token_hash: tokenHash, type: 'email' });
+    if (error) throw error;
+    return true;
+  }
+
   const code = queryParams?.code;
   if (typeof code !== 'string') return false;
   const { error } = await supabase.auth.exchangeCodeForSession(code);

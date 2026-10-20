@@ -21,7 +21,7 @@ export default function AuthCallback() {
     <Screen>
       <T variant="title">That link didn’t work</T>
       <ErrorNote message={error} />
-      <T muted>Links expire after a while and only work on the device that requested them. Use the 6-digit code instead.</T>
+      <T muted>Links expire after a while and work only once. Request a new code and enter the 6 digits instead.</T>
       <Button title="Back to sign in" onPress={() => router.replace('/sign-in')} />
     </Screen>
   );
