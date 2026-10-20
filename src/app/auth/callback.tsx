@@ -22,7 +22,7 @@ export default function AuthCallback() {
       <IconBubble icon="link" tone="orange" size={56} />
       <T variant="title">That link didn’t work</T>
       <ErrorNote message={error} />
-      <T muted>Links expire after a while and work only once. Request a new code and enter the 6 digits instead.</T>
+      <T muted>Links expire after a while and work only once. Request a new code and type it in instead.</T>
       <Button title="Back to sign in" onPress={() => router.replace('/sign-in')} />
     </Screen>
   );

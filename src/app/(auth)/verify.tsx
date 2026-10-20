@@ -6,19 +6,25 @@ import { sendEmailCode, verifyEmailCode } from '@/lib/auth';
 import { useToast } from '@/lib/toast';
 import { font, radius, space, useColors } from '@/theme';
 
-/** Six boxes backed by one hidden input, so paste and SMS/email autofill still work. */
-function CodeBoxes({ value, onChange, error }: { value: string; onChange: (v: string) => void; error: boolean }) {
+/** Supabase sends 6-10 digit codes depending on the project's "Email OTP Length" setting. */
+const MIN_CODE = 6;
+const MAX_CODE = 10;
+
+/** One box per digit, backed by a hidden input so paste and email/SMS autofill still work. */
+function CodeBoxes({ value, onChange, error }: { value: string; onChange: (v: string, pasted: boolean) => void; error: boolean }) {
   const c = useColors();
   const input = useRef<ComponentRef<typeof TextInput>>(null);
+  const boxes = Math.min(MAX_CODE, Math.max(MIN_CODE, value.length));
   return (
-    <Pressable onPress={() => input.current?.focus()} style={{ flexDirection: 'row', gap: space.sm, justifyContent: 'center' }}>
-      {Array.from({ length: 6 }, (_, i) => {
-        const active = i === Math.min(value.length, 5);
+    <Pressable onPress={() => input.current?.focus()} style={{ flexDirection: 'row', gap: 6, justifyContent: 'center' }}>
+      {Array.from({ length: boxes }, (_, i) => {
+        const active = i === Math.min(value.length, boxes - 1);
         return (
           <View
             key={i}
             style={{
-              width: 48,
+              flex: 1,
+              maxWidth: 48,
               height: 58,
               borderRadius: radius.md,
               borderWidth: active ? 2 : 1,
@@ -35,15 +41,20 @@ function CodeBoxes({ value, onChange, error }: { value: string; onChange: (v: st
       <TextInput
         ref={input}
         value={value}
-        onChangeText={(v) => onChange(v.replace(/\D/g, '').slice(0, 6))}
+        onChangeText={(v) => {
+          const digits = v.replace(/\D/g, '').slice(0, MAX_CODE);
+          // Several digits arriving at once means a paste or autofill: the code is complete.
+          onChange(digits, digits.length - value.length > 1);
+        }}
         keyboardType="number-pad"
         textContentType="oneTimeCode"
         autoComplete="one-time-code"
         autoFocus
-        maxLength={6}
-        accessibilityLabel="6-digit code"
+        maxLength={MAX_CODE}
+        accessibilityLabel="Sign-in code"
         placeholder="123456"
-        style={{ position: 'absolute', opacity: 0.01, width: '100%', height: '100%' }}
+        placeholderTextColor="transparent"
+        style={{ position: 'absolute', opacity: 0.01, width: '100%', height: '100%', color: 'transparent' }}
       />
     </Pressable>
   );
@@ -58,7 +69,7 @@ export default function Verify() {
   const [error, setError] = useState<string | null>(null);
 
   const submit = async (value = code) => {
-    if (!/^\d{6}$/.test(value)) return setError('Enter the 6-digit code from the email.');
+    if (!new RegExp(`^\\d{${MIN_CODE},${MAX_CODE}}$`).test(value)) return setError('Enter the code from the email.');
     setBusy(true);
     setError(null);
     try {
@@ -77,21 +88,21 @@ export default function Verify() {
         <IconBubble icon="mail-open" tone="green" size={64} />
         <T variant="title" center>Check your email</T>
         <T muted center>
-          We sent a 6-digit code to{'\n'}
+          We sent a sign-in code to{'\n'}
           <T variant="label">{email}</T>
         </T>
       </View>
       <CodeBoxes
         value={code}
         error={!!error}
-        onChange={(digits) => {
+        onChange={(digits, pasted) => {
           setCode(digits);
           setError(null);
-          if (digits.length === 6) submit(digits);
+          if (pasted && digits.length >= MIN_CODE) submit(digits);
         }}
       />
       {error ? <ErrorNote message={error} /> : null}
-      <Button title="Verify" onPress={() => submit()} loading={busy} disabled={code.length < 6} />
+      <Button title="Verify" onPress={() => submit()} loading={busy} disabled={code.length < MIN_CODE} />
       <View style={{ alignItems: 'center', gap: space.xs }}>
         <Button
           title={resent ? 'Code sent' : 'Send a new code'}
