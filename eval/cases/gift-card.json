@@ -1,0 +1,22 @@
+{
+  "origin": "synthetic",
+  "source": "email",
+  "input": {
+    "subject": "You've received a gift card",
+    "date": "2026-10-20T14:05:00-04:00",
+    "text": "Hi! Sam sent you a $25.00 Northwind gift card.\nGift card code: NW-4821-9932\nNo expiry date. Redeem online or in store.",
+    "from": "Northwind <giftcards@northwind.example>"
+  },
+  "expected": {
+    "kind": "gift_card_or_store_credit",
+    "merchant": "Northwind",
+    "offers": [
+      {
+        "type": "gift_card",
+        "amount": 25,
+        "code": "NW-4821-9932",
+        "expires_on": null
+      }
+    ]
+  }
+}

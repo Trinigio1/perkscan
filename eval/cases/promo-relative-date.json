@@ -1,0 +1,23 @@
+{
+  "origin": "synthetic",
+  "source": "email",
+  "input": {
+    "subject": "A gift for you",
+    "date": "2026-10-20T14:05:00-04:00",
+    "text": "Thanks for being a regular! Enjoy $5 off your next order of $20 or more with code BLUE5. Hurry, it expires in 7 days.",
+    "from": "Bluebird Coffee <hi@bluebird.example>"
+  },
+  "expected": {
+    "kind": "promo",
+    "merchant": "Bluebird Coffee",
+    "offers": [
+      {
+        "type": "promo",
+        "code": "BLUE5",
+        "amount": 5,
+        "currency": "USD",
+        "expires_on": "2026-10-27"
+      }
+    ]
+  }
+}

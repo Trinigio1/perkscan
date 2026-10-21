@@ -72,6 +72,8 @@ function RootNavigator() {
         <Stack.Screen name="country" options={{ ...modal, title: 'Country & currency' }} />
         <Stack.Screen name="connect-texts" options={{ ...header, title: '' }} />
         <Stack.Screen name="add-text" options={{ ...modal, title: 'Add a text' }} />
+        <Stack.Screen name="review" options={{ ...header, title: 'Reading accuracy' }} />
+        <Stack.Screen name="report" options={{ ...modal, title: 'Something’s wrong' }} />
       </Stack.Protected>
     </Stack>
   );

@@ -4,6 +4,7 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
 import { Linking, Pressable, View } from 'react-native';
 import { Disclaimer } from '@/components/Disclaimer';
+import { ReadCheck } from '@/components/ReadCheck';
 import { Badge, Button, ErrorNote, Field, IconBubble, Money, Panel, Row, Screen, T } from '@/components/ui';
 import { formatMoney, lastDayLabel, relativeDays } from '@/domain/format';
 import { offerIcon, OFFER_TYPE_LABELS } from '@/domain/visuals';
@@ -167,7 +168,9 @@ export default function OfferDetail() {
         </Panel>
       ) : null}
 
-      <T variant="caption" faint center>Found in an email you sent to PerkScan. Double-check the details in the original email.</T>
+      <T variant="caption" faint center>Found in an email or text you sent to PerkScan. Double-check the details in the original.</T>
+      {opp.source_message_id && opp.type !== 'protection' ? <ReadCheck messageId={opp.source_message_id} opportunityId={opp.id} /> : null}
+
       <Disclaimer />
     </Screen>
   );

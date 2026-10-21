@@ -1,0 +1,19 @@
+{
+  "origin": "synthetic",
+  "source": "email",
+  "input": {
+    "subject": "Your flight is booked",
+    "date": "2026-10-20T14:05:00-04:00",
+    "text": "Booking confirmed. Confirmation code: XJ4K2P\nPort of Spain (POS) to Miami (MIA), departing 2026-12-18.\nTotal paid: US$412.30 with Mastercard ending 0000.",
+    "from": "Caribbean Air <bookings@caribbeanair.example>"
+  },
+  "expected": {
+    "kind": "receipt",
+    "receipt": {
+      "total": 412.3,
+      "currency": "USD",
+      "card_last_four": "0000",
+      "purchase_type": "flight"
+    }
+  }
+}

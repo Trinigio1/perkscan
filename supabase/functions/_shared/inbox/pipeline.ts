@@ -3,6 +3,7 @@ import { matchAndApply } from '../matching/apply.ts';
 import { findDuplicate, mergeFields, MERGE_WINDOW_DAYS, type ExistingReceipt } from './merge.ts';
 import { toRows, type ReceiptRow } from './opportunities.ts';
 import { costUsd, parseEmail, type ModelCall } from './parse.ts';
+import { PROMPT_VERSION } from './prompt.ts';
 
 export interface PipelineOptions {
   /** Hard monthly cap across all users, in USD. */
@@ -112,6 +113,7 @@ export async function processMessages(db: SupabaseClient, ids: string[], call: M
         summary: parsed.data.summary || null,
         parse_error: null,
         parsed_at: new Date().toISOString(),
+        parser_version: `${opts.model}/${PROMPT_VERSION}`,
         attempts,
         raw_body: null, // privacy: the email text is gone once parsed
       })

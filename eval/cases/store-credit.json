@@ -1,0 +1,22 @@
+{
+  "origin": "synthetic",
+  "source": "email",
+  "input": {
+    "subject": "Your refund as store credit",
+    "date": "2026-10-20T14:05:00-04:00",
+    "text": "We've added TT$75.00 in store credit to your membership account for your return. It expires on 2027-04-20.",
+    "from": "PriceSmart <service@pricesmart.example>"
+  },
+  "expected": {
+    "kind": "gift_card_or_store_credit",
+    "merchant": "PriceSmart",
+    "offers": [
+      {
+        "type": "store_credit",
+        "amount": 75,
+        "currency": "TTD",
+        "expires_on": "2027-04-20"
+      }
+    ]
+  }
+}

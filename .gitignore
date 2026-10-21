@@ -42,3 +42,6 @@ yarn-error.*
 
 # env
 .env
+
+# Accuracy eval output (may echo message contents)
+eval/results/

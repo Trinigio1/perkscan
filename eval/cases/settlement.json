@@ -1,0 +1,19 @@
+{
+  "origin": "synthetic",
+  "source": "email",
+  "input": {
+    "subject": "Class action settlement notice",
+    "date": "2026-10-20T14:05:00-04:00",
+    "text": "You may be eligible for a payment from the Widget Battery Settlement. File a claim by January 15, 2027 at https://www.widgetbatterysettlement.example/claim. Payments are estimated at $20 per class member.",
+    "from": "Settlement Administrator <info@settlement.example>"
+  },
+  "expected": {
+    "kind": "settlement",
+    "offers": [
+      {
+        "type": "settlement",
+        "expires_on": "2027-01-15"
+      }
+    ]
+  }
+}

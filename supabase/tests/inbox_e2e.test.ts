@@ -97,9 +97,10 @@ Deno.test('inbox pipeline end to end', async () => {
     assert(r2.accepted === 0 && r2.duplicates === 2, `re-sent emails are ignored: ${JSON.stringify(r2)}`);
 
     // What alice now sees through RLS
-    const msgs = await alice.client.from('inbound_messages').select('parse_status, kind, summary, raw_body, from_domain');
+    const msgs = await alice.client.from('inbound_messages').select('parse_status, kind, summary, raw_body, from_domain, parser_version');
     assert(msgs.data?.length === 2 && msgs.data.every((m) => m.parse_status === 'parsed'), `messages parsed: ${JSON.stringify(msgs.data)}`);
     assert(msgs.data.every((m) => m.raw_body === null), 'raw text deleted after parsing');
+    assert(msgs.data.every((m) => /^fake\/\d{4}-\d{2}-\d{2}$/.test(m.parser_version ?? '')), `reader version recorded: ${JSON.stringify(msgs.data)}`);
     assert(msgs.data.some((m) => m.from_domain === 'acme.com'), 'only the sender domain is stored');
 
     const opps = await alice.client.from('opportunities').select('type, title, code, category, value_estimate').neq('type', 'card_credit');

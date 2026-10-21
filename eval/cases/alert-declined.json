@@ -1,0 +1,15 @@
+{
+  "origin": "synthetic",
+  "source": "sms",
+  "input": {
+    "date": "2026-10-20T14:05:00-04:00",
+    "text": "Scotiabank: A transaction of $56.20 USD at AMAZON.COM on your Scotiabank Credit Card ***0000 was DECLINED at 7:02 pm AST."
+  },
+  "expected": {
+    "kind": "card_alert",
+    "receipt": {
+      "card_last_four": "0000",
+      "alert_status": "declined"
+    }
+  }
+}

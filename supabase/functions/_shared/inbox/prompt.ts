@@ -1,3 +1,6 @@
+/** Change this whenever SYSTEM_PROMPT or the parsing rules change, so accuracy can be compared per version. */
+export const PROMPT_VERSION = '2026-10-23';
+
 // Instructions for the extraction model. Kept stable (no dates or ids) so the
 // request prefix is identical across emails.
 export const SYSTEM_PROMPT = `You extract structured facts from a single email or text message for PerkScan, an app that helps people notice money they're owed: unused promo codes, gift cards, store credit, points, free trials about to renew, return windows, and class-action settlements.

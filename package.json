@@ -60,7 +60,8 @@
     "seed:build": "tsx scripts/build-seed.ts",
     "lint": "expo lint",
     "test:rls": "tsx supabase/tests/rls-two-users.ts",
-    "test:inbox": "deno test -A --config supabase/functions/deno.json supabase/tests/inbox_e2e.test.ts"
+    "test:inbox": "deno test -A --config supabase/functions/deno.json supabase/tests/inbox_e2e.test.ts",
+    "eval": "npx -y deno@2.9.6 run --allow-read=eval --allow-write=eval/results --allow-env --allow-net=api.anthropic.com --config supabase/functions/deno.json eval/run.ts"
   },
   "private": true,
   "jest": {

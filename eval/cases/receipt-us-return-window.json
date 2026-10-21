@@ -1,0 +1,22 @@
+{
+  "origin": "synthetic",
+  "source": "email",
+  "input": {
+    "subject": "Your order has shipped",
+    "date": "2026-10-20T14:05:00-04:00",
+    "text": "Thanks for your order #TH-55120!\n\nTrail Runner Shoes  $89.99\nTax  $7.20\nTotal  $97.19\n\nPaid with Visa ending in 0000.\nNot right? You have 30 days to return it.",
+    "from": "Trailhead Gear <orders@trailhead.example>"
+  },
+  "expected": {
+    "kind": "receipt",
+    "merchant": "Trailhead Gear",
+    "receipt": {
+      "total": 97.19,
+      "currency": "USD",
+      "card_last_four": "0000",
+      "alert_status": null,
+      "purchase_type": "clothing"
+    },
+    "offers": []
+  }
+}

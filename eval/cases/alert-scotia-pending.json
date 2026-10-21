@@ -1,0 +1,19 @@
+{
+  "origin": "synthetic",
+  "source": "sms",
+  "input": {
+    "date": "2026-10-20T14:05:00-04:00",
+    "text": "There was an authorization made outside of the country for $144.51 TTD at UBER * EATS PENDING on your Scotiabank Credit Card ***0000 at 08:59 pm AST.\n\nIf you didn’t do this, call the number on the back of your card."
+  },
+  "expected": {
+    "kind": "card_alert",
+    "merchant": "Uber Eats",
+    "receipt": {
+      "total": 144.51,
+      "currency": "TTD",
+      "card_last_four": "0000",
+      "alert_status": "pending",
+      "purchase_type": "food_delivery"
+    }
+  }
+}

@@ -1,0 +1,22 @@
+{
+  "origin": "synthetic",
+  "source": "email",
+  "input": {
+    "subject": "20% off everything this weekend",
+    "date": "2026-10-20T14:05:00-04:00",
+    "text": "Our biggest sale of the season!\n\nTake 20% off everything with code FALL20 at checkout.\nOffer ends October 31, 2026.\n\nUnsubscribe",
+    "from": "Acme Outfitters <deals@acme.example>"
+  },
+  "expected": {
+    "kind": "promo",
+    "merchant": "Acme Outfitters",
+    "offers": [
+      {
+        "type": "promo",
+        "code": "FALL20",
+        "expires_on": "2026-10-31",
+        "amount": null
+      }
+    ]
+  }
+}

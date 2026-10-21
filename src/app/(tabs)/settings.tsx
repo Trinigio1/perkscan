@@ -1,12 +1,14 @@
-import { router } from 'expo-router';
-import { useEffect, useState } from 'react';
+import { router, useFocusEffect } from 'expo-router';
+import { useCallback, useEffect, useState } from 'react';
 import { Alert, Linking, Platform, View } from 'react-native';
 import { DISCLAIMER_FULL } from '@/components/Disclaimer';
 import { ListRow } from '@/components/ListRow';
 import { ErrorNote, Panel, Row, Screen, T } from '@/components/ui';
 import { signOut, useAuth } from '@/lib/auth';
+import { accuracyPercent, type Accuracy } from '@/domain/accuracy';
 import { countryByCode } from '@/domain/countries';
 import { updateProfile } from '@/lib/cards';
+import { getAccuracy } from '@/lib/feedback';
 import { useData } from '@/lib/data';
 import { remindersEnabled, requestReminderPermission, setRemindersEnabled, syncReminders } from '@/lib/notifications';
 import { useToast } from '@/lib/toast';
@@ -29,6 +31,13 @@ export default function Settings() {
   const [reminders, setReminders] = useState(true);
   const [showLegal, setShowLegal] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const [accuracy, setAccuracy] = useState<Accuracy | null>(null);
+  useFocusEffect(
+    useCallback(() => {
+      getAccuracy().then(setAccuracy).catch(() => setAccuracy(null));
+    }, []),
+  );
 
   useEffect(() => {
     remindersEnabled().then(setReminders);
@@ -103,6 +112,14 @@ export default function Settings() {
       </Group>
 
       <Group title="About the numbers">
+        <ListRow
+          icon="analytics"
+          tone="purple"
+          title="Reading accuracy"
+          subtitle="Check what PerkScan read from your emails and texts"
+          value={accuracy && accuracy.checked ? `${accuracyPercent(accuracy)}%` : 'Not checked'}
+          onPress={() => router.push('/review')}
+        />
         <ListRow icon="shield-checkmark" tone="green" title="Verified benefits" subtitle="Unverified amounts count as zero" value={`${verified} of ${data.benefits.length}`} />
         <ListRow icon="lock-closed" tone="blue" title="Your privacy" subtitle="Card names and last 4 digits only. Email text is deleted once read. Never sold or shared." />
       </Group>

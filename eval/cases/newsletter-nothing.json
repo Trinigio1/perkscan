@@ -1,0 +1,15 @@
+{
+  "origin": "synthetic",
+  "source": "email",
+  "input": {
+    "subject": "Our autumn lookbook",
+    "date": "2026-10-20T14:05:00-04:00",
+    "text": "Discover our new autumn collection. Cozy knits, bold colours and more. Shop now!\n\nUnsubscribe",
+    "from": "Acme Outfitters <news@acme.example>"
+  },
+  "expected": {
+    "kind": "other",
+    "offers": [],
+    "receipt": null
+  }
+}

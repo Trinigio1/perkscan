@@ -1,0 +1,20 @@
+{
+  "origin": "synthetic",
+  "source": "email",
+  "input": {
+    "subject": "Your Uber Eats order",
+    "date": "2026-10-20T14:05:00-04:00",
+    "text": "Thanks for ordering, here's your receipt.\n\nTotal TT$144.51\nSubtotal TT$118.00\nDelivery fee TT$12.00\nService fee TT$14.51\n\nPayments: Visa ••••0000",
+    "from": "Uber Receipts <noreply@uber.example>"
+  },
+  "expected": {
+    "kind": "receipt",
+    "merchant": "Uber Eats",
+    "receipt": {
+      "total": 144.51,
+      "currency": "TTD",
+      "card_last_four": "0000",
+      "purchase_type": "food_delivery"
+    }
+  }
+}

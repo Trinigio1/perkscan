@@ -1,0 +1,21 @@
+{
+  "origin": "synthetic",
+  "source": "email",
+  "input": {
+    "subject": "Scotiabank Transaction Alert",
+    "date": "2026-10-20T14:05:00-04:00",
+    "text": "A purchase of TT$2,899.00 was made at COURTS TRINIDAD on your Scotiabank Credit Card ***0000 on Oct 20, 2026 at 10:15 am AST.\n\nIf you didn’t do this, call the number on the back of your card.",
+    "from": "Scotiabank <alerts@scotiabank.example>"
+  },
+  "expected": {
+    "kind": "card_alert",
+    "merchant": "Courts",
+    "receipt": {
+      "total": 2899,
+      "currency": "TTD",
+      "card_last_four": "0000",
+      "alert_status": "approved",
+      "purchase_date": "2026-10-20"
+    }
+  }
+}
