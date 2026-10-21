@@ -60,4 +60,30 @@ describe('toRows', () => {
     const { opportunities } = toRows(email({ offers: [offer({ type: 'points', title: 'Your points', points: 12500, expires_on: '2026-06-01' })] }), TODAY);
     expect(opportunities[0]).toMatchObject({ title: '12,500 points', value_estimate: null });
   });
+
+  describe('card alerts', () => {
+    const alert = (status: 'approved' | 'pending' | 'declined' | 'reversed' | null, total: number | null = 144.51) =>
+      email({
+        kind: 'card_alert',
+        merchant: 'Uber Eats',
+        receipt: {
+          total, currency: 'TTD', purchase_type: 'food_delivery', travel_date: null, purchase_date: null, card_last_four: '0000',
+          order_number: null, return_by: null, return_window_days: null, items: [], alert_status: status,
+        },
+      });
+
+    it('becomes a purchase on the card, dated today when the alert has no date, with no return window', () => {
+      const rows = toRows(alert('pending'), TODAY);
+      expect(rows.receipt).toMatchObject({ kind: 'card_alert', pending: true, merchant: 'Uber Eats', total: 144.51, currency: 'TTD', last_four: '0000', purchase_date: TODAY });
+      expect(rows.opportunities).toHaveLength(0);
+    });
+    it('marks settled charges as not pending', () => {
+      expect(toRows(alert('approved'), TODAY).receipt?.pending).toBe(false);
+    });
+    it('ignores declined and reversed charges, and alerts without an amount', () => {
+      expect(toRows(alert('declined'), TODAY).receipt).toBeNull();
+      expect(toRows(alert('reversed'), TODAY).receipt).toBeNull();
+      expect(toRows(alert('approved', null), TODAY).receipt).toBeNull();
+    });
+  });
 });

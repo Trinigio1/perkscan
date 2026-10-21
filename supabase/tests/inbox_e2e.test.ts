@@ -9,7 +9,7 @@ import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 import type { ModelCall } from '../functions/_shared/inbox/parse.ts';
 import { ingestHandler } from '../functions/ingest/handler.ts';
 import { processHandler } from '../functions/process-inbox/handler.ts';
-import { PROMO_HTML, RECEIPT_TEXT } from '../functions/_shared/inbox/__fixtures__/emails.ts';
+import { PROMO_HTML, RECEIPT_TEXT, SCOTIA_ALERT_TEXT } from '../functions/_shared/inbox/__fixtures__/emails.ts';
 
 const url = Deno.env.get('SUPABASE_URL')!;
 const anonKey = Deno.env.get('SUPABASE_PUBLISHABLE_KEY')!;
@@ -34,6 +34,10 @@ const fakeModel: ModelCall = async (input) => {
     out = { ...base, kind: 'promo', merchant: 'Acme Outfitters', summary: '20% off code from Acme', offers: [{ type: 'promo', currency: null, title: '20% off your next order', amount: null, percent_off: 20, code: 'SPRING20', expires_on: '2099-04-30', min_spend: null, points: null, claim_url: null, details: null }] };
   } else if (input.includes('Thanks for your order')) {
     out = { ...base, kind: 'receipt', merchant: 'Acme Outfitters', summary: 'Order from Acme, $101.99', receipt: { total: 101.99, currency: 'USD', purchase_type: 'electronics', travel_date: null, purchase_date: new Date().toISOString().slice(0, 10), card_last_four: '4242', order_number: 'A-1', return_by: null, return_window_days: 30, items: [{ name: 'Trail Runner Shoes', price: 89.99, quantity: 1 }] } };
+  } else if (input.includes('authorization made outside')) {
+    out = { ...base, kind: 'card_alert', merchant: 'Uber Eats', summary: 'Uber Eats, TT$144.51 (pending)', receipt: { total: 144.51, currency: 'TTD', purchase_type: 'food_delivery', travel_date: null, purchase_date: new Date().toISOString().slice(0, 10), card_last_four: '4242', order_number: null, return_by: null, return_window_days: null, items: [], alert_status: 'pending' } };
+  } else if (input.includes('Uber Eats order total')) {
+    out = { ...base, kind: 'receipt', merchant: 'Uber Eats', summary: 'Uber Eats order, TT$144.51', receipt: { total: 144.51, currency: 'TTD', purchase_type: 'food_delivery', travel_date: null, purchase_date: new Date().toISOString().slice(0, 10), card_last_four: null, order_number: 'UE-77', return_by: null, return_window_days: null, items: [{ name: 'Burger', price: 144.51, quantity: 1 }], alert_status: null } };
   } else if (input.includes('Uber receipt')) {
     out = { ...base, kind: 'receipt', merchant: 'Uber Eats', summary: 'Uber Eats order, $23.50', receipt: { total: 23.5, currency: 'USD', purchase_type: 'food_delivery', travel_date: null, purchase_date: new Date().toISOString().slice(0, 10), card_last_four: '4242', order_number: null, return_by: null, return_window_days: null, items: [] } };
   } else if (input.includes('THANKS10')) {
@@ -123,6 +127,39 @@ Deno.test('inbox pipeline end to end', async () => {
     assert(re.summary?.receipts >= 2 && re.summary.protections === 0 && re.summary.creditsUsed === 0, `rematch is idempotent: ${JSON.stringify(re)}`);
     const usage2 = await alice.client.from('benefit_usage').select('amount_used').eq('benefit_id', 'amex_gold__uber_cash');
     assert(Number(usage2.data?.[0]?.amount_used) === 23.5, 'credit not counted twice');
+
+    // A bank alert by text (the iPhone Shortcut's shape), then the store's own receipt by email: one purchase
+    const smsUrl = 'http://local/ingest/sms';
+    const postSms = (body: unknown) =>
+      ingest(new Request(smsUrl, { method: 'POST', headers: { 'content-type': 'application/json', authorization: `Bearer ${token}` }, body: JSON.stringify(body) }));
+    const alertText = SCOTIA_ALERT_TEXT.replace('***0000', '***4242');
+    const a1 = await (await postSms({ text: alertText })).json();
+    assert(a1.accepted === 1, `alert text accepted: ${JSON.stringify(a1)}`);
+    const a2 = await (await postSms({ text: alertText })).json();
+    assert(a2.accepted === 0 && a2.duplicates === 1, `the same text twice is stored once: ${JSON.stringify(a2)}`);
+    const sms = await admin.from('inbound_messages').select('source, parse_status, kind, raw_body').eq('user_id', alice.id).eq('source', 'sms');
+    assert(sms.data?.length === 1 && sms.data[0]!.kind === 'card_alert' && sms.data[0]!.raw_body === null, `text parsed and deleted: ${JSON.stringify(sms.data)}`);
+    let uber = await alice.client.from('receipts').select('id, kind, pending, last_four, matched_user_card_id, order_number').eq('total', 144.51);
+    assert(uber.data?.length === 1 && uber.data[0]!.kind === 'card_alert' && uber.data[0]!.pending && uber.data[0]!.matched_user_card_id === card.data!.id,
+      `alert stored as a pending purchase on the card: ${JSON.stringify(uber.data)}`);
+    await post(ingest, { messages: [{ id: 'g-uber-tt', subject: 'Your Uber Eats order', date: new Date().toISOString(), text: 'Uber Eats order total TT$144.51. Thanks!' }] }, token);
+    uber = await alice.client.from('receipts').select('id, kind, pending, last_four, matched_user_card_id, order_number').eq('total', 144.51);
+    assert(uber.data?.length === 1 && uber.data[0]!.kind === 'receipt' && !uber.data[0]!.pending && uber.data[0]!.last_four === '4242' && uber.data[0]!.order_number === 'UE-77',
+      `store receipt merged into the alert: ${JSON.stringify(uber.data)}`);
+
+    // Sign-in codes are dropped on arrival: never stored, never sent to the model
+    const before = (await admin.from('inbound_messages').select('id', { count: 'exact', head: true }).eq('user_id', alice.id)).count;
+    const otp = await (await postSms({ text: 'Your Scotiabank OTP is 482913. Do not share it.' })).json();
+    const after = (await admin.from('inbound_messages').select('id', { count: 'exact', head: true }).eq('user_id', alice.id)).count;
+    assert(otp.accepted === 0 && otp.skipped_security_codes === 1 && before === after, `security code dropped: ${JSON.stringify(otp)}`);
+    assert((await postSms({ nope: true })).status === 400, 'bad text body -> 400');
+
+    // Pasting a text in the app
+    const procS = processHandler({ db: admin, userFromRequest: async () => alice.id, model: fakeModel, pipeline });
+    const pasted = await (await post(procS, { action: 'submit', text: 'Get 15% off with code SPRING20 at Acme' })).json();
+    assert(pasted.result?.status === 'parsed', `pasted text parsed: ${JSON.stringify(pasted)}`);
+    const pastedOtp = await (await post(procS, { action: 'submit', text: '123456 is your verification code' })).json();
+    assert(pastedOtp.skipped === 'security_code', `pasted code refused: ${JSON.stringify(pastedOtp)}`);
 
     // Bob sees none of it
     for (const t of ['inbound_messages', 'receipts']) {

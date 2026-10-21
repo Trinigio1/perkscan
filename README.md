@@ -5,7 +5,7 @@ Finds money you're already owed and shows it as one number: **"You left $X on th
 Expo (React Native) + TypeScript + Expo Router on the front end, Supabase (Postgres, Auth, RLS) on the back end.
 The earlier Firebase prototype lives untouched in `legacy/` for reference.
 
-- What's built so far and how to test it: [`PHASE_1_NOTES.md`](PHASE_1_NOTES.md), [`PHASE_2_NOTES.md`](PHASE_2_NOTES.md), [`PHASE_3_NOTES.md`](PHASE_3_NOTES.md)
+- What's built so far and how to test it: [`PHASE_1_NOTES.md`](PHASE_1_NOTES.md), [`PHASE_2_NOTES.md`](PHASE_2_NOTES.md), [`PHASE_3_NOTES.md`](PHASE_3_NOTES.md), [`PHASE_4_NOTES.md`](PHASE_4_NOTES.md)
 - Connect Gmail: [`gmail/README.md`](gmail/README.md)
 - Card benefits (edit + verify these): [`seed/card_benefits.json`](seed/card_benefits.json)
 

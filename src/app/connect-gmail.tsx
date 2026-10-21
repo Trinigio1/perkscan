@@ -1,61 +1,13 @@
-import { Ionicons } from '@expo/vector-icons';
-import * as Clipboard from 'expo-clipboard';
 import { useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
-import { Alert, Linking, Platform, Pressable, View } from 'react-native';
+import { Linking, View } from 'react-native';
+import { confirmRevoke, CopyBox, Step, TokenList } from '@/components/Setup';
 import { Button, ErrorNote, IconBubble, Note, Panel, Row, Screen, T } from '@/components/ui';
-import { relativeDays } from '@/domain/format';
 import type { IngestToken } from '@/domain/types';
 import { useData } from '@/lib/data';
 import { createToken, GMAIL_SCRIPT_URL, INGEST_URL, listTokens, revokeToken, sendTestEmail } from '@/lib/inbox';
 import { useToast } from '@/lib/toast';
-import { font, radius, space, useColors } from '@/theme';
-
-function CopyBox({ label, value, secret }: { label: string; value: string; secret?: boolean }) {
-  const c = useColors();
-  const toast = useToast();
-  return (
-    <View style={{ gap: 6 }}>
-      <T variant="label">{label}</T>
-      <Pressable
-        onPress={async () => {
-          await Clipboard.setStringAsync(value);
-          toast(`${label} copied`, { tone: 'info' });
-        }}
-        accessibilityLabel={`Copy ${label}`}
-        style={({ pressed }) => ({
-          flexDirection: 'row',
-          alignItems: 'center',
-          gap: space.sm,
-          padding: space.md,
-          borderRadius: radius.md,
-          backgroundColor: secret ? c.warnSoft : c.surfaceAlt,
-          opacity: pressed ? 0.7 : 1,
-        })}
-      >
-        <T variant="caption" style={{ flex: 1, fontFamily: Platform.select({ ios: 'Menlo', default: 'monospace' }) }} numberOfLines={3}>
-          {value}
-        </T>
-        <Ionicons name="copy-outline" size={18} color={c.textMuted} />
-      </Pressable>
-    </View>
-  );
-}
-
-function Step({ n, title, children }: { n: number; title: string; children?: React.ReactNode }) {
-  const c = useColors();
-  return (
-    <Row gap={space.md} style={{ alignItems: 'flex-start' }}>
-      <View style={{ width: 28, height: 28, borderRadius: 14, backgroundColor: c.accent, alignItems: 'center', justifyContent: 'center' }}>
-        <T variant="label" color={c.accentText} style={{ fontFamily: font.bold }}>{n}</T>
-      </View>
-      <View style={{ flex: 1, gap: space.sm }}>
-        <T variant="subheading">{title}</T>
-        {children}
-      </View>
-    </Row>
-  );
-}
+import { space } from '@/theme';
 
 export default function ConnectGmail() {
   const toast = useToast();
@@ -74,7 +26,9 @@ export default function ConnectGmail() {
     setBusy('create');
     setError(null);
     try {
-      setFresh(await createToken('Gmail'));
+      // One token per Gmail account, e.g. a second inbox that gets your bank alerts.
+      const gmail = tokens.filter((t) => t.label.startsWith('Gmail')).length;
+      setFresh(await createToken(gmail ? `Gmail ${gmail + 1}` : 'Gmail'));
       load();
     } catch (e) {
       setError((e as Error).message);
@@ -92,17 +46,7 @@ export default function ConnectGmail() {
       setError((e as Error).message);
     }
   };
-  const revoke = (t: IngestToken) => {
-    const msg = 'Any Gmail script using it will stop sending emails.';
-    if (Platform.OS === 'web') {
-      if (globalThis.confirm?.(`Revoke this token? ${msg}`)) doRevoke(t);
-      return;
-    }
-    Alert.alert('Revoke this token?', msg, [
-      { text: 'Cancel', style: 'cancel' },
-      { text: 'Revoke', style: 'destructive', onPress: () => doRevoke(t) },
-    ]);
-  };
+  const revoke = (t: IngestToken) => confirmRevoke('Anything using it (a Gmail script or iPhone Shortcut) will stop sending.', () => doRevoke(t));
 
   const test = async () => {
     setBusy('test');
@@ -135,7 +79,7 @@ export default function ConnectGmail() {
       </Note>
 
       <Panel style={{ gap: space.lg }}>
-        <Step n={1} title="Create your personal token">
+        <Step n={1} title="Create a token for this Gmail account">
           {fresh ? (
             <>
               <CopyBox label="Token" value={fresh} secret />
@@ -163,25 +107,7 @@ export default function ConnectGmail() {
 
       {error ? <ErrorNote message={error} /> : null}
 
-      {tokens.length ? (
-        <View style={{ gap: space.sm }}>
-          <T variant="overline" muted>Active tokens</T>
-          <Panel style={{ paddingVertical: space.xs }}>
-            {tokens.map((t) => (
-              <Row key={t.id} gap={space.md} style={{ paddingVertical: space.sm }}>
-                <IconBubble icon="key" tone="gray" size={34} />
-                <View style={{ flex: 1 }}>
-                  <T variant="subheading">{t.label}</T>
-                  <T variant="caption" muted>
-                    Created {relativeDays(new Date(t.created_at), new Date())} · {t.last_used_at ? `last used ${relativeDays(new Date(t.last_used_at), new Date())}` : 'not used yet'}
-                  </T>
-                </View>
-                <Button title="Revoke" kind="danger" size="sm" onPress={() => revoke(t)} />
-              </Row>
-            ))}
-          </Panel>
-        </View>
-      ) : null}
+      <TokenList tokens={tokens} onRevoke={revoke} />
     </Screen>
   );
 }

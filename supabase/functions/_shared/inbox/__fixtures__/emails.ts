@@ -21,3 +21,8 @@ https://www.acmeoutfitters.com/orders/112233445566778899
 
 --
 Acme Outfitters Customer Care`;
+
+/** Wording of a real Scotiabank T&T alert; card digits and amount changed. */
+export const SCOTIA_ALERT_TEXT = `There was an authorization made outside of the country for $144.51 TTD at UBER * EATS PENDING on your Scotiabank Credit Card ***0000 at 08:59 pm AST.
+
+If you didn’t do this, call the number on the back of your card.`;

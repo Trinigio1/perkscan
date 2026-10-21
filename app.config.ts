@@ -27,6 +27,8 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
       monochromeImage: './assets/android-icon-monochrome.png',
     },
     predictiveBackGestureEnabled: false,
+    // "Share → PerkScan" for texts (read by modules/share-text). No READ_SMS permission.
+    intentFilters: [{ action: 'SEND', category: ['DEFAULT'], data: [{ mimeType: 'text/plain' }] }],
   },
   web: { favicon: './assets/favicon.png' },
   plugins: [

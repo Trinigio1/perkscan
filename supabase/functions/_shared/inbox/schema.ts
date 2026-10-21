@@ -29,6 +29,8 @@ export const OfferSchema = z.object({
   details: z.string().nullable().describe('One short sentence of important conditions'),
 });
 
+export const ALERT_STATUSES = ['approved', 'pending', 'declined', 'reversed'] as const;
+
 export const ReceiptSchema = z.object({
   total: z.number().nullable(),
   currency: CURRENCY,
@@ -40,15 +42,20 @@ export const ReceiptSchema = z.object({
   return_by: z.string().nullable().describe('YYYY-MM-DD if a return deadline is stated'),
   return_window_days: z.number().nullable().describe('Return window length in days if stated instead of a date'),
   items: z.array(z.object({ name: z.string(), price: z.number().nullable(), quantity: z.number().nullable() })),
+  alert_status: z
+    .enum(ALERT_STATUSES)
+    .nullable()
+    .optional() // older stored replies and store receipts may leave it out
+    .describe('Only for bank card alerts: approved, pending (an authorization), declined, or reversed (refund/reversal). Null for store receipts'),
 });
 
-export const KINDS = ['receipt', 'promo', 'gift_card_or_store_credit', 'loyalty', 'trial_or_subscription', 'settlement', 'other'] as const;
+export const KINDS = ['receipt', 'card_alert', 'promo', 'gift_card_or_store_credit', 'loyalty', 'trial_or_subscription', 'settlement', 'other'] as const;
 
 export const ParsedEmailSchema = z.object({
   kind: z.enum(KINDS),
   merchant: z.string().nullable().describe('Store or brand name'),
   summary: z.string().describe('Under 100 characters, no personal details'),
-  receipt: ReceiptSchema.nullable().describe('Only for purchase receipts / order confirmations'),
+  receipt: ReceiptSchema.nullable().describe('For purchase receipts, order confirmations and bank card purchase alerts'),
   offers: z.array(OfferSchema).describe('Every distinct offer, credit, code, trial or settlement in the email; empty if none'),
 });
 
@@ -101,6 +108,7 @@ export function normalizeParsed(p: ParsedEmail): ParsedEmail {
             p.receipt.return_window_days !== null && p.receipt.return_window_days > 0 && p.receipt.return_window_days <= 365
               ? Math.round(p.receipt.return_window_days)
               : null,
+          alert_status: p.receipt.alert_status ?? null,
           items: p.receipt.items.slice(0, 50).map((i) => ({
             name: text(i.name, 120) ?? 'Item',
             price: money(i.price),

@@ -1,6 +1,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { matchAndApply } from '../matching/apply.ts';
-import { toRows } from './opportunities.ts';
+import { findDuplicate, mergeFields, MERGE_WINDOW_DAYS, type ExistingReceipt } from './merge.ts';
+import { toRows, type ReceiptRow } from './opportunities.ts';
 import { costUsd, parseEmail, type ModelCall } from './parse.ts';
 
 export interface PipelineOptions {
@@ -83,16 +84,7 @@ export async function processMessages(db: SupabaseClient, ids: string[], call: M
 
     const { data: profile } = await db.from('profiles').select('home_currency').eq('id', claimed.user_id).maybeSingle();
     const rows = toRows(parsed.data, today, (profile?.home_currency as string | undefined) ?? 'USD');
-    let receiptId: string | null = null;
-    if (rows.receipt) {
-      const { data: rec, error } = await db
-        .from('receipts')
-        .insert({ ...rows.receipt, user_id: claimed.user_id, source_message_id: id })
-        .select('id')
-        .single();
-      if (error) throw new Error(`receipts: ${error.message}`);
-      receiptId = rec.id as string;
-    }
+    const receiptId = rows.receipt ? await saveReceipt(db, claimed.user_id as string, id, rows.receipt) : null;
 
     let created = 0;
     for (const o of rows.opportunities) {
@@ -127,4 +119,38 @@ export async function processMessages(db: SupabaseClient, ids: string[], call: M
     results.push({ id, status: 'parsed', kind: parsed.data.kind, summary: parsed.data.summary, opportunities: created });
   }
   return results;
+}
+
+const shiftDay = (d: string, days: number) => {
+  const t = new Date(`${d}T00:00:00Z`);
+  t.setUTCDate(t.getUTCDate() + days);
+  return t.toISOString().slice(0, 10);
+};
+
+/** Inserts a receipt, or merges it into the alert/receipt already stored for the same purchase. Returns its id. */
+async function saveReceipt(db: SupabaseClient, userId: string, messageId: string, row: ReceiptRow): Promise<string> {
+  if (row.total !== null && row.purchase_date) {
+    const { data: candidates, error } = await db
+      .from('receipts')
+      .select('id, kind, pending, merchant, total, currency, purchase_date, last_four, order_number')
+      .eq('user_id', userId)
+      .eq('currency', row.currency)
+      .eq('total', row.total)
+      .gte('purchase_date', shiftDay(row.purchase_date, -MERGE_WINDOW_DAYS))
+      .lte('purchase_date', shiftDay(row.purchase_date, MERGE_WINDOW_DAYS))
+      .limit(10);
+    if (error) throw new Error(`receipts: ${error.message}`);
+    const dup = findDuplicate(
+      row,
+      (candidates ?? []).map((c: ExistingReceipt & { total: number | string | null }) => ({ ...c, total: c.total === null ? null : Number(c.total) })),
+    );
+    if (dup) {
+      const { error: upErr } = await db.from('receipts').update(mergeFields(dup, row)).eq('id', dup.id);
+      if (upErr) throw new Error(`receipts: ${upErr.message}`);
+      return dup.id;
+    }
+  }
+  const { data, error } = await db.from('receipts').insert({ ...row, user_id: userId, source_message_id: messageId }).select('id').single();
+  if (error) throw new Error(`receipts: ${error.message}`);
+  return data.id as string;
 }

@@ -4,6 +4,10 @@ import { supabase } from './supabase';
 
 /** Where the Gmail script sends emails. */
 export const INGEST_URL = `${SUPABASE_URL}/functions/v1/ingest`;
+/** Where the iPhone Shortcut sends texts. */
+export const INGEST_SMS_URL = `${SUPABASE_URL}/functions/v1/ingest/sms`;
+/** A ready-made iCloud Shortcut, once one is published (EXPO_PUBLIC_SHORTCUT_URL). */
+export const SHORTCUT_URL = (process.env.EXPO_PUBLIC_SHORTCUT_URL ?? '').trim() || null;
 export const GMAIL_SCRIPT_URL = 'https://github.com/Trinigio1/perkscan/blob/phase-1/gmail/README.md';
 
 export async function listMessages(limit = 50): Promise<InboundMessage[]> {
@@ -38,8 +42,8 @@ export async function revokeToken(id: string) {
   if (error) throw new Error(error.message);
 }
 
-async function invokeProcess(action: 'retry' | 'test' | 'rematch') {
-  const { data, error } = await supabase.functions.invoke('process-inbox', { body: { action } });
+async function invokeProcess(action: 'retry' | 'test' | 'test_sms' | 'rematch' | 'submit', text?: string) {
+  const { data, error } = await supabase.functions.invoke('process-inbox', { body: { action, text } });
   if (error) {
     // Surface the function's own message (e.g. AI not configured) when there is one.
     const ctx = (error as { context?: Response }).context;
@@ -47,14 +51,18 @@ async function invokeProcess(action: 'retry' | 'test' | 'rematch') {
     throw new Error((body as { error?: string } | null)?.error ?? error.message);
   }
   return data as {
-    result?: { status: string; opportunities?: number; error?: string };
+    result?: { status: string; kind?: string; opportunities?: number; error?: string };
     results?: { status: string }[];
     summary?: { receipts: number; matched: number; protections: number; creditsUsed: number };
+    skipped?: 'security_code' | 'duplicate';
   };
 }
 
 export const sendTestEmail = () => invokeProcess('test');
 export const retryFailed = () => invokeProcess('retry');
+export const sendTestText = () => invokeProcess('test_sms');
+/** A text the user pasted or shared into the app. */
+export const submitText = (text: string) => invokeProcess('submit', text);
 
 /**
  * Re-checks recent receipts against the user's cards, e.g. after adding a card or

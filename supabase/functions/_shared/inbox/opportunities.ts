@@ -3,6 +3,10 @@ import type { Offer, ParsedEmail, PurchaseType } from './schema.ts';
 // Turns a parsed email into database rows. Pure: the caller does the writes.
 
 export interface ReceiptRow {
+  /** A store receipt, or a bank's card purchase alert (no items or return window). */
+  kind: 'receipt' | 'card_alert';
+  /** An authorization the bank hasn't settled yet. */
+  pending: boolean;
   merchant: string;
   total: number | null;
   currency: string;
@@ -127,10 +131,32 @@ export function toRows(p: ParsedEmail, today: string, defaultCurrency = 'USD'): 
   }
 
   let receipt: ReceiptRow | null = null;
-  if (p.kind === 'receipt' && p.receipt) {
+  if (p.kind === 'card_alert' && p.receipt) {
+    const r = p.receipt;
+    // Declined and reversed charges aren't purchases; an alert without an amount can't be matched.
+    if (r.alert_status !== 'declined' && r.alert_status !== 'reversed' && r.total !== null) {
+      receipt = {
+        kind: 'card_alert',
+        pending: r.alert_status === 'pending',
+        merchant: merchant ?? 'Unknown merchant',
+        total: r.total,
+        currency: r.currency ?? defaultCurrency,
+        purchase_type: r.purchase_type,
+        travel_date: r.travel_date,
+        purchase_date: r.purchase_date ?? today,
+        last_four: r.card_last_four,
+        items: [],
+        order_number: null,
+        return_by: null,
+        category: null,
+      };
+    }
+  } else if (p.kind === 'receipt' && p.receipt) {
     const r = p.receipt;
     const returnBy = r.return_by ?? (r.purchase_date && r.return_window_days ? addDays(r.purchase_date, r.return_window_days) : null);
     receipt = {
+      kind: 'receipt',
+      pending: false,
       merchant: merchant ?? 'Unknown merchant',
       total: r.total,
       currency: r.currency ?? defaultCurrency,

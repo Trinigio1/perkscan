@@ -70,8 +70,8 @@ export default function Offers() {
             <T variant="subheading">{connected ? 'Inbox' : 'Connect Gmail'}</T>
             <T variant="caption" muted>
               {connected
-                ? `${inbox!.total} email${inbox!.total === 1 ? '' : 's'} read${inbox!.failed ? ` · ${inbox!.failed} need a retry` : ''}`
-                : 'Find promo codes, gift cards and trials in your email'}
+                ? `${inbox!.total} message${inbox!.total === 1 ? '' : 's'} read${inbox!.failed ? ` · ${inbox!.failed} need a retry` : ''}`
+                : 'Find promo codes, gift cards and trials in your email and texts'}
             </T>
           </View>
           <Ionicons name="chevron-forward" size={18} color={c.textFaint} />

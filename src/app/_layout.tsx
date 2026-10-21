@@ -4,14 +4,16 @@ import { Inter_600SemiBold } from '@expo-google-fonts/inter/600SemiBold';
 import { Inter_700Bold } from '@expo-google-fonts/inter/700Bold';
 import { Inter_800ExtraBold } from '@expo-google-fonts/inter/800ExtraBold';
 import { useFonts } from 'expo-font';
-import { DarkTheme, DefaultTheme, Stack, ThemeProvider } from 'expo-router';
+import { DarkTheme, DefaultTheme, router, Stack, ThemeProvider } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
+import { useCallback } from 'react';
 import { useColorScheme } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { Loading, Screen, T } from '@/components/ui';
 import { AuthProvider, useAuth } from '@/lib/auth';
 import { DataProvider, useData } from '@/lib/data';
 import { isConfigured } from '@/lib/env';
+import { useSharedText } from '@/lib/shareIntent';
 import { ToastProvider } from '@/lib/toast';
 import { font, useColors } from '@/theme';
 
@@ -30,6 +32,10 @@ function RootNavigator() {
   const { session, loading: authLoading } = useAuth();
   const { data, loading: dataLoading } = useData();
   const c = useColors();
+  const ready = !!session && !!data.profile?.onboarded_at;
+  // Android "Share → PerkScan": open the shared text, ready to add.
+  const openShared = useCallback((text: string) => router.push({ pathname: '/add-text', params: { text } }), []);
+  useSharedText(ready, openShared);
 
   if (authLoading || (session && dataLoading && !data.profile)) return <Loading />;
 
@@ -64,6 +70,8 @@ function RootNavigator() {
         <Stack.Screen name="inbox" options={{ ...header, title: 'Inbox' }} />
         <Stack.Screen name="connect-gmail" options={{ ...header, title: '' }} />
         <Stack.Screen name="country" options={{ ...modal, title: 'Country & currency' }} />
+        <Stack.Screen name="connect-texts" options={{ ...header, title: '' }} />
+        <Stack.Screen name="add-text" options={{ ...modal, title: 'Add a text' }} />
       </Stack.Protected>
     </Stack>
   );

@@ -29,6 +29,20 @@ subject:("order confirmation" OR "your order" OR receipt OR "gift card" OR "stor
 
 You can also label any email `PerkScan` by hand.
 
+### Bank purchase alerts
+Bank alerts tell PerkScan which card paid, so purchases can be matched to the card's protections and credits.
+Add a second filter with **From** `scotiabank` and **Has the words** `authorization OR purchase OR transaction`
+→ **Apply the label: PerkScan**. (Change `scotiabank` to your bank's name if it's different.)
+
+## 4. A second Gmail account (e.g. where your bank alerts go)
+Repeat steps 1–3 in the other account, with its own token:
+1. In the app: **Settings → Connect Gmail → Create another token** (it's named "Gmail 2").
+2. Signed in to the *other* Gmail account, go to script.google.com and add the script again with the new token.
+3. Add the bank-alert filter above in that account.
+
+Both accounts then feed the same PerkScan. Revoking one token stops only that account. If the other account
+belongs to someone else, ask them first, and filter so only your bank's alerts are sent.
+
 ## Good to know
 - Only the cleaned text of labeled emails is sent. Links are removed and full card numbers are masked
   before anything is stored. PerkScan deletes the email text as soon as it's been read (24 hours at most).

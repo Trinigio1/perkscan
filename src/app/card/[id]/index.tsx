@@ -71,12 +71,12 @@ function Purchases({ receipts, opportunities }: { receipts: Receipt[]; opportuni
     <View style={{ gap: space.sm }}>
       <View>
         <T variant="heading">Recent purchases on this card</T>
-        <T variant="caption" muted>From receipts in your inbox that show this card’s last 4 digits.</T>
+        <T variant="caption" muted>From receipts and bank alerts that show this card’s last 4 digits.</T>
       </View>
       <Panel style={{ paddingVertical: space.xs }}>
         {receipts.length === 0 ? (
           <T variant="caption" muted style={{ paddingVertical: space.md }}>
-            No receipts matched yet. Receipts are matched when the email shows the card’s last 4 digits.
+            Nothing matched yet. Purchases are matched when a receipt or bank alert shows the card’s last 4 digits.
           </T>
         ) : (
           receipts.slice(0, 20).map((r) => {
@@ -89,7 +89,7 @@ function Purchases({ receipts, opportunities }: { receipts: Receipt[]; opportuni
                   <View style={{ flex: 1 }}>
                     <T variant="subheading" numberOfLines={1}>{r.merchant}</T>
                     <T variant="caption" muted>
-                      {[r.purchase_date, r.purchase_type ? TYPE_LABELS[r.purchase_type] : null].filter(Boolean).join(' · ')}
+                      {[r.purchase_date, r.purchase_type ? TYPE_LABELS[r.purchase_type] : null, r.kind === 'card_alert' ? (r.pending ? 'Bank alert · pending' : 'Bank alert') : null].filter(Boolean).join(' · ')}
                     </T>
                   </View>
                   {r.total !== null ? (

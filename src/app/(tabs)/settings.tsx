@@ -95,9 +95,11 @@ export default function Settings() {
         <ListRow icon="school" tone="purple" title="I’m a student" subtitle="Student discounts arrive later" toggle={!!data.profile?.is_student} onToggle={toggleStudent} />
       </Group>
 
-      <Group title="Email">
-        <ListRow icon="mail" tone="blue" title="Connect Gmail" subtitle="Find offers in emails you label “PerkScan”" onPress={() => router.push('/connect-gmail')} />
-        <ListRow icon="file-tray-full" tone="gray" title="Inbox" subtitle="Emails PerkScan has read" onPress={() => router.push('/inbox')} />
+      <Group title="Email & texts">
+        <ListRow icon="mail" tone="blue" title="Connect Gmail" subtitle="Emails you label “PerkScan” — add more Gmail accounts too" onPress={() => router.push('/connect-gmail')} />
+        <ListRow icon="chatbubbles" tone="green" title="Connect texts" subtitle="Bank alerts and offers you get by text" onPress={() => router.push('/connect-texts')} />
+        <ListRow icon="clipboard" tone="orange" title="Paste a text" subtitle="Add one bank alert or offer by hand" onPress={() => router.push('/add-text')} />
+        <ListRow icon="file-tray-full" tone="gray" title="Inbox" subtitle="Emails and texts PerkScan has read" onPress={() => router.push('/inbox')} />
       </Group>
 
       <Group title="About the numbers">
@@ -122,7 +124,7 @@ export default function Settings() {
         <ListRow icon="download" tone="gray" title="Export or delete my data" subtitle="Coming in a later update" />
       </Group>
 
-      <T variant="caption" faint center>PerkScan · Phase 3 preview</T>
+      <T variant="caption" faint center>PerkScan · Phase 4 preview</T>
     </Screen>
   );
 }

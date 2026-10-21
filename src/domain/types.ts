@@ -100,6 +100,10 @@ export interface Receipt {
   last_four: string | null;
   purchase_type: string | null;
   matched_user_card_id: string | null;
+  /** A store receipt, or a bank's card purchase alert. */
+  kind: 'receipt' | 'card_alert';
+  /** An authorization the bank hasn't settled yet. */
+  pending: boolean;
 }
 
 export type ParseStatus = 'pending' | 'parsing' | 'parsed' | 'failed' | 'ignored';
