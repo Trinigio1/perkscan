@@ -18,6 +18,7 @@ export const benefitSchema = z
     coverage_window_days: z.number().int().positive().nullable(),
     enrollment_required: z.boolean(),
     merchant_match: z.object({ merchants: z.array(z.string().min(1)) }).nullable(),
+    currency: z.string().regex(/^[A-Z]{3}$/, 'Use a 3-letter currency code, e.g. USD').nullable().default(null),
     status: z.enum(['active', 'TODO_VERIFY']),
     source_url: z.string().url().nullable(),
     last_verified: isoDate.nullable(),
@@ -47,7 +48,10 @@ export const cardSchema = z
     id: slug,
     issuer: z.string().min(1),
     product_name: z.string().min(1),
+    country: z.string().regex(/^[A-Z]{2}$/, 'Use a 2-letter country code, e.g. US or TT').default('US'),
+    currency: z.string().regex(/^[A-Z]{3}$/, 'Use a 3-letter currency code, e.g. USD or TTD').default('USD'),
     annual_fee: money,
+    fee_note: z.string().nullable().optional(),
     status: z.enum(['active', 'TODO_VERIFY']),
     source_url: z.string().url().nullable(),
     last_verified: isoDate.nullable(),
@@ -100,19 +104,20 @@ export function seedToSql(seed: SeedFile): string {
   ];
   seed.cards.forEach((c, ci) => {
     lines.push(
-      `insert into public.cards (id, issuer, product_name, annual_fee, status, source_url, last_verified, sort_order) values (` +
-        [c.id, c.issuer, c.product_name, c.annual_fee, c.status, c.source_url, c.last_verified, ci].map(sqlLiteral).join(', ') +
-        `) on conflict (id) do update set issuer = excluded.issuer, product_name = excluded.product_name, annual_fee = excluded.annual_fee, ` +
+      `insert into public.cards (id, issuer, product_name, country, currency, annual_fee, status, source_url, last_verified, sort_order) values (` +
+        [c.id, c.issuer, c.product_name, c.country, c.currency, c.annual_fee, c.status, c.source_url, c.last_verified, ci].map(sqlLiteral).join(', ') +
+        `) on conflict (id) do update set issuer = excluded.issuer, product_name = excluded.product_name, country = excluded.country, ` +
+        `currency = excluded.currency, annual_fee = excluded.annual_fee, ` +
         `status = excluded.status, source_url = excluded.source_url, last_verified = excluded.last_verified, sort_order = excluded.sort_order;`,
     );
     c.benefits.forEach((b, bi) => {
       const cols = [
         'id', 'card_id', 'type', 'name', 'amount', 'period', 'period_anchor', 'amount_schedule', 'terms_summary', 'max_coverage',
-        'coverage_window_days', 'enrollment_required', 'merchant_match', 'status', 'source_url', 'last_verified', 'notes', 'sort_order',
+        'coverage_window_days', 'enrollment_required', 'merchant_match', 'currency', 'status', 'source_url', 'last_verified', 'notes', 'sort_order',
       ];
       const vals = [
         b.id, c.id, b.type, b.name, b.amount, b.period, b.period_anchor, b.amount_schedule, b.terms_summary, b.max_coverage,
-        b.coverage_window_days, b.enrollment_required, b.merchant_match, b.status, b.source_url, b.last_verified, b.notes, bi,
+        b.coverage_window_days, b.enrollment_required, b.merchant_match, b.currency, b.status, b.source_url, b.last_verified, b.notes, bi,
       ];
       lines.push(
         `insert into public.card_benefits (${cols.join(', ')}) values (${vals.map(sqlLiteral).join(', ')}) ` +

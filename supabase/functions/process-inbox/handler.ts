@@ -3,10 +3,12 @@ import { CORS, json } from '../_shared/http.ts';
 import { buildModelInput } from '../_shared/inbox/clean.ts';
 import type { ModelCall } from '../_shared/inbox/parse.ts';
 import { processMessages, type PipelineOptions } from '../_shared/inbox/pipeline.ts';
+import { matchAndApply } from '../_shared/matching/apply.ts';
 
 // POST /functions/v1/process-inbox   (called from the app with the user's session)
 // { "action": "retry" } -> re-parse this user's failed/pending messages
 // { "action": "test" }  -> run a sample email through the whole pipeline
+// { "action": "rematch" } -> re-check recent receipts against the user's cards (after adding or editing a card)
 
 export interface ProcessDeps {
   db: SupabaseClient; // service role
@@ -33,14 +35,17 @@ export function processHandler(deps: ProcessDeps) {
     if (req.method !== 'POST') return json({ error: 'Use POST' }, 405);
     const userId = await deps.userFromRequest(req);
     if (!userId) return json({ error: 'Sign in first' }, 401);
-    if (!deps.model) return json({ error: 'AI parsing is not set up yet (ANTHROPIC_API_KEY is missing).' }, 503);
-
     let action = 'retry';
     try {
       action = ((await req.json()) as { action?: string }).action ?? 'retry';
     } catch {
       // empty body = retry
     }
+
+    // Matching needs no AI.
+    if (action === 'rematch') return json({ summary: await matchAndApply(deps.db, userId) });
+
+    if (!deps.model) return json({ error: 'AI parsing is not set up yet (ANTHROPIC_API_KEY is missing).' }, 503);
 
     if (action === 'test') {
       const { data, error } = await deps.db

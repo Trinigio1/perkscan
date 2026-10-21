@@ -3,7 +3,7 @@ import type { Offer, ParsedEmail } from '../schema.ts';
 
 const TODAY = '2026-04-10';
 const offer = (o: Partial<Offer>): Offer => ({
-  type: 'promo', title: 'Deal', amount: null, percent_off: null, code: null, expires_on: null,
+  type: 'promo', currency: null, title: 'Deal', amount: null, percent_off: null, code: null, expires_on: null,
   min_spend: null, points: null, claim_url: null, details: null, ...o,
 });
 const email = (p: Partial<ParsedEmail>): ParsedEmail => ({ kind: 'promo', merchant: 'Acme', summary: '', receipt: null, offers: [], ...p });
@@ -37,12 +37,18 @@ describe('toRows', () => {
     const rows = toRows(
       email({
         kind: 'receipt',
-        receipt: { total: 101.99, currency: 'USD', purchase_date: '2026-04-05', card_last_four: '4242', order_number: 'A1', return_by: null, return_window_days: 30, items: [] },
+        receipt: { total: 101.99, currency: 'USD', purchase_type: 'clothing', travel_date: null, purchase_date: '2026-04-05', card_last_four: '4242', order_number: 'A1', return_by: null, return_window_days: 30, items: [] },
       }),
       TODAY,
     );
     expect(rows.receipt).toMatchObject({ merchant: 'Acme', total: 101.99, last_four: '4242', return_by: '2026-05-05' });
     expect(rows.opportunities[0]).toMatchObject({ type: 'return_window', value_estimate: null, expires_at: '2026-05-05T23:59:59Z' });
+  });
+
+  it('uses the offer currency, then the receipt currency, then the home currency', () => {
+    expect(toRows(email({ offers: [offer({ amount: 5, code: 'A', currency: 'TTD' })] }), TODAY).opportunities[0]!.currency).toBe('TTD');
+    expect(toRows(email({ offers: [offer({ amount: 5, code: 'B' })] }), TODAY, 'TTD').opportunities[0]!.currency).toBe('TTD');
+    expect(toRows(email({ offers: [offer({ amount: 5, code: 'C' })] }), TODAY).opportunities[0]!.currency).toBe('USD');
   });
 
   it('removes duplicate offers within one email', () => {

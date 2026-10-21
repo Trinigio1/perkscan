@@ -5,7 +5,7 @@ const valid = {
   merchant: 'Acme Outfitters',
   summary: '20% off code from Acme',
   receipt: null,
-  offers: [{ type: 'promo', title: '20% off your next order', amount: null, percent_off: 20, code: 'SPRING20', expires_on: '2026-04-30', min_spend: null, points: null, claim_url: null, details: null }],
+  offers: [{ type: 'promo', currency: null, title: '20% off your next order', amount: null, percent_off: 20, code: 'SPRING20', expires_on: '2026-04-30', min_spend: null, points: null, claim_url: null, details: null }],
 };
 
 const reply = (text: string | null, stopReason = 'end_turn') => ({ text, stopReason, inputTokens: 1000, outputTokens: 200 });
@@ -69,16 +69,22 @@ describe('parseEmail', () => {
     const messy = {
       ...valid,
       kind: 'receipt',
-      receipt: { total: -5, currency: 'usd', purchase_date: '2026-02-30', card_last_four: '4242 ', order_number: ' A1 ', return_by: null, return_window_days: 900, items: [] },
+      receipt: { total: -5, currency: 'usd', purchase_type: 'electronics', travel_date: '2026-13-01', purchase_date: '2026-02-30', card_last_four: '4242 ', order_number: ' A1 ', return_by: null, return_window_days: 900, items: [] },
       offers: [{ ...valid.offers[0], code: 'HAS SPACES', percent_off: 250, expires_on: 'next week' }],
     };
     const r = await parseEmail('email', fake(reply(JSON.stringify(messy))));
     expect(r.ok).toBe(true);
     if (r.ok) {
-      expect(r.data.receipt).toMatchObject({ total: null, currency: 'USD', purchase_date: null, card_last_four: null, order_number: 'A1', return_window_days: null });
+      expect(r.data.receipt).toMatchObject({ total: null, currency: 'USD', purchase_date: null, travel_date: null, card_last_four: null, order_number: 'A1', return_window_days: null });
       expect(r.data.offers[0]).toMatchObject({ code: null, percent_off: null, expires_on: null });
     }
   });
+});
+
+it('maps currency symbols to codes', async () => {
+  const withTT = { ...valid, offers: [{ ...valid.offers[0], currency: 'TT$' }] };
+  const r = await parseEmail('email', fake(reply(JSON.stringify(withTT))));
+  expect(r.ok && r.data.offers[0]!.currency).toBe('TTD');
 });
 
 describe('costUsd', () => {

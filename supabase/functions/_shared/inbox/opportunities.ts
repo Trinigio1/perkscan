@@ -1,4 +1,4 @@
-import type { Offer, ParsedEmail } from './schema.ts';
+import type { Offer, ParsedEmail, PurchaseType } from './schema.ts';
 
 // Turns a parsed email into database rows. Pure: the caller does the writes.
 
@@ -6,6 +6,8 @@ export interface ReceiptRow {
   merchant: string;
   total: number | null;
   currency: string;
+  purchase_type: PurchaseType;
+  travel_date: string | null;
   purchase_date: string | null;
   last_four: string | null;
   items: { name: string; price: number | null; quantity: number | null }[];
@@ -21,6 +23,7 @@ export interface OpportunityRow {
   merchant: string | null;
   code: string | null;
   value_estimate: number | null;
+  currency: string;
   expires_at: string | null;
   dedupe_key: string;
   action_steps: { step: string; url?: string }[];
@@ -43,10 +46,17 @@ function addDays(d: string, days: number): string {
   return t.toISOString().slice(0, 10);
 }
 
-const fmt = (n: number) => (Number.isInteger(n) ? `$${n}` : `$${n.toFixed(2)}`);
+const PREFIX: Record<string, string> = { USD: 'US$', TTD: 'TT$', CAD: 'CA$', JMD: 'J$', BBD: 'Bds$', EUR: '€', GBP: '£' };
+/** "US$25" / "TT$19.99" / "25 XYZ". */
+export function fmtMoney(n: number, currency: string): string {
+  const num = Number.isInteger(n) ? String(n) : n.toFixed(2);
+  const p = PREFIX[currency];
+  return p ? `${p}${num}` : `${num} ${currency}`;
+}
 
-function offerRow(o: Offer, merchant: string | null): OpportunityRow {
+function offerRow(o: Offer, merchant: string | null, currency: string): OpportunityRow {
   const who = merchant ?? 'this store';
+  const fmt = (n: number) => fmtMoney(n, currency);
   const steps: OpportunityRow['action_steps'] = [];
   let type: OpportunityRow['type'] = o.type;
   let value = o.amount;
@@ -90,6 +100,7 @@ function offerRow(o: Offer, merchant: string | null): OpportunityRow {
     merchant,
     code: o.code,
     value_estimate: value,
+    currency,
     expires_at: o.expires_on ? endOfDay(o.expires_on) : null,
     dedupe_key: `${type}:${slug(merchant)}:${slug(o.code ?? o.title)}:${o.expires_on ?? ''}`,
     action_steps: steps,
@@ -101,14 +112,18 @@ function isActionable(o: Offer): boolean {
   return o.amount !== null || o.percent_off !== null || o.code !== null || o.points !== null || o.expires_on !== null;
 }
 
-export function toRows(p: ParsedEmail, today: string): Rows {
+/**
+ * @param defaultCurrency used when the email doesn't say (the user's home currency).
+ */
+export function toRows(p: ParsedEmail, today: string, defaultCurrency = 'USD'): Rows {
   const merchant = p.merchant;
+  const emailCurrency = p.receipt?.currency ?? defaultCurrency;
   const opportunities: OpportunityRow[] = [];
 
   for (const o of p.offers) {
     if (!isActionable(o)) continue;
     if (o.expires_on && o.expires_on < today) continue; // already expired when it arrived
-    opportunities.push(offerRow(o, merchant));
+    opportunities.push(offerRow(o, merchant, o.currency ?? emailCurrency));
   }
 
   let receipt: ReceiptRow | null = null;
@@ -118,7 +133,9 @@ export function toRows(p: ParsedEmail, today: string): Rows {
     receipt = {
       merchant: merchant ?? 'Unknown merchant',
       total: r.total,
-      currency: r.currency ?? 'USD',
+      currency: r.currency ?? defaultCurrency,
+      purchase_type: r.purchase_type,
+      travel_date: r.travel_date,
       purchase_date: r.purchase_date,
       last_four: r.card_last_four,
       items: r.items,
@@ -130,10 +147,11 @@ export function toRows(p: ParsedEmail, today: string): Rows {
       opportunities.push({
         type: 'return_window',
         title: `Return window: ${merchant ?? 'recent order'}`,
-        description: r.total !== null ? `Order total ${fmt(r.total)}` : null,
+        description: r.total !== null ? `Order total ${fmtMoney(r.total, r.currency ?? defaultCurrency)}` : null,
         merchant,
         code: null,
         value_estimate: null, // a return is a choice, not money owed
+        currency: r.currency ?? defaultCurrency,
         expires_at: endOfDay(returnBy),
         dedupe_key: `return_window:${slug(merchant)}:${slug(r.order_number ?? r.purchase_date ?? String(r.total))}`,
         action_steps: [

@@ -1,4 +1,5 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
+import { matchAndApply } from '../matching/apply.ts';
 import { toRows } from './opportunities.ts';
 import { costUsd, parseEmail, type ModelCall } from './parse.ts';
 
@@ -80,17 +81,13 @@ export async function processMessages(db: SupabaseClient, ids: string[], call: M
       continue;
     }
 
-    const rows = toRows(parsed.data, today);
+    const { data: profile } = await db.from('profiles').select('home_currency').eq('id', claimed.user_id).maybeSingle();
+    const rows = toRows(parsed.data, today, (profile?.home_currency as string | undefined) ?? 'USD');
     let receiptId: string | null = null;
     if (rows.receipt) {
-      let matched: string | null = null;
-      if (rows.receipt.last_four) {
-        const { data: cards } = await db.from('user_cards').select('id').eq('user_id', claimed.user_id).eq('last_four', rows.receipt.last_four);
-        if (cards?.length === 1) matched = cards[0]!.id as string;
-      }
       const { data: rec, error } = await db
         .from('receipts')
-        .insert({ ...rows.receipt, user_id: claimed.user_id, source_message_id: id, matched_user_card_id: matched })
+        .insert({ ...rows.receipt, user_id: claimed.user_id, source_message_id: id })
         .select('id')
         .single();
       if (error) throw new Error(`receipts: ${error.message}`);
@@ -107,6 +104,12 @@ export async function processMessages(db: SupabaseClient, ids: string[], call: M
       });
       if (!error) created += 1;
       else if (error.code !== '23505') throw new Error(`opportunities: ${error.message}`); // 23505 = already have this offer
+    }
+
+    // Match the receipt to a card: protections, and credits it used up.
+    if (receiptId) {
+      const m = await matchAndApply(db, claimed.user_id as string, [receiptId], today);
+      created += m.protections;
     }
 
     await db

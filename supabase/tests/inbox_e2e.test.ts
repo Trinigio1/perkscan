@@ -31,11 +31,13 @@ const fakeModel: ModelCall = async (input) => {
   const base = { receipt: null, offers: [] as unknown[] };
   let out: Record<string, unknown>;
   if (input.includes('SPRING20')) {
-    out = { ...base, kind: 'promo', merchant: 'Acme Outfitters', summary: '20% off code from Acme', offers: [{ type: 'promo', title: '20% off your next order', amount: null, percent_off: 20, code: 'SPRING20', expires_on: '2099-04-30', min_spend: null, points: null, claim_url: null, details: null }] };
+    out = { ...base, kind: 'promo', merchant: 'Acme Outfitters', summary: '20% off code from Acme', offers: [{ type: 'promo', currency: null, title: '20% off your next order', amount: null, percent_off: 20, code: 'SPRING20', expires_on: '2099-04-30', min_spend: null, points: null, claim_url: null, details: null }] };
   } else if (input.includes('Thanks for your order')) {
-    out = { ...base, kind: 'receipt', merchant: 'Acme Outfitters', summary: 'Order from Acme, $101.99', receipt: { total: 101.99, currency: 'USD', purchase_date: new Date().toISOString().slice(0, 10), card_last_four: '4242', order_number: 'A-1', return_by: null, return_window_days: 30, items: [{ name: 'Trail Runner Shoes', price: 89.99, quantity: 1 }] } };
+    out = { ...base, kind: 'receipt', merchant: 'Acme Outfitters', summary: 'Order from Acme, $101.99', receipt: { total: 101.99, currency: 'USD', purchase_type: 'electronics', travel_date: null, purchase_date: new Date().toISOString().slice(0, 10), card_last_four: '4242', order_number: 'A-1', return_by: null, return_window_days: 30, items: [{ name: 'Trail Runner Shoes', price: 89.99, quantity: 1 }] } };
+  } else if (input.includes('Uber receipt')) {
+    out = { ...base, kind: 'receipt', merchant: 'Uber Eats', summary: 'Uber Eats order, $23.50', receipt: { total: 23.5, currency: 'USD', purchase_type: 'food_delivery', travel_date: null, purchase_date: new Date().toISOString().slice(0, 10), card_last_four: '4242', order_number: null, return_by: null, return_window_days: null, items: [] } };
   } else if (input.includes('THANKS10')) {
-    out = { ...base, kind: 'promo', merchant: 'PerkScan Test Shop', summary: '$10 off test code', offers: [{ type: 'promo', title: '$10 off $50', amount: 10, percent_off: null, code: 'THANKS10', expires_on: '2099-01-01', min_spend: 50, points: null, claim_url: null, details: null }] };
+    out = { ...base, kind: 'promo', merchant: 'PerkScan Test Shop', summary: '$10 off test code', offers: [{ type: 'promo', currency: null, title: '$10 off $50', amount: 10, percent_off: null, code: 'THANKS10', expires_on: '2099-01-01', min_spend: 50, points: null, claim_url: null, details: null }] };
   } else {
     out = { ...base, kind: 'other', merchant: null, summary: 'Newsletter' };
   }
@@ -103,6 +105,24 @@ Deno.test('inbox pipeline end to end', async () => {
 
     const receipts = await alice.client.from('receipts').select('merchant, total, last_four, matched_user_card_id');
     assert(receipts.data?.[0]?.matched_user_card_id === card.data!.id, `receipt matched to the card ending 4242: ${JSON.stringify(receipts.data)}`);
+
+    // Matching: the electronics receipt on the Gold card (purchase protection + extended warranty in the catalog)
+    const prots = await alice.client.from('opportunities').select('type, benefit_id, user_card_id, value_estimate, source_receipt_id').eq('type', 'protection');
+    assert(prots.data?.some((p) => p.benefit_id === 'amex_gold__purchase_protection' && p.user_card_id === card.data!.id && p.value_estimate === null),
+      `purchase protection found for the receipt: ${JSON.stringify(prots.data)}`);
+    assert(prots.data?.every((p) => p.source_receipt_id), 'protections link back to their receipt');
+
+    // An Uber receipt on the same card counts toward the Uber Cash credit, automatically
+    await post(ingest, { messages: [{ id: 'g-uber', subject: 'Your Uber receipt', text: 'Uber receipt — thanks for ordering' }] }, token);
+    const creditUsage = await alice.client.from('benefit_usage').select('benefit_id, amount_used, marked_by').eq('benefit_id', 'amex_gold__uber_cash');
+    assert(creditUsage.data?.[0]?.marked_by === 'auto' && Number(creditUsage.data[0].amount_used) === 23.5, `auto credit use: ${JSON.stringify(creditUsage.data)}`);
+
+    // Re-checking receipts is safe: no duplicate protections, no double-counted credit
+    const procR = processHandler({ db: admin, userFromRequest: async () => alice.id, model: fakeModel, pipeline });
+    const re = await (await post(procR, { action: 'rematch' })).json();
+    assert(re.summary?.receipts >= 2 && re.summary.protections === 0 && re.summary.creditsUsed === 0, `rematch is idempotent: ${JSON.stringify(re)}`);
+    const usage2 = await alice.client.from('benefit_usage').select('amount_used').eq('benefit_id', 'amex_gold__uber_cash');
+    assert(Number(usage2.data?.[0]?.amount_used) === 23.5, 'credit not counted twice');
 
     // Bob sees none of it
     for (const t of ['inbound_messages', 'receipts']) {

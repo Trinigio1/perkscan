@@ -6,8 +6,18 @@ import { z } from 'zod';
 
 export const OFFER_TYPES = ['promo', 'gift_card', 'store_credit', 'points', 'free_trial', 'settlement'] as const;
 
+export const PURCHASE_TYPES = [
+  'electronics', 'appliance', 'phone', 'clothing', 'other_goods',
+  'phone_bill', 'flight', 'car_rental', 'hotel', 'travel_other',
+  'food_delivery', 'rideshare', 'restaurant', 'groceries', 'subscription', 'service', 'other',
+] as const;
+export type PurchaseType = (typeof PURCHASE_TYPES)[number];
+
+const CURRENCY = z.string().nullable().describe('ISO currency code of the amounts, e.g. USD or TTD');
+
 export const OfferSchema = z.object({
   type: z.enum(OFFER_TYPES),
+  currency: CURRENCY,
   title: z.string().describe('Short headline, e.g. "20% off your next order" or "$25 store credit"'),
   amount: z.number().nullable().describe('Dollar value if stated (credit/discount/settlement amount; for trials, the price after the trial)'),
   percent_off: z.number().nullable(),
@@ -21,7 +31,9 @@ export const OfferSchema = z.object({
 
 export const ReceiptSchema = z.object({
   total: z.number().nullable(),
-  currency: z.string().nullable().describe('ISO code, e.g. USD'),
+  currency: CURRENCY,
+  purchase_type: z.enum(PURCHASE_TYPES).describe('What was mainly bought. phone = a phone/device itself; phone_bill = a mobile plan payment'),
+  travel_date: z.string().nullable().describe('YYYY-MM-DD departure or pick-up date for flights, car rentals and hotels'),
   purchase_date: z.string().nullable().describe('YYYY-MM-DD'),
   card_last_four: z.string().nullable().describe('Only if the email shows the last 4 digits of the payment card'),
   order_number: z.string().nullable(),
@@ -44,6 +56,14 @@ export type ParsedEmail = z.infer<typeof ParsedEmailSchema>;
 export type Offer = z.infer<typeof OfferSchema>;
 
 const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
+
+function currency(s: string | null): string | null {
+  const c = s?.trim().toUpperCase() ?? '';
+  // Common symbols the model might echo instead of a code.
+  const bySymbol: Record<string, string> = { US$: 'USD', TT$: 'TTD', 'CA$': 'CAD', '€': 'EUR', '£': 'GBP', J$: 'JMD' };
+  if (bySymbol[c]) return bySymbol[c]!;
+  return /^[A-Z]{3}$/.test(c) ? c : null;
+}
 
 function date(s: string | null): string | null {
   if (!s || !ISO_DATE.test(s)) return null;
@@ -70,7 +90,9 @@ export function normalizeParsed(p: ParsedEmail): ParsedEmail {
     receipt: p.receipt
       ? {
           total: money(p.receipt.total),
-          currency: p.receipt.currency && /^[A-Z]{3}$/.test(p.receipt.currency.toUpperCase()) ? p.receipt.currency.toUpperCase() : null,
+          currency: currency(p.receipt.currency),
+          purchase_type: p.receipt.purchase_type,
+          travel_date: date(p.receipt.travel_date),
           purchase_date: date(p.receipt.purchase_date),
           card_last_four: p.receipt.card_last_four && /^\d{4}$/.test(p.receipt.card_last_four) ? p.receipt.card_last_four : null,
           order_number: text(p.receipt.order_number, 60),
@@ -88,6 +110,7 @@ export function normalizeParsed(p: ParsedEmail): ParsedEmail {
       : null,
     offers: p.offers.slice(0, 10).map((o) => ({
       type: o.type,
+      currency: currency(o.currency),
       title: text(o.title, 100) ?? 'Offer',
       amount: money(o.amount, 1_000_000),
       percent_off: o.percent_off !== null && o.percent_off > 0 && o.percent_off <= 100 ? o.percent_off : null,

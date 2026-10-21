@@ -19,11 +19,18 @@ describe('seed/card_benefits.json', () => {
     }
   });
 
-  it('has the 10 launch cards', () => {
+  it('has the 10 US launch cards and the Scotiabank T&T cards', () => {
     expect(seedJson.cards.map((c: { id: string }) => c.id)).toEqual([
       'amex_platinum', 'amex_gold', 'chase_sapphire_reserve', 'chase_sapphire_preferred', 'capital_one_venture_x',
       'capital_one_savor', 'citi_strata_premier', 'chase_freedom_unlimited', 'discover_it', 'apple_card',
+      'scotiabank_tt_visa_classic', 'scotiabank_tt_aero_platinum_visa', 'scotiabank_tt_gold_mastercard_cashback', 'scotiabank_tt_mastercard',
     ]);
+  });
+
+  it('gives Trinidad & Tobago cards TT$ and keeps US$ coverage explicit', () => {
+    const classic = seedJson.cards.find((c: { id: string }) => c.id === 'scotiabank_tt_visa_classic');
+    expect(classic).toMatchObject({ country: 'TT', currency: 'TTD' });
+    expect(classic.benefits.find((b: { id: string }) => b.id.endsWith('price_protection')).currency).toBe('USD');
   });
 });
 

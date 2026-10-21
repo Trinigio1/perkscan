@@ -11,7 +11,8 @@ Rules:
 - Free trials: title like "Trial ends — cancel to avoid charge", amount = the price that will be charged after the trial if stated.
 - Settlements: only include claim_url if the email itself contains the official claim site.
 - Dates: YYYY-MM-DD. Resolve relative dates ("expires in 7 days", "this Sunday") against the email's Date header.
-- Money: plain numbers in the stated currency, no symbols (e.g. 25 or 19.99).
+- Money: plain numbers, no symbols (e.g. 25 or 19.99), with the ISO currency code in the currency field (USD, TTD, CAD, ...). "TT$" is TTD; a bare "$" from a US store is USD. If the currency can't be told, use null.
+- purchase_type: what the receipt is mainly for. Use phone_bill for mobile plan payments and phone for buying a phone itself. For flights, car rentals and hotels, put the departure / pick-up / check-in date in travel_date.
 - card_last_four: only the 4 digits shown for the payment card (e.g. "Visa ending in 1234" -> "1234"). Never a full card number.
 - summary: under 100 characters, plain description such as "Order from Target, $54.12" or "20% off code from Nike". No names, addresses or account numbers.`;
 
