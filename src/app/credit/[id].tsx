@@ -44,6 +44,7 @@ export default function CreditDetail() {
   const missed = opp.status === 'expired' || (!!expires && expires <= now);
   const soon = !!expires && !used && !missed && expires.getTime() - now.getTime() < 7 * 86_400_000;
   const { icon, tone } = benefitIcon(opp.title, 'credit');
+  const money = (n: number) => formatMoney(n, { currency: opp.currency });
 
   const act = async (key: string, fn: () => Promise<void>, message: string) => {
     setBusy(key);
@@ -64,7 +65,7 @@ export default function CreditDetail() {
     const amount = Number(String(raw).replace(/[^0-9.]/g, ''));
     if (!Number.isFinite(amount) || amount <= 0) return setError('Enter how much you used, e.g. 12.50');
     const full = value !== null && amount >= value;
-    act('partial', () => markCredit(opp.id, full, amount), `Nice — ${formatMoney(value !== null ? Math.min(amount, value) : amount)} recovered`);
+    act('partial', () => markCredit(opp.id, full, amount), `Nice — ${money(value !== null ? Math.min(amount, value) : amount)} recovered`);
   };
 
   return (
@@ -97,8 +98,8 @@ export default function CreditDetail() {
         ) : (
           <ProgressRing value={value ? recovered / value : 0} done={used} size={150} stroke={12} color={soon ? c.warn : c.accent}>
             <View style={{ alignItems: 'center' }}>
-              <Money value={used ? value : Math.max(0, value - recovered)} size={32} />
-              <T variant="caption" muted>{used ? 'used' : recovered > 0 ? `left of ${formatMoney(value)}` : 'this period'}</T>
+              <Money value={used ? value : Math.max(0, value - recovered)} size={32} currency={opp.currency} />
+              <T variant="caption" muted>{used ? 'used' : recovered > 0 ? `left of ${money(value)}` : 'this period'}</T>
             </View>
           </ProgressRing>
         )}
@@ -121,7 +122,7 @@ export default function CreditDetail() {
             icon="checkmark-circle"
             loading={busy === 'full'}
             disabled={!!busy}
-            onPress={() => act('full', () => markCredit(opp.id, true), value !== null ? `Nice — ${formatMoney(value)} recovered` : 'Marked as used')}
+            onPress={() => act('full', () => markCredit(opp.id, true), value !== null ? `Nice — ${money(value)} recovered` : 'Marked as used')}
           />
         ) : null}
         {!used && !showPartial ? (
@@ -134,7 +135,7 @@ export default function CreditDetail() {
               <Row style={{ flexWrap: 'wrap' }}>
                 {[0.25, 0.5, 0.75].map((f) => {
                   const amt = Math.round(value * f * 100) / 100;
-                  return <Chip key={f} label={formatMoney(amt)} selected={partial === String(amt)} onPress={() => setPartial(String(amt))} />;
+                  return <Chip key={f} label={money(amt)} selected={partial === String(amt)} onPress={() => setPartial(String(amt))} />;
                 })}
               </Row>
             ) : null}

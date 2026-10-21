@@ -38,7 +38,7 @@ export default function Welcome() {
           </Row>
         ))}
       </View>
-      <Button title="Get started" icon="arrow-forward" onPress={() => router.push('/pick-cards')} />
+      <Button title="Get started" icon="arrow-forward" onPress={() => router.push('/where')} />
     </Screen>
   );
 }

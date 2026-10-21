@@ -63,6 +63,7 @@ function RootNavigator() {
         <Stack.Screen name="offer/[id]" options={{ ...modal, title: '' }} />
         <Stack.Screen name="inbox" options={{ ...header, title: 'Inbox' }} />
         <Stack.Screen name="connect-gmail" options={{ ...header, title: '' }} />
+        <Stack.Screen name="country" options={{ ...modal, title: 'Country & currency' }} />
       </Stack.Protected>
     </Stack>
   );

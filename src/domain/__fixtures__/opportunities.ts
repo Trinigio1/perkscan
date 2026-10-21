@@ -11,6 +11,7 @@ export function opp(partial: Partial<Opportunity>): Opportunity {
     title: `Credit ${n}`,
     description: null,
     value_estimate: 10,
+    currency: 'USD',
     expires_at: null,
     status: 'open',
     user_card_id: 'uc1',
@@ -22,7 +23,7 @@ export function opp(partial: Partial<Opportunity>): Opportunity {
   };
 }
 
-export function rec(opportunity_id: string, amount: number, recovered_at = '2026-06-01T00:00:00Z'): Recovered {
+export function rec(opportunity_id: string, amount: number, recovered_at = '2026-06-01T00:00:00Z', currency = 'USD'): Recovered {
   n += 1;
-  return { id: `rec-${n}`, opportunity_id, amount, recovered_at };
+  return { id: `rec-${n}`, opportunity_id, amount, currency, recovered_at };
 }

@@ -38,7 +38,7 @@ export async function revokeToken(id: string) {
   if (error) throw new Error(error.message);
 }
 
-async function invokeProcess(action: 'retry' | 'test') {
+async function invokeProcess(action: 'retry' | 'test' | 'rematch') {
   const { data, error } = await supabase.functions.invoke('process-inbox', { body: { action } });
   if (error) {
     // Surface the function's own message (e.g. AI not configured) when there is one.
@@ -46,11 +46,23 @@ async function invokeProcess(action: 'retry' | 'test') {
     const body = ctx && typeof ctx.json === 'function' ? await ctx.json().catch(() => null) : null;
     throw new Error((body as { error?: string } | null)?.error ?? error.message);
   }
-  return data as { result?: { status: string; opportunities?: number; error?: string }; results?: { status: string }[] };
+  return data as {
+    result?: { status: string; opportunities?: number; error?: string };
+    results?: { status: string }[];
+    summary?: { receipts: number; matched: number; protections: number; creditsUsed: number };
+  };
 }
 
 export const sendTestEmail = () => invokeProcess('test');
 export const retryFailed = () => invokeProcess('retry');
+
+/**
+ * Re-checks recent receipts against the user's cards, e.g. after adding a card or
+ * fixing its last 4. Best effort: a failure (functions not deployed yet) is ignored.
+ */
+export async function rematchReceipts(): Promise<void> {
+  await invokeProcess('rematch').catch(() => {});
+}
 
 export async function markOpportunity(id: string, action: 'used' | 'dismiss' | 'reopen', amount: number | null = null) {
   const { error } = await supabase.rpc('mark_opportunity', { p_opportunity_id: id, p_action: action, p_amount: amount });

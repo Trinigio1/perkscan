@@ -19,6 +19,10 @@ const ART: Record<string, CardArt> = {
   chase_freedom_unlimited: { colors: ['#4A90D9', '#2F74C0', '#1D5A9E'], text: '#F4F9FF', subtle: '#CFE2F7' },
   discover_it: { colors: ['#F7A35C', '#EE7E2D', '#C95F14'], text: '#2A1406', subtle: '#5E2F0F' },
   apple_card: { colors: ['#FFFFFF', '#F1F2F4', '#DCDFE4'], text: '#16181C', subtle: '#6A707A' },
+  scotiabank_tt_visa_classic: { colors: ['#D9343A', '#B0222A', '#7E141B'], text: '#FFF3F3', subtle: '#F2B9BB' },
+  scotiabank_tt_aero_platinum_visa: { colors: ['#DADDE1', '#B4B9C0', '#8C939C'], text: '#1C2026', subtle: '#4A5059' },
+  scotiabank_tt_gold_mastercard_cashback: { colors: ['#E8C46A', '#C99B3A', '#9A7020'], text: '#2A1E06', subtle: '#5B4512' },
+  scotiabank_tt_mastercard: { colors: ['#3A3F47', '#24282E', '#121418'], text: '#F3F4F6', subtle: '#A6ACB4' },
 };
 
 const FALLBACK: CardArt = { colors: ['#3A4A42', '#26332C', '#151D19'], text: '#F2FFF7', subtle: '#A9BDB2' };

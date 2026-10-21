@@ -50,17 +50,22 @@ export default function WorthIt() {
   const recoveredThisYear = useMemo(() => {
     const year = new Date().getFullYear();
     return data.recovered
-      .filter((r) => new Date(r.recovered_at).getFullYear() === year)
+      .filter((r) => new Date(r.recovered_at).getFullYear() === year && r.currency === card?.currency)
       .filter((r) => data.opportunities.find((o) => o.id === r.opportunity_id)?.user_card_id === id)
       .reduce((s, r) => s + r.amount, 0);
-  }, [data, id]);
+  }, [data, id, card?.currency]);
 
   if (!uc || !card) return <Screen edges={[]}><T muted>Card not found.</T></Screen>;
 
+  // The fee is in the card's currency; credits in another currency aren't converted, so they're left out of the comparison.
+  const cur = card.currency;
+  const sameCurrency = (b: (typeof credits)[number]) => (b.currency ?? cur) === cur;
+  const money = (n: number, currency = cur) => formatMoney(n, { currency });
   const result = computeWorthIt(
     card.annual_fee,
-    credits.map((b) => ({ benefitId: b.id, name: b.name, annualValue: annualCreditValue(b), useRate: rates[b.id] ?? 0.5 })),
+    credits.filter(sameCurrency).map((b) => ({ benefitId: b.id, name: b.name, annualValue: annualCreditValue(b), useRate: rates[b.id] ?? 0.5 })),
   );
+  const otherCurrency = credits.filter((b) => !sameCurrency(b));
   const tone = result.verdict === 'worth_it' ? c.accent : result.verdict === 'not_worth_it' ? c.danger : result.verdict === 'borderline' ? c.warn : c.textMuted;
   const verdictIcon = result.verdict === 'worth_it' ? 'thumbs-up' : result.verdict === 'not_worth_it' ? 'thumbs-down' : result.verdict === 'borderline' ? 'swap-horizontal' : 'help';
   const scale = Math.max(card.annual_fee ?? 0, result.maxValue, 1);
@@ -84,7 +89,7 @@ export default function WorthIt() {
             <T variant="heading" color={tone}>{VERDICT_COPY[result.verdict]}</T>
             {result.net !== null && result.verdict !== 'unknown' ? (
               <T muted>
-                {formatMoney(Math.abs(result.net))} {result.net >= 0 ? 'more' : 'less'} than the fee, at the usage below
+                {money(Math.abs(result.net))} {result.net >= 0 ? 'more' : 'less'} than the fee, at the usage below
               </T>
             ) : (
               <T variant="caption" muted>
@@ -98,16 +103,16 @@ export default function WorthIt() {
 
         {card.annual_fee !== null ? (
           <View style={{ gap: space.sm }}>
-            <Bar label="Annual fee" value={card.annual_fee} max={scale} color={c.textMuted} />
-            <Bar label="What you’d use" value={result.expectedValue} max={scale} color={c.accent} />
-            <Bar label="If you used everything" value={result.maxValue} max={scale} color={c.surfaceSunken} textColor={c.textMuted} />
+            <Bar label="Annual fee" value={card.annual_fee} max={scale} color={c.textMuted} currency={cur} />
+            <Bar label="What you’d use" value={result.expectedValue} max={scale} color={c.accent} currency={cur} />
+            <Bar label="If you used everything" value={result.maxValue} max={scale} color={c.surfaceSunken} textColor={c.textMuted} currency={cur} />
           </View>
         ) : null}
 
         <Row gap={space.lg}>
           <View style={{ flex: 1 }}>
             <T variant="caption" muted>Used this year</T>
-            <T variant="heading" color={c.accentStrong}>{formatMoney(recoveredThisYear)}</T>
+            <T variant="heading" color={c.accentStrong}>{money(recoveredThisYear)}</T>
           </View>
           {result.breakEvenRate !== null && card.annual_fee ? (
             <View style={{ flex: 1 }}>
@@ -126,15 +131,16 @@ export default function WorthIt() {
         {credits.length === 0 ? <T muted>This card has no recurring credits.</T> : null}
         {credits.map((b) => {
           const annual = annualCreditValue(b);
+          const other = !sameCurrency(b);
           const { icon, tone: t } = benefitIcon(b.name, 'credit');
           return (
             <View key={b.id} style={{ gap: space.sm }}>
               <Row gap={space.md}>
                 <IconBubble icon={icon} tone={t} size={32} />
                 <T variant="subheading" style={{ flex: 1 }} numberOfLines={1}>{b.name}</T>
-                {annual === null ? <Badge label="Not verified" /> : <T variant="label" muted>{formatMoney(annual)}/yr</T>}
+                {annual === null ? <Badge label="Not verified" /> : <T variant="label" muted>{money(annual, b.currency ?? cur)}/yr</T>}
               </Row>
-              {annual !== null ? (
+              {annual !== null && !other ? (
                 <Segmented options={RATES} value={rates[b.id] ?? 0.5} onChange={(v) => setRates({ ...rates, [b.id]: v })} />
               ) : null}
             </View>
@@ -142,6 +148,11 @@ export default function WorthIt() {
         })}
       </Panel>
 
+      {otherCurrency.length > 0 ? (
+        <Note icon="swap-horizontal-outline">
+          {otherCurrency.map((b) => b.name).join(', ')} {otherCurrency.length > 1 ? 'are' : 'is'} in a different currency from the fee, so {otherCurrency.length > 1 ? 'they’re' : 'it’s'} not counted here. PerkScan never converts currencies.
+        </Note>
+      ) : null}
       {result.unverifiedCount > 0 ? (
         <Note icon="shield-checkmark-outline">
           {result.unverifiedCount} credit{result.unverifiedCount > 1 ? 's are' : ' is'} left out because the amount isn’t verified yet.
@@ -155,12 +166,12 @@ export default function WorthIt() {
   );
 }
 
-function Bar({ label, value, max, color, textColor }: { label: string; value: number; max: number; color: string; textColor?: string }) {
+function Bar({ label, value, max, color, textColor, currency }: { label: string; value: number; max: number; color: string; textColor?: string; currency: string }) {
   return (
     <View style={{ gap: 4 }}>
       <Row>
         <T variant="caption" muted style={{ flex: 1 }}>{label}</T>
-        <T variant="label" color={textColor}>{formatMoney(value)}</T>
+        <T variant="label" color={textColor}>{formatMoney(value, { currency })}</T>
       </Row>
       <ProgressBar value={value / max} color={color} height={10} />
     </View>

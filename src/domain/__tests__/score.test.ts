@@ -1,4 +1,4 @@
-import { computeScore, isAtRisk, remainingValue } from '../score';
+import { computeScore, isAtRisk, remainingValue, scoreByCurrency } from '../score';
 import { opp, rec } from '../__fixtures__/opportunities';
 
 const NOW = new Date('2026-10-20T12:00:00Z');
@@ -105,5 +105,26 @@ describe('helpers', () => {
     expect(isAtRisk(opp({ expires_at: '2026-10-20T11:59:59Z' }), NOW)).toBe(false);
     expect(isAtRisk(opp({ expires_at: '2026-10-27T12:00:00Z' }), NOW)).toBe(true);
     expect(isAtRisk(opp({ expires_at: '2026-10-27T12:00:01Z' }), NOW)).toBe(false);
+  });
+});
+
+describe('scoreByCurrency', () => {
+  it('keeps each currency separate, home currency first', () => {
+    const tt = opp({ currency: 'TTD', value_estimate: 100, status: 'expired', expires_at: '2026-03-01T00:00:00Z' });
+    const us = opp({ currency: 'USD', value_estimate: 30, status: 'expired', expires_at: '2026-04-01T00:00:00Z' });
+    const out = scoreByCurrency([tt, us], [], NOW, 'TTD');
+    expect(out.map((x) => [x.currency, x.score.leftOnTable])).toEqual([['TTD', 100], ['USD', 30]]);
+  });
+  it('always includes the home currency, even when empty', () => {
+    const us = opp({ currency: 'USD', value_estimate: 30, status: 'expired', expires_at: '2026-04-01T00:00:00Z' });
+    const out = scoreByCurrency([us], [], NOW, 'TTD');
+    expect(out[0]).toMatchObject({ currency: 'TTD', score: { leftOnTable: 0 } });
+    expect(out[1]).toMatchObject({ currency: 'USD', score: { leftOnTable: 30 } });
+  });
+  it('counts recovered money in its opportunity’s currency', () => {
+    const tt = opp({ currency: 'TTD', value_estimate: 100, status: 'claimed' });
+    const out = scoreByCurrency([tt], [rec(tt.id, 60, '2026-06-01T00:00:00Z', 'TTD')], NOW, 'USD');
+    expect(out.find((x) => x.currency === 'TTD')!.score.recoveredThisYear).toBe(60);
+    expect(out.find((x) => x.currency === 'USD')!.score.recoveredThisYear).toBe(0);
   });
 });

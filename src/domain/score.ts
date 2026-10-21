@@ -50,6 +50,27 @@ export function isAtRisk(opp: Opportunity, now: Date, days = 7): boolean {
 
 const round2 = (n: number) => Math.round(n * 100) / 100;
 
+/**
+ * One score per currency, since amounts are never converted. The home currency
+ * comes first, then the rest by how much is at stake.
+ */
+export function scoreByCurrency(opportunities: Opportunity[], recovered: Recovered[], now: Date, home: string): { currency: string; score: Score }[] {
+  const currencies = new Set<string>([home]);
+  for (const o of opportunities) currencies.add(o.currency);
+  for (const r of recovered) currencies.add(r.currency);
+  const byOpp = new Map(opportunities.map((o) => [o.id, o.currency]));
+  return [...currencies]
+    .map((currency) => ({
+      currency,
+      score: computeScore(
+        opportunities.filter((o) => o.currency === currency),
+        recovered.filter((r) => (r.opportunity_id ? byOpp.get(r.opportunity_id) ?? r.currency : r.currency) === currency),
+        now,
+      ),
+    }))
+    .sort((a, b) => (a.currency === home ? -1 : b.currency === home ? 1 : b.score.leftOnTable + b.score.available - (a.score.leftOnTable + a.score.available)));
+}
+
 export function computeScore(opportunities: Opportunity[], recovered: Recovered[], now: Date): Score {
   const year = now.getFullYear();
   const recoveredByOpp = new Map<string, number>();

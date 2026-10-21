@@ -194,8 +194,11 @@ export function Money({
   color,
   style,
   animate = false,
+  currency,
 }: {
   value: number;
+  /** Defaults to the user's home currency. */
+  currency?: string;
   size?: number;
   color?: string;
   style?: StyleProp<TextStyle>;
@@ -212,7 +215,7 @@ export function Money({
         style,
       ]}
     >
-      {formatMoney(shown)}
+      {formatMoney(shown, { currency })}
     </Text>
   );
 }

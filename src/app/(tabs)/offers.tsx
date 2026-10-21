@@ -4,7 +4,7 @@ import { useCallback, useMemo, useState } from 'react';
 import { RefreshControl, View } from 'react-native';
 import { OfferRow } from '@/components/OfferRow';
 import { Button, Empty, IconBubble, Panel, Row, Screen, Segmented, T } from '@/components/ui';
-import { formatMoney } from '@/domain/format';
+import { addToBag, formatBag, type MoneyBag } from '@/domain/format';
 import type { Opportunity } from '@/domain/types';
 import { useData } from '@/lib/data';
 import { listMessages } from '@/lib/inbox';
@@ -13,6 +13,7 @@ import { space, useColors } from '@/theme';
 type Filter = 'active' | 'history';
 
 const SECTIONS: { title: string; types: Opportunity['type'][] }[] = [
+  { title: 'Card protections', types: ['protection'] },
   { title: 'Promo codes', types: ['promo'] },
   { title: 'Gift cards & store credit', types: ['gift_card', 'store_credit'] },
   { title: 'Points', types: ['points'] },
@@ -48,7 +49,7 @@ export default function Offers() {
       now: at,
       soon: week,
       sections: SECTIONS.map((s) => ({ ...s, items: rest.filter((o) => s.types.includes(o.type)).sort(byExpiry) })).filter((s) => s.items.length),
-      total: list.reduce((s, o) => s + (o.value_estimate ?? 0), 0),
+      total: list.reduce((bag, o) => addToBag(bag, o.currency, o.value_estimate ?? 0), {} as MoneyBag),
     };
   }, [data.opportunities, filter]);
 
@@ -79,9 +80,9 @@ export default function Offers() {
 
       <Segmented<Filter> value={filter} onChange={setFilter} options={[{ label: 'Active', value: 'active' }, { label: 'History', value: 'history' }]} />
 
-      {filter === 'active' && total > 0 ? (
+      {filter === 'active' && Object.values(total).some((v) => v > 0) ? (
         <Row style={{ alignItems: 'baseline' }} gap={6}>
-          <T variant="title">{formatMoney(total)}</T>
+          <T variant="title">{formatBag(total)}</T>
           <T muted>in offers you can still use</T>
         </Row>
       ) : null}
@@ -90,7 +91,7 @@ export default function Offers() {
         <Empty
           icon={filter === 'active' ? 'gift' : 'time'}
           title={filter === 'active' ? 'No offers yet' : 'Nothing here yet'}
-          body={filter === 'active' ? 'Label receipts and promo emails “PerkScan” in Gmail, and they’ll show up here.' : 'Offers you use, dismiss, or that expire land here.'}
+          body={filter === 'active' ? 'Label receipts and promo emails “PerkScan” in Gmail. Offers, and the card protections that apply to your purchases, show up here.' : 'Offers you use, dismiss, or that expire land here.'}
           action={filter === 'active' && !connected ? <Button title="Connect Gmail" icon="mail" onPress={() => router.push('/connect-gmail')} /> : undefined}
         />
       ) : null}

@@ -3,7 +3,7 @@ import { useMemo } from 'react';
 import { Pressable, View } from 'react-native';
 import { CardArt } from '@/components/CardArt';
 import { Button, Empty, IconBubble, Row, Screen, T } from '@/components/ui';
-import { formatMoney } from '@/domain/format';
+import { addToBag, formatBag, formatMoney, type MoneyBag } from '@/domain/format';
 import { remainingValue } from '@/domain/score';
 import { useData, useLookups } from '@/lib/data';
 import { space, useColors } from '@/theme';
@@ -21,7 +21,7 @@ export default function Wallet() {
       return {
         uc,
         card,
-        available: open.reduce((s, o) => s + remainingValue(o, recoveredByOpp), 0),
+        available: open.reduce((bag, o) => addToBag(bag, o.currency, remainingValue(o, recoveredByOpp)), {} as MoneyBag),
         credits: data.benefits.filter((b) => b.card_id === uc.card_id && b.type === 'credit').length,
         protections: data.benefits.filter((b) => b.card_id === uc.card_id && b.type === 'protection').length,
       };
@@ -41,9 +41,9 @@ export default function Wallet() {
             </Pressable>
             <Row gap={space.lg} style={{ paddingHorizontal: space.xs }}>
               <View style={{ flex: 1 }}>
-                <T variant="subheading">{available > 0 ? formatMoney(available) : '$0'} <T variant="caption" muted>available now</T></T>
+                <T variant="subheading">{Object.values(available).some((v) => v > 0) ? formatBag(available, card.currency) : formatMoney(0, { currency: card.currency })} <T variant="caption" muted>available now</T></T>
                 <T variant="caption" muted>
-                  {credits} credits · {protections} protections · {card.annual_fee === null ? 'fee not verified' : `${formatMoney(card.annual_fee)} fee`}
+                  {credits} credits · {protections} protections · {card.annual_fee === null ? 'fee not verified' : `${formatMoney(card.annual_fee, { currency: card.currency })} fee`}
                 </T>
               </View>
               <Pressable onPress={() => router.push({ pathname: '/card/[id]/worth-it', params: { id: uc.id } })} accessibilityLabel="Is it worth the fee?">

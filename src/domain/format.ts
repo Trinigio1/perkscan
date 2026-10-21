@@ -1,12 +1,49 @@
-/** "$1,234" for whole dollars, "$12.50" otherwise. Avoids Intl so it behaves the same on every engine. */
-export function formatMoney(n: number, opts: { cents?: boolean } = {}): string {
+const PREFIX: Record<string, string> = { USD: 'US$', TTD: 'TT$', CAD: 'CA$', JMD: 'J$', BBD: 'Bds$', GBP: '£', EUR: '€' };
+
+/** The signed-in user's home currency; set by the data layer once the profile loads. */
+let homeCurrency = 'USD';
+export function setHomeCurrency(c: string) {
+  homeCurrency = /^[A-Z]{3}$/.test(c) ? c : 'USD';
+}
+export function getHomeCurrency() {
+  return homeCurrency;
+}
+
+/** "$" for a US user's dollars, "US$" / "TT$" etc. whenever there's room for confusion. */
+export function currencyPrefix(currency: string, home = homeCurrency): string {
+  if (currency === 'USD' && home === 'USD') return '$';
+  return PREFIX[currency] ?? `${currency} `;
+}
+
+/**
+ * "$1,234" / "TT$1,234" / "US$12.50". Whole amounts drop the cents.
+ * Avoids Intl so it behaves the same on every engine.
+ */
+export function formatMoney(n: number, opts: { cents?: boolean; currency?: string; home?: string } = {}): string {
   const negative = n < 0;
   const abs = Math.abs(n);
   const showCents = opts.cents ?? !Number.isInteger(Math.round(abs * 100) / 100);
   const fixed = abs.toFixed(showCents ? 2 : 0);
   const [whole = '0', frac] = fixed.split('.');
   const grouped = whole.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
-  return `${negative ? '-' : ''}$${grouped}${frac ? `.${frac}` : ''}`;
+  const home = opts.home ?? homeCurrency;
+  return `${negative ? '-' : ''}${currencyPrefix(opts.currency ?? home, home)}${grouped}${frac ? `.${frac}` : ''}`;
+}
+
+/** Amounts per currency. Never added across currencies. */
+export type MoneyBag = Record<string, number>;
+
+export function addToBag(bag: MoneyBag, currency: string, amount: number): MoneyBag {
+  bag[currency] = Math.round(((bag[currency] ?? 0) + amount) * 100) / 100;
+  return bag;
+}
+
+/** "TT$450 + US$35", home currency first, zero amounts left out ("$0" style when empty). */
+export function formatBag(bag: MoneyBag, home = homeCurrency): string {
+  const entries = Object.entries(bag).filter(([, v]) => v !== 0);
+  if (!entries.length) return formatMoney(0, { currency: home, home });
+  entries.sort(([a, x], [b, y]) => (a === home ? -1 : b === home ? 1 : y - x));
+  return entries.map(([c, v]) => formatMoney(v, { currency: c, home })).join(' + ');
 }
 
 /** "today", "tomorrow", "in 5 days", "3 days ago". */

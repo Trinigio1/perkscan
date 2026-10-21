@@ -14,12 +14,12 @@ export default function PickCards() {
 
   return (
     <Screen>
-      <Steps step={1} total={3} />
+      <Steps step={2} total={4} />
       <View style={{ gap: space.xs }}>
         <T variant="display">Which cards do you carry?</T>
         <T muted>Pick all that apply. You can add more later.</T>
       </View>
-      <CardPicker cards={data.cards} selected={selected} onToggle={toggle} />
+      <CardPicker cards={data.cards} selected={selected} onToggle={toggle} country={data.profile?.country ?? null} />
       <Button
         title={selected.length ? `Continue with ${selected.length} card${selected.length > 1 ? 's' : ''}` : 'Pick at least one card'}
         icon={selected.length ? 'arrow-forward' : undefined}

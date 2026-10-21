@@ -4,7 +4,7 @@ import { RefreshControl, View } from 'react-native';
 import { CardArt } from '@/components/CardArt';
 import { CreditRow } from '@/components/CreditRow';
 import { Button, Empty, Panel, Row, Screen, Segmented, T } from '@/components/ui';
-import { formatMoney, PERIOD_LABELS } from '@/domain/format';
+import { addToBag, formatBag, PERIOD_LABELS, type MoneyBag } from '@/domain/format';
 import { remainingValue } from '@/domain/score';
 import type { Opportunity } from '@/domain/types';
 import { useData, useLookups } from '@/lib/data';
@@ -17,6 +17,8 @@ const EMPTY_COPY: Record<Filter, string> = {
   missed: 'Nothing missed this year. Nice.',
   used: 'Nothing marked used yet.',
 };
+
+const hasMoney = (bag: MoneyBag) => Object.values(bag).some((v) => v > 0);
 
 export default function Credits() {
   const c = useColors();
@@ -44,10 +46,13 @@ export default function Credits() {
           if ((a.value_estimate === null) !== (b.value_estimate === null)) return a.value_estimate === null ? 1 : -1;
           return filter === 'current' ? time(a) - time(b) : time(b) - time(a);
         });
-      const sum = items.reduce((s, o) => s + (filter === 'used' ? recoveredByOpp.get(o.id) ?? 0 : remainingValue(o, recoveredByOpp)), 0);
+      const sum: MoneyBag = {};
+      for (const o of items) addToBag(sum, o.currency, filter === 'used' ? recoveredByOpp.get(o.id) ?? 0 : remainingValue(o, recoveredByOpp));
       return { uc, card: cardById.get(uc.card_id), items, sum };
     });
-    return { now: at, groups: grouped, total: grouped.reduce((s, g) => s + g.sum, 0) };
+    const total: MoneyBag = {};
+    for (const g of grouped) for (const [cur, v] of Object.entries(g.sum)) addToBag(total, cur, v);
+    return { now: at, groups: grouped, total };
   }, [data, filter, cardById, recoveredByOpp]);
 
   const onRefresh = async () => {
@@ -71,8 +76,8 @@ export default function Credits() {
       />
       {data.userCards.length ? (
         <Row style={{ alignItems: 'baseline' }} gap={6}>
-          <T variant="title" color={filter === 'missed' && total > 0 ? c.danger : filter === 'used' ? c.accentStrong : c.text}>
-            {formatMoney(total)}
+          <T variant="title" color={filter === 'missed' && hasMoney(total) ? c.danger : filter === 'used' ? c.accentStrong : c.text}>
+            {formatBag(total)}
           </T>
           <T muted>{totalLabel}</T>
         </Row>
@@ -87,7 +92,7 @@ export default function Credits() {
               <T variant="subheading" numberOfLines={1}>{uc.nickname || card?.product_name.replace(/®/g, '')}</T>
               <T variant="caption" muted>•••• {uc.last_four}</T>
             </View>
-            {sum > 0 ? <T variant="label" muted>{formatMoney(sum)}</T> : null}
+            {hasMoney(sum) ? <T variant="label" muted>{formatBag(sum)}</T> : null}
           </Row>
           <Panel style={{ paddingVertical: space.xs }}>
             {items.length === 0 ? (

@@ -1,5 +1,6 @@
 import { draftToRow, type CardDraft } from '@/domain/cardDraft';
 import { friendlyDbError } from './dbErrors';
+import { rematchReceipts } from './inbox';
 import { supabase } from './supabase';
 
 export async function addUserCards(drafts: CardDraft[]) {
@@ -8,6 +9,8 @@ export async function addUserCards(drafts: CardDraft[]) {
     if (error.code === '23505') throw new Error('One of these cards (same card and last 4 digits) is already in your wallet.');
     throw new Error(error.message);
   }
+  // Receipts that arrived before the card was added can now be matched to it.
+  await rematchReceipts();
 }
 
 export function deviceTimeZone(): string {
@@ -19,7 +22,7 @@ export function deviceTimeZone(): string {
 }
 
 /** Saves profile settings; falls back to UTC if the device reports a zone Postgres doesn't know. */
-export async function updateProfile(userId: string, patch: { is_student?: boolean; onboarded_at?: string; timezone?: string }) {
+export async function updateProfile(userId: string, patch: { is_student?: boolean; onboarded_at?: string; timezone?: string; country?: string | null; home_currency?: string }) {
   let { data, error } = await supabase.from('profiles').update(patch).eq('id', userId).select('id');
   if (error?.code === '22023' && patch.timezone) {
     ({ data, error } = await supabase.from('profiles').update({ ...patch, timezone: 'UTC' }).eq('id', userId).select('id'));

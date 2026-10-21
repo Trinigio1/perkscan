@@ -49,7 +49,7 @@ export function planCreditReminders(opportunities: Opportunity[], recovered: Rec
       if (fireAt.getTime() <= now.getTime() || fireAt.getTime() >= expires.getTime()) continue;
       const when = days <= 2 ? `in ${days} days` : 'in a week';
       if (opp.type === 'card_credit') {
-        const amount = opp.value_estimate === null ? 'Your' : `${formatMoney(remaining)} of your`;
+        const amount = opp.value_estimate === null ? 'Your' : `${formatMoney(remaining, { currency: opp.currency })} of your`;
         out.push({
           id: `remind-${opp.id}-${days}d`,
           opportunityId: opp.id,

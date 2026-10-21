@@ -1,7 +1,8 @@
 import { createContext, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { AppState } from 'react-native';
+import { setHomeCurrency } from '@/domain/format';
 import { singleFlight } from '@/domain/singleFlight';
-import type { BenefitUsage, Card, CardBenefit, Opportunity, Profile, Recovered, UserCard } from '@/domain/types';
+import type { BenefitUsage, Card, CardBenefit, Opportunity, Profile, Receipt, Recovered, UserCard } from '@/domain/types';
 import { useAuth } from './auth';
 import { deviceTimeZone } from './cards';
 import { friendlyDbError } from './dbErrors';
@@ -16,6 +17,8 @@ export interface AppData {
   opportunities: Opportunity[];
   recovered: Recovered[];
   usage: BenefitUsage[];
+  /** Matched and unmatched receipts from the last 180 days, newest first. */
+  receipts: Receipt[];
 }
 
 export interface RefreshResult {
@@ -31,7 +34,7 @@ interface DataState {
   refresh: () => Promise<RefreshResult>;
 }
 
-const empty: AppData = { profile: null, cards: [], benefits: [], userCards: [], opportunities: [], recovered: [], usage: [] };
+const empty: AppData = { profile: null, cards: [], benefits: [], userCards: [], opportunities: [], recovered: [], usage: [], receipts: [] };
 const DataContext = createContext<DataState>({ data: empty, loading: true, error: null, refresh: async () => ({ data: null, error: null }) });
 
 function must<T>(what: string, res: { data: T | null; error: { message: string; code?: string } | null }): T {
@@ -50,26 +53,40 @@ async function load(userId: string): Promise<AppData> {
   if (sync.error) throw new Error(friendlyDbError('sync_my_card_credits', sync.error));
 
   const yearStart = new Date(new Date().getFullYear(), 0, 1).toISOString();
-  const [profile, cards, benefits, userCards, opportunities, recovered, usage] = await Promise.all([
-    supabase.from('profiles').select('id, display_name, forwarding_address, is_student, timezone, onboarded_at').eq('id', userId).single(),
+  const since = new Date(Date.now() - 180 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+  const [profile, cards, benefits, userCards, opportunities, recovered, usage, receipts] = await Promise.all([
+    supabase
+      .from('profiles')
+      .select('id, display_name, forwarding_address, is_student, timezone, country, home_currency, onboarded_at')
+      .eq('id', userId)
+      .single(),
     supabase.from('cards').select('*').order('sort_order'),
     supabase.from('card_benefits').select('*').order('sort_order'),
     supabase.from('user_cards').select('*').order('created_at'),
     supabase.from('opportunities').select('*').or(`status.eq.open,expires_at.gte.${yearStart}`).order('expires_at', { ascending: true }),
-    supabase.from('recovered').select('id, opportunity_id, amount, recovered_at'),
+    supabase.from('recovered').select('id, opportunity_id, amount, currency, recovered_at'),
     supabase.from('benefit_usage').select('id, user_card_id, benefit_id, period_start, amount_used, is_used, marked_by'),
+    supabase
+      .from('receipts')
+      .select('id, merchant, total, currency, purchase_date, last_four, purchase_type, matched_user_card_id')
+      .or(`purchase_date.gte.${since},purchase_date.is.null`)
+      .order('purchase_date', { ascending: false, nullsFirst: false })
+      .limit(300),
   ]);
 
   // numeric columns arrive as numbers from PostgREST; normalize defensively.
   const num = (v: unknown) => (v === null || v === undefined ? null : Number(v));
+  const prof = must<Profile>('profile', profile);
+  setHomeCurrency(prof.home_currency?.trim() || 'USD');
   return {
-    profile: must('profile', profile),
+    profile: prof,
     cards: must('cards', cards).map((c: Card) => ({ ...c, annual_fee: num(c.annual_fee) })),
     benefits: must('card_benefits', benefits).map((b: CardBenefit) => ({ ...b, amount: num(b.amount), max_coverage: num(b.max_coverage) })),
     userCards: must('user_cards', userCards),
     opportunities: must('opportunities', opportunities).map((o: Opportunity) => ({ ...o, value_estimate: num(o.value_estimate) })),
     recovered: must('recovered', recovered).map((r: Recovered) => ({ ...r, amount: Number(r.amount) })),
     usage: must('benefit_usage', usage).map((u: BenefitUsage) => ({ ...u, amount_used: num(u.amount_used) })),
+    receipts: must('receipts', receipts).map((r: Receipt) => ({ ...r, total: num(r.total) })),
   };
 }
 

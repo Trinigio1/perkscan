@@ -38,7 +38,9 @@ export default function OfferDetail() {
   const missed = opp.status === 'expired' || (opp.status === 'open' && !!expires && expires <= now);
   const soon = opp.status === 'open' && !missed && !!expires && expires.getTime() - now.getTime() <= 7 * 86_400_000;
   // Only real money (promos, gift cards, credit) is "recovered" when used.
-  const countsAsMoney = ['promo', 'gift_card', 'store_credit', 'settlement', 'points'].includes(opp.type);
+  // A protection only becomes money once a claim pays out, so we ask how much.
+  const countsAsMoney = ['promo', 'gift_card', 'store_credit', 'settlement', 'points', 'protection'].includes(opp.type);
+  const isProtection = opp.type === 'protection';
 
   const act = async (key: string, action: 'used' | 'dismiss' | 'reopen', amount: number | null, message: string) => {
     setBusy(key);
@@ -60,7 +62,7 @@ export default function OfferDetail() {
     const amount = saved ? Number(saved.replace(/[^0-9.]/g, '')) : null;
     if (amount !== null && (!Number.isFinite(amount) || amount < 0)) return setError('Enter an amount like 12.50');
     const value = amount ?? opp.value_estimate;
-    act('used', 'used', countsAsMoney ? amount : 0, countsAsMoney && value ? `Nice — ${formatMoney(value)} saved` : 'Marked as done');
+    act('used', 'used', countsAsMoney ? amount : 0, countsAsMoney && value ? `Nice — ${formatMoney(value, { currency: opp.currency })} ${isProtection ? 'recovered' : 'saved'}` : 'Marked as done');
   };
 
   return (
@@ -78,7 +80,7 @@ export default function OfferDetail() {
       </View>
 
       <Panel style={{ alignItems: 'center', paddingVertical: space.xl, gap: space.md }}>
-        {opp.value_estimate !== null ? <Money value={opp.value_estimate} size={44} /> : null}
+        {opp.value_estimate !== null ? <Money value={opp.value_estimate} size={44} currency={opp.currency} /> : null}
         {opp.description ? <T muted center>{opp.description}</T> : null}
         {opp.code ? (
           <Pressable
@@ -113,7 +115,7 @@ export default function OfferDetail() {
             </T>
           </Row>
         ) : (
-          <T variant="caption" muted>No expiry date found in the email</T>
+          <T variant="caption" muted center>{isProtection ? 'The deadline depends on your card’s terms' : 'No expiry date found in the email'}</T>
         )}
       </Panel>
 
@@ -124,18 +126,18 @@ export default function OfferDetail() {
           <>
             {askSaved ? (
               <Panel>
-                <T variant="subheading">How much did you save?</T>
-                <Field label="Amount (optional)" value={saved} onChangeText={setSaved} placeholder="$0.00" keyboardType="decimal-pad" autoFocus />
+                <T variant="subheading">{isProtection ? 'How much did the claim pay you?' : 'How much did you save?'}</T>
+                <Field label={`Amount in ${opp.currency} (optional)`} value={saved} onChangeText={setSaved} placeholder="0.00" keyboardType="decimal-pad" autoFocus />
               </Panel>
             ) : null}
             <Button
-              title={opp.type === 'free_trial' ? 'I cancelled / decided' : opp.type === 'return_window' ? 'Done with this' : askSaved ? 'Save' : 'I used it'}
+              title={askSaved ? 'Save' : opp.type === 'free_trial' ? 'I cancelled / decided' : opp.type === 'return_window' ? 'Done with this' : isProtection ? 'I made a claim' : 'I used it'}
               icon="checkmark-circle"
               loading={busy === 'used'}
               disabled={!!busy}
               onPress={markUsed}
             />
-            <Button title="Not interested" kind="ghost" loading={busy === 'dismiss'} disabled={!!busy} onPress={() => act('dismiss', 'dismiss', null, 'Dismissed')} />
+            <Button title={isProtection ? 'Not needed' : 'Not interested'} kind="ghost" loading={busy === 'dismiss'} disabled={!!busy} onPress={() => act('dismiss', 'dismiss', null, 'Dismissed')} />
           </>
         ) : (
           <Button title="Undo" kind="secondary" icon="arrow-undo" loading={busy === 'reopen'} disabled={!!busy} onPress={() => act('reopen', 'reopen', null, 'Moved back to active')} />

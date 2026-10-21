@@ -49,7 +49,7 @@ export function CreditRow({
       onPress={() => router.push({ pathname: '/credit/[id]', params: { id: opp.id } })}
       style={({ pressed }) => ({ paddingVertical: space.md, opacity: pressed ? 0.6 : 1 })}
       accessibilityRole="button"
-      accessibilityLabel={`${opp.title}, ${value === null ? 'amount not verified' : formatMoney(value)}, ${status}`}
+      accessibilityLabel={`${opp.title}, ${value === null ? 'amount not verified' : formatMoney(value, { currency: opp.currency })}, ${status}`}
     >
       <Row gap={space.md}>
         <View>
@@ -83,7 +83,7 @@ export function CreditRow({
                 color={missed ? c.danger : used ? c.textFaint : c.text}
                 style={[{ fontVariant: ['tabular-nums'] }, used ? { textDecorationLine: 'line-through' } : null]}
               >
-                {formatMoney(used || missed ? value : remaining!)}
+                {formatMoney(used || missed ? value : remaining!, { currency: opp.currency })}
               </T>
               {!used && !missed && recovered > 0 ? <T variant="caption" faint>left</T> : null}
             </>

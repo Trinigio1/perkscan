@@ -17,6 +17,8 @@ export interface Card {
   id: string;
   issuer: string;
   product_name: string;
+  country: string;
+  currency: string;
   annual_fee: number | null;
   status: VerificationStatus;
   source_url: string | null;
@@ -37,6 +39,8 @@ export interface CardBenefit {
   max_coverage: number | null;
   coverage_window_days: number | null;
   enrollment_required: boolean;
+  /** Overrides the card currency, e.g. US$ coverage on a TT$ card. */
+  currency: string | null;
   status: VerificationStatus;
   source_url: string | null;
   last_verified: string | null;
@@ -50,6 +54,8 @@ export interface Profile {
   forwarding_address: string | null;
   is_student: boolean;
   timezone: string;
+  country: string | null;
+  home_currency: string;
   onboarded_at: string | null;
 }
 
@@ -71,6 +77,7 @@ export interface Opportunity {
   title: string;
   description: string | null;
   value_estimate: number | null;
+  currency: string;
   expires_at: string | null;
   status: OpportunityStatus;
   user_card_id: string | null;
@@ -80,7 +87,19 @@ export interface Opportunity {
   merchant?: string | null;
   code?: string | null;
   source_message_id?: string | null;
+  source_receipt_id?: string | null;
   created_at: string;
+}
+
+export interface Receipt {
+  id: string;
+  merchant: string;
+  total: number | null;
+  currency: string;
+  purchase_date: string | null;
+  last_four: string | null;
+  purchase_type: string | null;
+  matched_user_card_id: string | null;
 }
 
 export type ParseStatus = 'pending' | 'parsing' | 'parsed' | 'failed' | 'ignored';
@@ -108,6 +127,7 @@ export interface Recovered {
   id: string;
   opportunity_id: string | null;
   amount: number;
+  currency: string;
   recovered_at: string;
 }
 

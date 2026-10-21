@@ -5,6 +5,7 @@ import { DISCLAIMER_FULL } from '@/components/Disclaimer';
 import { ListRow } from '@/components/ListRow';
 import { ErrorNote, Panel, Row, Screen, T } from '@/components/ui';
 import { signOut, useAuth } from '@/lib/auth';
+import { countryByCode } from '@/domain/countries';
 import { updateProfile } from '@/lib/cards';
 import { useData } from '@/lib/data';
 import { remindersEnabled, requestReminderPermission, setRemindersEnabled, syncReminders } from '@/lib/notifications';
@@ -61,6 +62,9 @@ export default function Settings() {
   };
 
   const email = session?.user.email ?? 'Signed in';
+  const region = data.profile?.country
+    ? countryByCode(data.profile.country) ?? { name: 'Somewhere else' }
+    : null;
   const verified = data.benefits.filter((b) => b.status === 'active').length;
 
   return (
@@ -80,6 +84,13 @@ export default function Settings() {
       </Panel>
 
       <Group title="Preferences">
+        <ListRow
+          icon="globe-outline"
+          tone="blue"
+          title="Country & currency"
+          subtitle={region ? `${region.name} · amounts in ${data.profile?.home_currency}` : 'Not set'}
+          onPress={() => router.push('/country')}
+        />
         <ListRow icon="notifications" tone="orange" title="Reminders" subtitle="7 and 2 days before credits and offers expire" toggle={reminders && Platform.OS !== 'web'} onToggle={toggleReminders} />
         <ListRow icon="school" tone="purple" title="I’m a student" subtitle="Student discounts arrive later" toggle={!!data.profile?.is_student} onToggle={toggleStudent} />
       </Group>
@@ -90,7 +101,7 @@ export default function Settings() {
       </Group>
 
       <Group title="About the numbers">
-        <ListRow icon="shield-checkmark" tone="green" title="Verified benefits" subtitle="Unverified amounts count as $0" value={`${verified} of ${data.benefits.length}`} />
+        <ListRow icon="shield-checkmark" tone="green" title="Verified benefits" subtitle="Unverified amounts count as zero" value={`${verified} of ${data.benefits.length}`} />
         <ListRow icon="lock-closed" tone="blue" title="Your privacy" subtitle="Card names and last 4 digits only. Email text is deleted once read. Never sold or shared." />
       </Group>
 
@@ -111,7 +122,7 @@ export default function Settings() {
         <ListRow icon="download" tone="gray" title="Export or delete my data" subtitle="Coming in a later update" />
       </Group>
 
-      <T variant="caption" faint center>PerkScan · Phase 2 preview</T>
+      <T variant="caption" faint center>PerkScan · Phase 3 preview</T>
     </Screen>
   );
 }

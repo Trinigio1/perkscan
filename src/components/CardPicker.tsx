@@ -2,22 +2,25 @@ import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { useMemo, useState } from 'react';
 import { Platform, Pressable, TextInput, View } from 'react-native';
+import { countryByCode } from '@/domain/countries';
 import type { Card } from '@/domain/types';
 import { font, radius, space, useColors } from '@/theme';
 import { CardArt } from './CardArt';
 import { T } from './ui';
 
-/** Searchable multi-select over the card catalog, grouped by issuer. */
+/** Searchable multi-select over the card catalog. Cards from the user's country come first. */
 export function CardPicker({
   cards,
   selected,
   onToggle,
   ownedIds = [],
+  country = null,
 }: {
   cards: Card[];
   selected: string[];
   onToggle: (id: string) => void;
   ownedIds?: string[];
+  country?: string | null;
 }) {
   const c = useColors();
   const [q, setQ] = useState('');
@@ -26,6 +29,14 @@ export function CardPicker({
     if (!needle) return cards;
     return cards.filter((card) => `${card.issuer} ${card.product_name}`.toLowerCase().includes(needle));
   }, [cards, q]);
+  const local = shown.filter((card) => card.country === country);
+  const groups =
+    local.length && local.length < shown.length
+      ? [
+          { title: `Cards in ${countryByCode(country)?.name ?? 'your country'}`, items: local },
+          { title: 'Other countries', items: shown.filter((card) => card.country !== country) },
+        ]
+      : [{ title: null, items: local.length ? local : shown }];
 
   return (
     <View style={{ gap: space.sm }}>
@@ -45,7 +56,9 @@ export function CardPicker({
           </Pressable>
         ) : null}
       </View>
-      {shown.map((card) => {
+      {groups.map((g) => [
+        g.title ? <T key={g.title} variant="overline" muted style={{ marginTop: space.sm }}>{g.title}</T> : null,
+        ...g.items.map((card) => {
         const on = selected.includes(card.id);
         const owned = ownedIds.includes(card.id);
         return (
@@ -79,7 +92,8 @@ export function CardPicker({
             <Ionicons name={on ? 'checkmark-circle' : 'add-circle-outline'} size={26} color={on ? c.accent : c.textFaint} />
           </Pressable>
         );
-      })}
+        }),
+      ])}
       {cards.length === 0 ? (
         <T muted center style={{ padding: space.lg }}>
           The card catalog is empty. In VS Code run: npx supabase db push --include-seed

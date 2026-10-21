@@ -6,8 +6,8 @@ import { CardArt } from '@/components/CardArt';
 import { OpportunityRow } from '@/components/OfferRow';
 import { Hero } from '@/components/Hero';
 import { Button, Empty, ErrorNote, IconBubble, Money, Note, Panel, ProgressBar, Row, Screen, SectionHeader, T } from '@/components/ui';
-import { formatMoney } from '@/domain/format';
-import { computeScore, remainingValue } from '@/domain/score';
+import { addToBag, formatBag, formatMoney, getHomeCurrency, type MoneyBag } from '@/domain/format';
+import { remainingValue, scoreByCurrency } from '@/domain/score';
 import { CATEGORY_LABELS, type OpportunityCategory } from '@/domain/types';
 import { greeting, type IconTone } from '@/domain/visuals';
 import type { IconName } from '@/components/ui';
@@ -27,8 +27,15 @@ const CATEGORY_ICON: Record<OpportunityCategory, { icon: IconName; tone: IconTon
 };
 
 // Categories with no data source yet; everything else is live.
-const NOT_YET = new Set<OpportunityCategory>(['card_protections', 'student']);
+const NOT_YET = new Set<OpportunityCategory>(['student']);
 const ROUTE: Partial<Record<OpportunityCategory, '/credits' | '/offers'>> = { card_credits: '/credits' };
+
+const nonZero = (bag: MoneyBag) => Object.values(bag).some((v) => v > 0);
+/** "+ US$35" for amounts in currencies other than the one shown big. */
+const others = (bag: MoneyBag, shown: string) => {
+  const rest = Object.fromEntries(Object.entries(bag).filter(([cur, v]) => cur !== shown && v > 0));
+  return nonZero(rest) ? `+ ${formatBag(rest)}` : null;
+};
 
 export default function Home() {
   const c = useColors();
@@ -37,9 +44,23 @@ export default function Home() {
   const { benefitById, cardById, recoveredByOpp, userCardLabel } = useLookups();
   const [refreshing, setRefreshing] = useState(false);
 
-  const { now, score, upNext, perCard } = useMemo(() => {
+  const { now, home, score, totals, categories, atRiskItems, unverifiedCount, upNext, perCard } = useMemo(() => {
     const at = new Date();
-    const s = computeScore(data.opportunities, data.recovered, at);
+    const homeCur = data.profile?.home_currency?.trim() || getHomeCurrency();
+    // Amounts are never converted: one score per currency, the home currency shown big.
+    const scores = scoreByCurrency(data.opportunities, data.recovered, at, homeCur);
+    const s = scores[0]!.score;
+    const bag = (pick: (x: typeof s) => number) => scores.reduce((b, x) => addToBag(b, x.currency, pick(x.score)), {} as MoneyBag);
+    const cats = s.byCategory.map((cat) => {
+      const all = scores.map((x) => ({ cur: x.currency, c: x.score.byCategory.find((y) => y.category === cat.category)! }));
+      return {
+        category: cat.category,
+        count: all.reduce((n, x) => n + x.c.count, 0),
+        missed: all.reduce((b, x) => addToBag(b, x.cur, x.c.leftOnTable), {} as MoneyBag),
+        available: all.reduce((b, x) => addToBag(b, x.cur, x.c.available + x.c.atRisk), {} as MoneyBag),
+      };
+    });
+    const risky = scores.flatMap((x) => x.score.atRiskItems).sort((a, b) => new Date(a.expires_at!).getTime() - new Date(b.expires_at!).getTime());
     const open = data.opportunities
       .filter((o) => o.status === 'open' && o.expires_at && new Date(o.expires_at) > at)
       .sort((a, b) => new Date(a.expires_at!).getTime() - new Date(b.expires_at!).getTime());
@@ -47,9 +68,19 @@ export default function Home() {
     const next = [...open].sort((a, b) => Number(a.value_estimate === null) - Number(b.value_estimate === null)).slice(0, 4);
     const cards = data.userCards.map((uc) => ({
       uc,
-      available: open.filter((o) => o.user_card_id === uc.id).reduce((sum, o) => sum + remainingValue(o, recoveredByOpp), 0),
+      available: open.filter((o) => o.user_card_id === uc.id).reduce((b, o) => addToBag(b, o.currency, remainingValue(o, recoveredByOpp)), {} as MoneyBag),
     }));
-    return { now: at, score: s, upNext: s.atRiskItems.length ? s.atRiskItems.slice(0, 4) : next, perCard: cards };
+    return {
+      now: at,
+      home: homeCur,
+      score: s,
+      totals: { left: bag((x) => x.leftOnTable), atRisk: bag((x) => x.atRiskThisWeek), recovered: bag((x) => x.recoveredThisYear) },
+      categories: cats,
+      atRiskItems: risky,
+      unverifiedCount: scores.reduce((n, x) => n + x.score.unverifiedCount, 0),
+      upNext: risky.length ? risky.slice(0, 4) : next,
+      perCard: cards,
+    };
   }, [data, recoveredByOpp]);
 
   const name = data.profile?.display_name?.split(' ')[0];
@@ -60,9 +91,9 @@ export default function Home() {
   };
 
   // Show credits always, and other categories once something has been found for them.
-  const live = score.byCategory.filter((x) => x.category === 'card_credits' || (!NOT_YET.has(x.category) && x.count > 0));
-  const soon = score.byCategory.filter((x) => NOT_YET.has(x.category));
-  const emailFound = score.byCategory.some((x) => x.category !== 'card_credits' && x.count > 0);
+  const live = categories.filter((x) => x.category === 'card_credits' || (!NOT_YET.has(x.category) && x.count > 0));
+  const soon = categories.filter((x) => NOT_YET.has(x.category));
+  const emailFound = categories.some((x) => x.category !== 'card_credits' && x.count > 0);
 
   return (
     <Screen refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={c.accent} />}>
@@ -80,9 +111,23 @@ export default function Home() {
 
       {error ? <ErrorNote message={`Couldn’t refresh: ${error}`} /> : null}
 
+      {data.profile && !data.profile.country ? (
+        <Panel onPress={() => router.push('/country')}>
+          <Row gap={space.md}>
+            <IconBubble icon="globe-outline" tone="blue" size={36} />
+            <View style={{ flex: 1 }}>
+              <T variant="subheading">Where do you live?</T>
+              <T variant="caption" muted>Set your country so amounts show in your currency.</T>
+            </View>
+            <Ionicons name="chevron-forward" size={18} color={c.textFaint} />
+          </Row>
+        </Panel>
+      ) : null}
+
       <Hero>
         <T variant="label" color={c.heroMuted}>You left</T>
-        <Money value={score.leftOnTable} size={60} color={c.heroText} animate />
+        <Money value={score.leftOnTable} size={60} color={c.heroText} currency={home} animate />
+        {others(totals.left, home) ? <T variant="heading" color={c.heroText}>{others(totals.left, home)}</T> : null}
         <T variant="subheading" color={c.heroText}>on the table in {now.getFullYear()}</T>
         <View style={{ marginTop: space.lg, gap: space.sm }}>
           {score.captureRate !== null ? (
@@ -102,12 +147,14 @@ export default function Home() {
       <Row gap={space.md} style={{ alignItems: 'stretch' }}>
         <Panel style={{ flex: 1 }} onPress={() => router.push('/credits')}>
           <IconBubble icon="time" tone="orange" size={34} />
-          <Money value={score.atRiskThisWeek} size={28} style={{ marginTop: space.xs }} />
+          <Money value={score.atRiskThisWeek} size={28} style={{ marginTop: space.xs }} currency={home} />
+          {others(totals.atRisk, home) ? <T variant="caption">{others(totals.atRisk, home)}</T> : null}
           <T variant="caption" muted>at risk this week</T>
         </Panel>
         <Panel style={{ flex: 1 }} onPress={() => router.push('/credits')}>
           <IconBubble icon="trending-up" tone="green" size={34} />
-          <Money value={score.recoveredThisYear} size={28} color={c.accentStrong} style={{ marginTop: space.xs }} />
+          <Money value={score.recoveredThisYear} size={28} color={c.accentStrong} style={{ marginTop: space.xs }} currency={home} />
+          {others(totals.recovered, home) ? <T variant="caption" color={c.accentStrong}>{others(totals.recovered, home)}</T> : null}
           <T variant="caption" muted>recovered this year</T>
         </Panel>
       </Row>
@@ -122,7 +169,7 @@ export default function Home() {
       ) : (
         <>
           <SectionHeader
-            title={!score.atRiskItems.length ? 'Up next' : upNext.every((o) => o.type === 'card_credit') ? 'Use it before it resets' : 'Expiring soon'}
+            title={!atRiskItems.length ? 'Up next' : upNext.every((o) => o.type === 'card_credit') ? 'Use it before it resets' : 'Expiring soon'}
             action="See all"
             onAction={() => router.push(upNext.some((o) => o.type !== 'card_credit') ? '/offers' : '/credits')}
           />
@@ -152,7 +199,7 @@ export default function Home() {
                 <Pressable key={uc.id} onPress={() => router.push({ pathname: '/card/[id]', params: { id: uc.id } })} style={{ width: 220, gap: space.sm }}>
                   <CardArt cardId={card.id} issuer={card.issuer} name={uc.nickname || card.product_name.replace(/®/g, '')} lastFour={uc.last_four} size="md" />
                   <T variant="caption" muted style={{ paddingHorizontal: 2 }}>
-                    {available > 0 ? `${formatMoney(available)} available now` : 'Nothing left this period'}
+                    {nonZero(available) ? `${formatBag(available, card.currency)} available now` : 'Nothing left this period'}
                   </T>
                 </Pressable>
               );
@@ -161,10 +208,10 @@ export default function Home() {
         </>
       )}
 
-      {score.unverifiedCount > 0 ? (
+      {unverifiedCount > 0 ? (
         <Note icon="shield-checkmark-outline">
-          {score.unverifiedCount} credit{score.unverifiedCount > 1 ? 's don’t' : ' doesn’t'} have a verified amount yet, so
-          {score.unverifiedCount > 1 ? ' they count' : ' it counts'} as $0. We’d rather undercount than guess.
+          {unverifiedCount} credit{unverifiedCount > 1 ? 's don’t' : ' doesn’t'} have a verified amount yet, so
+          {unverifiedCount > 1 ? ' they count' : ' it counts'} as {formatMoney(0, { currency: home })}. We’d rather undercount than guess.
         </Note>
       ) : null}
 
@@ -175,12 +222,20 @@ export default function Home() {
             <Row gap={space.md} style={{ paddingVertical: space.xs }}>
               <IconBubble icon={CATEGORY_ICON[cat.category].icon} tone={CATEGORY_ICON[cat.category].tone} size={36} />
               <T variant="subheading" style={{ flex: 1 }}>{CATEGORY_LABELS[cat.category]}</T>
-              <View style={{ alignItems: 'flex-end' }}>
-                <T variant="label" color={cat.leftOnTable > 0 ? c.danger : c.text}>{formatMoney(cat.leftOnTable)} missed</T>
-                <T variant="caption" muted>
-                  {cat.available + cat.atRisk > 0 ? `${formatMoney(cat.available + cat.atRisk)} available` : `${cat.count} active`}
-                </T>
-              </View>
+              {cat.category === 'card_protections' ? (
+                // Coverage isn't cash, so it never adds to the totals.
+                <View style={{ alignItems: 'flex-end' }}>
+                  <T variant="label">{cat.count} active</T>
+                  <T variant="caption" muted>coverage, not cash</T>
+                </View>
+              ) : (
+                <View style={{ alignItems: 'flex-end', flexShrink: 1 }}>
+                  <T variant="label" color={nonZero(cat.missed) ? c.danger : c.text}>{formatBag(cat.missed, home)} missed</T>
+                  <T variant="caption" muted>
+                    {nonZero(cat.available) ? `${formatBag(cat.available, home)} available` : `${cat.count} active`}
+                  </T>
+                </View>
+              )}
             </Row>
           </Pressable>
         ))}

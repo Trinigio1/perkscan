@@ -45,7 +45,7 @@ export function OfferRow({ opp, now }: { opp: Opportunity; now: Date }) {
         <View style={{ alignItems: 'flex-end', gap: 4, maxWidth: 110 }}>
           {opp.value_estimate !== null ? (
             <T variant="subheading" color={missed ? c.danger : done ? c.textFaint : c.text} style={{ fontVariant: ['tabular-nums'] }}>
-              {formatMoney(opp.value_estimate)}
+              {formatMoney(opp.value_estimate, { currency: opp.currency })}
             </T>
           ) : null}
           {opp.code && !done ? <Badge label={opp.code} /> : null}

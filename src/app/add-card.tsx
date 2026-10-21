@@ -25,6 +25,7 @@ export default function AddCard() {
           cards={data.cards}
           selected={selected}
           ownedIds={data.userCards.map((u) => u.card_id)}
+          country={data.profile?.country ?? null}
           onToggle={(id) => setSelected(selected.includes(id) ? selected.filter((x) => x !== id) : [...selected, id])}
         />
         <Button title={selected.length ? `Next · ${selected.length} selected` : 'Pick a card'} icon={selected.length ? 'arrow-forward' : undefined} disabled={!selected.length} onPress={() => setDrafts(selected.map(emptyDraft))} />
