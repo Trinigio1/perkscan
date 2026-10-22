@@ -70,6 +70,16 @@ const post = (handler: (r: Request) => Promise<Response>, body: unknown, token?:
 Deno.test('inbox pipeline end to end', async () => {
   const alice = await makeUser('alice');
   const bob = await makeUser('bob');
+  // A settlement covering the test store, so a new receipt should match it straight away.
+  const settlementId = `e2e_${Date.now()}`;
+  const today = new Date().toISOString().slice(0, 10);
+  const st = await admin.from('settlements').insert({
+    id: settlementId, name: 'E2E Test Settlement', description: 'Test.', eligible_merchants: ['acme outfitters'],
+    eligible_products: 'Anything from Acme.', purchase_start: '2020-01-01', purchase_end: '2099-12-31', claim_deadline: '2099-12-31',
+    claim_url: 'https://claims.example.com', proof_required: 'A receipt.', eligible_countries: [], status: 'active',
+    source_url: 'https://claims.example.com/notice', last_verified: today,
+  });
+  assert(!st.error, `create test settlement: ${st.error?.message}`);
   try {
     // Alice has a card ending 4242 so the receipt can be matched to it.
     const card = await alice.client.from('user_cards').insert({ card_id: 'amex_gold', last_four: '4242' }).select('id').single();
@@ -116,6 +126,10 @@ Deno.test('inbox pipeline end to end', async () => {
     assert(prots.data?.some((p) => p.benefit_id === 'amex_gold__purchase_protection' && p.user_card_id === card.data!.id && p.value_estimate === null),
       `purchase protection found for the receipt: ${JSON.stringify(prots.data)}`);
     assert(prots.data?.every((p) => p.source_receipt_id), 'protections link back to their receipt');
+
+    // The receipt falls inside a known settlement: a possible claim appears, worth nothing until paid.
+    const claim = await alice.client.from('opportunities').select('type, value_estimate, action_steps').eq('dedupe_key', `settlement:${settlementId}`);
+    assert(claim.data?.length === 1 && claim.data[0]!.value_estimate === null, `settlement matched on arrival: ${JSON.stringify(claim.data)}`);
 
     // An Uber receipt on the same card counts toward the Uber Cash credit, automatically
     await post(ingest, { messages: [{ id: 'g-uber', subject: 'Your Uber receipt', text: 'Uber receipt — thanks for ordering' }] }, token);
@@ -198,6 +212,7 @@ Deno.test('inbox pipeline end to end', async () => {
     await alice.client.rpc('revoke_ingest_token', { p_id: tokenRow.data!.id });
     assert((await post(ingest, { messages: [{ text: 'x' }] }, token)).status === 401, 'revoked token -> 401');
   } finally {
+    await admin.from('settlements').delete().eq('id', settlementId);
     await admin.auth.admin.deleteUser(alice.id);
     await admin.auth.admin.deleteUser(bob.id);
   }

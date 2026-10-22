@@ -39,6 +39,8 @@ export interface CardBenefit {
   max_coverage: number | null;
   coverage_window_days: number | null;
   enrollment_required: boolean;
+  /** Stores a credit applies at, e.g. { merchants: ['uber', 'uber eats'] }. */
+  merchant_match: { merchants: string[] } | null;
   /** Overrides the card currency, e.g. US$ coverage on a TT$ card. */
   currency: string | null;
   status: VerificationStatus;
@@ -161,3 +163,19 @@ export const CATEGORY_ORDER: OpportunityCategory[] = [
   'card_credits', 'card_protections', 'store_credit_gift_cards', 'promos',
   'points_miles', 'settlements', 'student', 'returns_trials',
 ];
+
+export interface StudentOffer {
+  id: string;
+  name: string;
+  provider: string;
+  category: string;
+  summary: string;
+  eligibility: string;
+  how_to_verify: string;
+  url: string;
+  /** Empty = available worldwide. */
+  countries: string[];
+  status: VerificationStatus;
+  source_url: string | null;
+  last_verified: string | null;
+}

@@ -101,7 +101,8 @@ export default function Settings() {
           onPress={() => router.push('/country')}
         />
         <ListRow icon="notifications" tone="orange" title="Reminders" subtitle="7 and 2 days before credits and offers expire" toggle={reminders && Platform.OS !== 'web'} onToggle={toggleReminders} />
-        <ListRow icon="school" tone="purple" title="I’m a student" subtitle="Student discounts arrive later" toggle={!!data.profile?.is_student} onToggle={toggleStudent} />
+        <ListRow icon="school" tone="purple" title="I’m a student" subtitle="Shows student offers on Home" toggle={!!data.profile?.is_student} onToggle={toggleStudent} />
+        {data.profile?.is_student ? <ListRow icon="gift" tone="purple" title="Student offers" subtitle="Free software and more for students" onPress={() => router.push('/student')} /> : null}
       </Group>
 
       <Group title="Email & texts">
@@ -141,7 +142,7 @@ export default function Settings() {
         <ListRow icon="download" tone="gray" title="Export or delete my data" subtitle="Coming in a later update" />
       </Group>
 
-      <T variant="caption" faint center>PerkScan · Phase 4 preview</T>
+      <T variant="caption" faint center>PerkScan · Phase 5 preview</T>
     </Screen>
   );
 }

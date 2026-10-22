@@ -127,18 +127,18 @@ export default function OfferDetail() {
           <>
             {askSaved ? (
               <Panel>
-                <T variant="subheading">{isProtection ? 'How much did the claim pay you?' : 'How much did you save?'}</T>
+                <T variant="subheading">{isProtection || opp.type === 'settlement' ? 'How much did the claim pay you? (leave blank if you’re still waiting)' : 'How much did you save?'}</T>
                 <Field label={`Amount in ${opp.currency} (optional)`} value={saved} onChangeText={setSaved} placeholder="0.00" keyboardType="decimal-pad" autoFocus />
               </Panel>
             ) : null}
             <Button
-              title={askSaved ? 'Save' : opp.type === 'free_trial' ? 'I cancelled / decided' : opp.type === 'return_window' ? 'Done with this' : isProtection ? 'I made a claim' : 'I used it'}
+              title={askSaved ? 'Save' : opp.type === 'free_trial' ? 'I cancelled / decided' : opp.type === 'return_window' ? 'Done with this' : isProtection || opp.type === 'settlement' ? 'I filed a claim' : 'I used it'}
               icon="checkmark-circle"
               loading={busy === 'used'}
               disabled={!!busy}
               onPress={markUsed}
             />
-            <Button title={isProtection ? 'Not needed' : 'Not interested'} kind="ghost" loading={busy === 'dismiss'} disabled={!!busy} onPress={() => act('dismiss', 'dismiss', null, 'Dismissed')} />
+            <Button title={isProtection ? 'Not needed' : opp.type === 'settlement' ? 'Not for me' : 'Not interested'} kind="ghost" loading={busy === 'dismiss'} disabled={!!busy} onPress={() => act('dismiss', 'dismiss', null, 'Dismissed')} />
           </>
         ) : (
           <Button title="Undo" kind="secondary" icon="arrow-undo" loading={busy === 'reopen'} disabled={!!busy} onPress={() => act('reopen', 'reopen', null, 'Moved back to active')} />

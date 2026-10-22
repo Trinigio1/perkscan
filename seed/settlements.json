@@ -1,0 +1,11 @@
+{
+  "_readme": [
+    "Class-action settlements PerkScan matches against your receipts (by store and purchase dates).",
+    "Only add a settlement from its official settlement website or court notice: claim_url must be the",
+    "official claim site, and source_url + last_verified record where and when it was checked.",
+    "eligible_merchants are lowercase store names; a receipt matches when its store name contains one.",
+    "eligible_countries: [] means not limited by country. PerkScan links to the claim site and never files.",
+    "Then run: npm run seed:build, and load supabase/seed.sql (db push --include-seed or the SQL editor)."
+  ],
+  "settlements": []
+}

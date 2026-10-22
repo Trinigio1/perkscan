@@ -1,0 +1,94 @@
+{
+  "_readme": [
+    "Student offers shown in PerkScan's Student mode. Only add an offer from the provider's own page,",
+    "with source_url and last_verified. No prices: they change and differ by country.",
+    "countries: [] means the provider offers it worldwide. Then run: npm run seed:build",
+    "Checked 2026-10-22 against the providers' official help/education pages (via web search)."
+  ],
+  "offers": [
+    {
+      "id": "github_student_pack",
+      "name": "GitHub Student Developer Pack",
+      "provider": "GitHub",
+      "category": "developer",
+      "summary": "Free access to a bundle of developer tools and services from GitHub and its partners.",
+      "eligibility": "Enrolled in a degree or diploma program, at least 13 years old, with a personal GitHub account.",
+      "how_to_verify": "School email address, or proof of current enrollment such as a student ID or transcript.",
+      "url": "https://education.github.com/pack",
+      "countries": [],
+      "status": "active",
+      "source_url": "https://help.github.com/articles/applying-for-a-student-developer-pack",
+      "last_verified": "2026-10-22"
+    },
+    {
+      "id": "jetbrains_student",
+      "name": "JetBrains free student license",
+      "provider": "JetBrains",
+      "category": "developer",
+      "summary": "Free individual licenses for JetBrains tools (such as IntelliJ IDEA and PyCharm), valid one year and renewable while you study.",
+      "eligibility": "Enrolled at an accredited school, college or university in a program of a year or more of full-time study.",
+      "how_to_verify": "School email address, an ISIC card, or a GitHub Student Developer Pack account.",
+      "url": "https://www.jetbrains.com/student/",
+      "countries": [],
+      "status": "active",
+      "source_url": "https://www.jetbrains.com/student/",
+      "last_verified": "2026-10-22"
+    },
+    {
+      "id": "figma_education",
+      "name": "Figma for Education",
+      "provider": "Figma",
+      "category": "design",
+      "summary": "Figma's Education plan, free for verified students (Professional plan for higher education).",
+      "eligibility": "Students and educators, 13 or older, applying with their school email.",
+      "how_to_verify": "Apply at figma.com/education; verification is done by SheerID.",
+      "url": "https://www.figma.com/education/",
+      "countries": [],
+      "status": "active",
+      "source_url": "https://help.figma.com/hc/en-us/articles/360041061214",
+      "last_verified": "2026-10-22"
+    },
+    {
+      "id": "notion_education",
+      "name": "Notion Plus for students",
+      "provider": "Notion",
+      "category": "productivity",
+      "summary": "Notion's Plus plan free for college and university students.",
+      "eligibility": "Students at an accredited college or university (not K-12).",
+      "how_to_verify": "Sign up with your school email, then Settings → Upgrade plan → Get free education plan.",
+      "url": "https://www.notion.com/product/notion-for-education",
+      "countries": [],
+      "status": "active",
+      "source_url": "https://www.notion.com/help/notion-for-education",
+      "last_verified": "2026-10-22"
+    },
+    {
+      "id": "autodesk_education",
+      "name": "Autodesk Education",
+      "provider": "Autodesk",
+      "category": "design",
+      "summary": "One year of free access to Autodesk software for learning, renewable while you're eligible. Not for commercial work.",
+      "eligibility": "Students and educators at qualified educational institutions.",
+      "how_to_verify": "Autodesk checks your student status when you sign up for education access.",
+      "url": "https://www.autodesk.com/education/edu-software/overview",
+      "countries": [],
+      "status": "active",
+      "source_url": "https://www.autodesk.com/education/home",
+      "last_verified": "2026-10-22"
+    },
+    {
+      "id": "microsoft_365_education",
+      "name": "Microsoft 365 Education",
+      "provider": "Microsoft",
+      "category": "productivity",
+      "summary": "Free web versions of Word, Excel, PowerPoint, OneNote and Teams for students at eligible schools. What's included depends on your school's license.",
+      "eligibility": "Students at an eligible school or university.",
+      "how_to_verify": "Sign up with your school email address.",
+      "url": "https://www.microsoft.com/en-us/education/products/microsoft-365",
+      "countries": [],
+      "status": "active",
+      "source_url": "https://www.microsoft.com/en-us/education/products/microsoft-365",
+      "last_verified": "2026-10-22"
+    }
+  ]
+}

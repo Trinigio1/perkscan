@@ -1,24 +1,42 @@
-// Validates seed/card_benefits.json and writes supabase/seed.sql.
+// Validates the curated lists in seed/ and writes supabase/seed.sql.
 // Usage: npm run seed:build
 import { readFileSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
+import type { ZodType } from 'zod';
+import { settlementFileSchema, settlementsToSql, studentFileSchema, studentToSql } from '../src/domain/catalogSchema';
 import { seedFileSchema, seedToSql } from '../src/domain/seedSchema';
 
 const root = resolve(__dirname, '..');
-const input = resolve(root, 'seed/card_benefits.json');
 const output = resolve(root, 'supabase/seed.sql');
 
-const parsed = seedFileSchema.safeParse(JSON.parse(readFileSync(input, 'utf8')));
-if (!parsed.success) {
-  console.error('seed/card_benefits.json is invalid:');
-  for (const issue of parsed.error.issues) console.error(`  • ${issue.path.join('.')}: ${issue.message}`);
-  process.exit(1);
+function load<T>(file: string, schema: ZodType<T>): T {
+  const parsed = schema.safeParse(JSON.parse(readFileSync(resolve(root, file), 'utf8')));
+  if (!parsed.success) {
+    console.error(`${file} is invalid:`);
+    for (const issue of parsed.error.issues) console.error(`  • ${issue.path.join('.')}: ${issue.message}`);
+    process.exit(1);
+  }
+  return parsed.data;
 }
 
-writeFileSync(output, seedToSql(parsed.data));
+const cards = load('seed/card_benefits.json', seedFileSchema);
+const students = load('seed/student_discounts.json', studentFileSchema);
+const settlements = load('seed/settlements.json', settlementFileSchema);
 
-const benefits = parsed.data.cards.flatMap((c) => c.benefits);
+// seedToSql wraps the cards in begin/commit; the other lists go inside the same transaction.
+const sql = seedToSql(cards).replace(/commit;\n$/, [
+  '-- Student offers (seed/student_discounts.json)',
+  ...studentToSql(students),
+  '-- Settlements (seed/settlements.json)',
+  ...settlementsToSql(settlements),
+  'commit;',
+  '',
+].join('\n'));
+writeFileSync(output, sql);
+
+const benefits = cards.cards.flatMap((c) => c.benefits);
 const todo = benefits.filter((b) => b.status === 'TODO_VERIFY').length;
-const feesTodo = parsed.data.cards.filter((c) => c.annual_fee === null).length;
+const feesTodo = cards.cards.filter((c) => c.annual_fee === null).length;
 console.log(`Wrote ${output}`);
-console.log(`${parsed.data.cards.length} cards, ${benefits.length} benefits — ${todo} benefits and ${feesTodo} annual fees still TODO_VERIFY.`);
+console.log(`${cards.cards.length} cards, ${benefits.length} benefits — ${todo} benefits and ${feesTodo} annual fees still TODO_VERIFY.`);
+console.log(`${students.offers.length} student offers, ${settlements.settlements.length} settlements.`);

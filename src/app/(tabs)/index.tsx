@@ -26,8 +26,8 @@ const CATEGORY_ICON: Record<OpportunityCategory, { icon: IconName; tone: IconTon
   returns_trials: { icon: 'return-down-back', tone: 'gray' },
 };
 
-// Categories with no data source yet; everything else is live.
-const NOT_YET = new Set<OpportunityCategory>(['student']);
+// Student offers have their own screen (Student mode), so they get their own row below.
+const OWN_ROW = new Set<OpportunityCategory>(['student']);
 const ROUTE: Partial<Record<OpportunityCategory, '/credits' | '/offers'>> = { card_credits: '/credits' };
 
 const nonZero = (bag: MoneyBag) => Object.values(bag).some((v) => v > 0);
@@ -91,8 +91,9 @@ export default function Home() {
   };
 
   // Show credits always, and other categories once something has been found for them.
-  const live = categories.filter((x) => x.category === 'card_credits' || (!NOT_YET.has(x.category) && x.count > 0));
-  const soon = categories.filter((x) => NOT_YET.has(x.category));
+  const live = categories.filter((x) => x.category === 'card_credits' || (!OWN_ROW.has(x.category) && x.count > 0));
+  const isStudent = !!data.profile?.is_student;
+  const studentClaimed = data.studentOffers.filter((o) => data.studentClaims.includes(o.id)).length;
   const emailFound = categories.some((x) => x.category !== 'card_credits' && x.count > 0);
 
   return (
@@ -158,6 +159,19 @@ export default function Home() {
           <T variant="caption" muted>recovered this year</T>
         </Panel>
       </Row>
+
+      {data.userCards.length ? (
+        <Panel onPress={() => router.push('/checkout')}>
+          <Row gap={space.md}>
+            <IconBubble icon="storefront" tone="teal" size={40} />
+            <View style={{ flex: 1 }}>
+              <T variant="subheading">Before you pay</T>
+              <T variant="caption" muted>Which card to use, plus any codes or credit for the store</T>
+            </View>
+            <Ionicons name="chevron-forward" size={18} color={c.textFaint} />
+          </Row>
+        </Panel>
+      ) : null}
 
       {data.userCards.length === 0 ? (
         <Empty
@@ -251,13 +265,18 @@ export default function Home() {
             </Row>
           </Pressable>
         ) : null}
-        <View style={{ height: 1, backgroundColor: c.border, marginVertical: space.sm }} />
-        <Row style={{ alignItems: 'flex-start' }}>
-          <Ionicons name="sparkles" size={14} color={c.textFaint} style={{ marginTop: 2 }} />
-          <T variant="caption" muted style={{ flex: 1 }}>
-            Coming soon: {soon.map((cat) => CATEGORY_LABELS[cat.category]).join(' · ')}
-          </T>
-        </Row>
+        <Pressable onPress={() => router.push('/student')}>
+          <Row gap={space.md} style={{ paddingVertical: space.xs }}>
+            <IconBubble icon={CATEGORY_ICON.student.icon} tone={CATEGORY_ICON.student.tone} size={36} />
+            <View style={{ flex: 1 }}>
+              <T variant="subheading">{isStudent ? 'Student offers' : 'Student?'}</T>
+              <T variant="caption" muted>
+                {isStudent ? `${data.studentOffers.length} offers · ${studentClaimed} claimed` : 'Turn on Student mode for student offers'}
+              </T>
+            </View>
+            <Ionicons name="chevron-forward" size={18} color={c.textFaint} />
+          </Row>
+        </Pressable>
       </Panel>
     </Screen>
   );

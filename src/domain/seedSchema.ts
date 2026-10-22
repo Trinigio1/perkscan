@@ -88,7 +88,7 @@ export type SeedFile = z.infer<typeof seedFileSchema>;
 export type SeedCard = z.infer<typeof cardSchema>;
 export type SeedBenefit = z.infer<typeof benefitSchema>;
 
-function sqlLiteral(v: unknown): string {
+export function sqlLiteral(v: unknown): string {
   if (v === null || v === undefined) return 'null';
   if (typeof v === 'number') return String(v);
   if (typeof v === 'boolean') return v ? 'true' : 'false';

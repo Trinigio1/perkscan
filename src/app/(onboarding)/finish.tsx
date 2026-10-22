@@ -61,7 +61,7 @@ export default function Finish() {
           icon="school"
           tone="purple"
           title="I’m a student"
-          subtitle="Student discounts arrive in a later update"
+          subtitle="Shows free software and other student offers"
           toggle={student}
           onToggle={setStudent}
         />

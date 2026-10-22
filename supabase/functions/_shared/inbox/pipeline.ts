@@ -103,6 +103,9 @@ export async function processMessages(db: SupabaseClient, ids: string[], call: M
     if (receiptId) {
       const m = await matchAndApply(db, claimed.user_id as string, [receiptId], today);
       created += m.protections;
+      // A new purchase may fall inside a known class-action settlement.
+      const s = await db.rpc('_match_settlements_for_user', { p_user: claimed.user_id });
+      if (s.error) console.warn('settlement matching failed', s.error.message);
     }
 
     await db
