@@ -5,7 +5,7 @@ import { Alert, Linking, Platform, Pressable, View } from 'react-native';
 import { CardArt } from '@/components/CardArt';
 import { CardDetailsForm } from '@/components/CardDetailsForm';
 import { Disclaimer } from '@/components/Disclaimer';
-import { Badge, Button, ErrorNote, IconBubble, Panel, Row, Screen, T } from '@/components/ui';
+import { Badge, Button, ErrorNote, IconBubble, Note, Panel, Row, Screen, T } from '@/components/ui';
 import { draftToRow, validateDraft, type CardDraft } from '@/domain/cardDraft';
 import { formatMoney, PERIOD_LABELS } from '@/domain/format';
 import type { BenefitType, Card, CardBenefit, Opportunity, Receipt } from '@/domain/types';
@@ -21,6 +21,8 @@ const SECTIONS: { type: BenefitType; title: string; blurb: string }[] = [
   { type: 'protection', title: 'Protections', blurb: 'Insurance-style coverage when you pay with this card.' },
   { type: 'perk', title: 'Perks', blurb: 'Status, access and other extras.' },
 ];
+
+const checkedOn = (d: string) => new Date(`${d}T12:00:00Z`).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
 
 function BenefitLine({ b, card }: { b: CardBenefit; card: Card }) {
   const c = useColors();
@@ -43,7 +45,13 @@ function BenefitLine({ b, card }: { b: CardBenefit; card: Card }) {
           ) : null}
         </Row>
         <Row style={{ flexWrap: 'wrap' }} gap={6}>
-          {amount ? <Badge label={amount} tone="good" /> : <Badge label="Not verified" />}
+          {amount ? (
+            <Badge label={amount} tone="good" />
+          ) : b.status === 'active' && b.last_verified ? (
+            <Badge label={`Checked ${checkedOn(b.last_verified)}`} tone="good" icon="checkmark" />
+          ) : (
+            <Badge label="Not verified" />
+          )}
           {b.type === 'credit' && b.period !== 'per_claim' && b.period_anchor === 'cardmember_year' ? <Badge label="Resets on anniversary" /> : null}
           {b.enrollment_required ? <Badge label="Enroll first" icon="alert-circle" tone="warn" /> : null}
         </Row>
@@ -228,6 +236,14 @@ export default function CardScreen() {
           </View>
         );
       })}
+
+      {!benefits.some((b) => b.type === 'credit') ? (
+        <Note icon="information-circle-outline">
+          {benefits.some((b) => b.type === 'protection')
+            ? 'This card has no statement credits, so it adds nothing to “left on the table” by itself. PerkScan uses its protections instead: when a receipt or bank alert shows a purchase on this card, you’ll see what’s covered and until when.'
+            : 'This card has no statement credits or purchase protections that PerkScan can find on the bank’s pages, so it adds nothing to your totals. Its value is in the perks above. Purchases on it still show below from your receipts and bank alerts.'}
+        </Note>
+      ) : null}
 
       <Purchases receipts={data.receipts.filter((r) => r.matched_user_card_id === uc.id)} opportunities={data.opportunities} />
 

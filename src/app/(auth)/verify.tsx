@@ -1,5 +1,5 @@
-import { Redirect, router, useLocalSearchParams } from 'expo-router';
-import { useRef, useState, type ComponentRef } from 'react';
+import { router, useLocalSearchParams } from 'expo-router';
+import { useEffect, useRef, useState, type ComponentRef } from 'react';
 import { Pressable, TextInput, View } from 'react-native';
 import { Button, ErrorNote, IconBubble, Screen, T } from '@/components/ui';
 import { sendEmailCode, verifyEmailCode } from '@/lib/auth';
@@ -69,7 +69,13 @@ export default function Verify() {
   const [error, setError] = useState<string | null>(null);
 
   // Opened without an email (e.g. Android restoring this screen on launch): there's no code to enter.
-  if (!email) return <Redirect href="/sign-in" />;
+  // The email screen sits underneath (it's the initial route), so go back to it rather than adding another.
+  useEffect(() => {
+    if (email) return;
+    if (router.canGoBack()) router.back();
+    else router.replace('/sign-in');
+  }, [email]);
+  if (!email) return null;
 
   const submit = async (value = code) => {
     if (!new RegExp(`^\\d{${MIN_CODE},${MAX_CODE}}$`).test(value)) return setError('Enter the code from the email.');

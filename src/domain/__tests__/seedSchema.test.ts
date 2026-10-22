@@ -19,18 +19,32 @@ describe('seed/card_benefits.json', () => {
     }
   });
 
-  it('has the 10 US launch cards and the Scotiabank T&T cards', () => {
+  it('has the 10 US launch cards and the Trinidad & Tobago cards', () => {
     expect(seedJson.cards.map((c: { id: string }) => c.id)).toEqual([
       'amex_platinum', 'amex_gold', 'chase_sapphire_reserve', 'chase_sapphire_preferred', 'capital_one_venture_x',
       'capital_one_savor', 'citi_strata_premier', 'chase_freedom_unlimited', 'discover_it', 'apple_card',
       'scotiabank_tt_visa_classic', 'scotiabank_tt_aero_platinum_visa', 'scotiabank_tt_gold_mastercard_cashback', 'scotiabank_tt_mastercard',
+      'first_citizens_tt_visa_classic', 'first_citizens_tt_visa_gold', 'first_citizens_tt_visa_platinum', 'first_citizens_tt_purple',
+      'first_citizens_tt_2_in_1', 'first_citizens_tt_vacation_lifestyle_mc',
+      'republic_tt_visa_classic', 'republic_tt_visa_gold', 'republic_tt_pricesmart_visa_platinum',
     ]);
   });
 
   it('gives Trinidad & Tobago cards TT$ and keeps US$ coverage explicit', () => {
     const classic = seedJson.cards.find((c: { id: string }) => c.id === 'scotiabank_tt_visa_classic');
     expect(classic).toMatchObject({ country: 'TT', currency: 'TTD' });
-    expect(classic.benefits.find((b: { id: string }) => b.id.endsWith('price_protection')).currency).toBe('USD');
+    const mc = seedJson.cards.find((c: { id: string }) => c.id === 'scotiabank_tt_mastercard');
+    expect(mc.benefits.find((b: { id: string }) => b.id.endsWith('purchase_protection')).currency).toBe('USD');
+  });
+
+  it('takes verified T&T card terms only from the bank’s own site', () => {
+    const own: Record<string, string> = { Scotiabank: 'tt.scotiabank.com', 'First Citizens': 'firstcitizenstt.com', 'Republic Bank': 'republictt.com' };
+    for (const card of seedJson.cards.filter((c: { country: string }) => c.country === 'TT')) {
+      const host = Object.entries(own).find(([name]) => card.issuer.startsWith(name))![1];
+      for (const b of card.benefits.filter((x: { status: string }) => x.status === 'active')) {
+        expect(new URL(b.source_url).hostname).toBe(host);
+      }
+    }
   });
 });
 

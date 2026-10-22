@@ -93,8 +93,18 @@ export async function syncReminders(opportunities: Opportunity[], recovered: Rec
   if (digest) {
     await Notifications.scheduleNotificationAsync({
       identifier: digest.id,
-      content: { title: digest.title, body: digest.body, data: { route: '/credits' } },
+      content: { title: digest.title, body: digest.body, data: { route: '/at-risk' } },
       trigger: { type: Notifications.SchedulableTriggerInputTypes.DATE, date: digest.fireAt, channelId: CHANNEL },
     });
   }
+}
+
+/** Opens the screen a tapped reminder points to (the weekly digest opens "At risk this week"). Returns an unsubscribe. */
+export function onReminderTap(open: (route: string) => void): () => void {
+  if (!remindersAvailable) return () => {};
+  const sub = notificationsModule().addNotificationResponseReceivedListener((r) => {
+    const route = r.notification.request.content.data?.route;
+    if (typeof route === 'string' && route.startsWith('/')) open(route);
+  });
+  return () => sub.remove();
 }

@@ -6,13 +6,14 @@ import { Inter_800ExtraBold } from '@expo-google-fonts/inter/800ExtraBold';
 import { useFonts } from 'expo-font';
 import { DarkTheme, DefaultTheme, router, Stack, ThemeProvider } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { useCallback } from 'react';
+import { useCallback, useEffect } from 'react';
 import { useColorScheme } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { Loading, Screen, T } from '@/components/ui';
 import { AuthProvider, useAuth } from '@/lib/auth';
 import { DataProvider, useData } from '@/lib/data';
 import { isConfigured } from '@/lib/env';
+import { onReminderTap } from '@/lib/notifications';
 import { useSharedText } from '@/lib/shareIntent';
 import { ToastProvider } from '@/lib/toast';
 import { font, useColors } from '@/theme';
@@ -36,6 +37,8 @@ function RootNavigator() {
   // Android "Share → PerkScan": open the shared text, ready to add.
   const openShared = useCallback((text: string) => router.push({ pathname: '/add-text', params: { text } }), []);
   useSharedText(ready, openShared);
+  // Tapping the weekly digest opens what it's about.
+  useEffect(() => (ready ? onReminderTap((route) => router.push(route as '/at-risk')) : undefined), [ready]);
 
   if (authLoading || (session && dataLoading && !data.profile)) return <Loading />;
 
@@ -79,6 +82,7 @@ function RootNavigator() {
         <Stack.Screen name="school" options={{ ...modal, title: 'Your school' }} />
         <Stack.Screen name="my-perk" options={{ ...modal, title: 'A perk from your school' }} />
         <Stack.Screen name="recap" options={{ ...header, title: 'Monthly recap' }} />
+        <Stack.Screen name="at-risk" options={{ ...header, title: 'At risk this week' }} />
         <Stack.Screen name="share" options={{ ...modal, title: 'Share' }} />
         <Stack.Screen name="data" options={{ ...header, title: 'Your data' }} />
         <Stack.Screen name="sources" options={{ ...header, title: 'Connected sources' }} />

@@ -7,6 +7,7 @@ import { OpportunityRow } from '@/components/OfferRow';
 import { Hero } from '@/components/Hero';
 import { Button, Empty, ErrorNote, IconBubble, Money, Note, Panel, ProgressBar, Row, Screen, SectionHeader, T } from '@/components/ui';
 import { addToBag, formatBag, formatMoney, getHomeCurrency, type MoneyBag } from '@/domain/format';
+import { groupAtRisk, sourcesLine } from '@/domain/atRisk';
 import { remainingValue, scoreByCurrency } from '@/domain/score';
 import { zeroReasons } from '@/domain/zeroReasons';
 import { CATEGORY_LABELS, type OpportunityCategory } from '@/domain/types';
@@ -89,6 +90,9 @@ export default function Home() {
       perCard: cards,
     };
   }, [data, recoveredByOpp]);
+
+  // Where the money at risk this week comes from, named on the tile.
+  const riskFrom = useMemo(() => sourcesLine(groupAtRisk(atRiskItems, recoveredByOpp, userCardLabel)), [atRiskItems, recoveredByOpp, userCardLabel]);
 
   const name = data.profile?.display_name?.split(' ')[0];
   const onRefresh = async () => {
@@ -202,11 +206,16 @@ export default function Home() {
       ) : null}
 
       <Row gap={space.md} style={{ alignItems: 'stretch' }}>
-        <Panel style={{ flex: 1 }} onPress={() => router.push('/credits')}>
+        <Panel style={{ flex: 1 }} onPress={() => router.push('/at-risk')}>
           <IconBubble icon="time" tone="orange" size={34} />
           <Money value={score.atRiskThisWeek} size={28} style={{ marginTop: space.xs }} currency={home} />
           {others(totals.atRisk, home) ? <T variant="caption">{others(totals.atRisk, home)}</T> : null}
           <T variant="caption" muted>at risk this week</T>
+          {riskFrom ? (
+            <T variant="caption" color={c.warn} numberOfLines={2} style={{ marginTop: 2 }}>
+              From {riskFrom}
+            </T>
+          ) : null}
         </Panel>
         <Panel style={{ flex: 1 }} onPress={() => router.push('/credits')}>
           <IconBubble icon="trending-up" tone="green" size={34} />

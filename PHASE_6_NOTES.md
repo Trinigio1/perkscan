@@ -141,3 +141,43 @@ analytics.
 - **iOS release builds** need the paid Apple Developer account.
 
 *PerkScan informs and guides. It does not file claims, sign you up for offers, or give financial or legal advice.*
+
+## Update: where "at risk" money comes from, and T&T card benefits (2026-10-22)
+
+### At risk this week
+- **The Home tile now names the sources:** for example, "From KFC, Courts". Tapping it opens **At risk this week**.
+- **The new screen groups everything expiring in the next 7 days by where it comes from:**
+  - Card benefits: each card, with its credits. Tap the card to open it.
+  - Stores: codes, gift cards and store credit.
+  - Each group has its own subtotal and expiry dates.
+- **Tapping the Sunday digest notification** opens the same screen.
+
+### Card benefits (Trinidad & Tobago)
+**The reason nothing showed:** every benefit in the catalog was still unverified, so cards showed "Not verified" everywhere.
+
+**Scotiabank:**
+- **No Fee Visa Classic:**
+  - No annual fee in the first year, and none after if purchases average TT$1,250 a month.
+  - Up to 3 free extra cards.
+  - The **price protection** listed before was a guess based on other banks' cards, and Scotiabank doesn't list it. It's removed, along with anything built from it.
+  - This card has no credits or protections Scotiabank publishes, so it adds $0 to totals. That's accurate, not a bug.
+- **Mastercard:** TT$180 annual fee and purchase protection up to US$100 per occurrence.
+- **Gold Mastercard:** up to 4% cash back and purchase protection up to US$200 per occurrence. The fee stays unverified because Scotiabank's pages disagree (TT$300 or TT$375).
+- **AERO Platinum:** 1 ScotiaPoint per US$1 and 3,000 bonus points. Purchase protection and extended warranty are included, but no limits are stated.
+
+**New cards:**
+- **First Citizens:** Visa Classic, Visa Gold, Visa Platinum, Purple Card, 2 in 1, Vacation Lifestyle Mastercard. They include price protection with a 30-day window, so PerkScan can now show deadlines for these.
+- **Republic Bank:** International Visa Classic, Visa Gold, and the PriceSmart Visa Platinum (4% back at PriceSmart, 1% elsewhere).
+
+**How these were checked:**
+- This build environment's network blocks the banks' sites, so I read the banks' own page text through web search. I didn't open the pages directly.
+- Each verified benefit links to the bank page and says this in its notes.
+- A test makes sure every verified T&T benefit points to the bank's own website.
+- Some bank pages are years old. Confirm with the bank before relying on a limit.
+
+**New card screen note:** cards with no statement credits now explain why they add nothing to "left on the table".
+
+### Your setup
+1. `git pull`
+2. `npx supabase db push` to load the new cards and remove the guessed benefit.
+3. In the app, open your card to see what's verified.
