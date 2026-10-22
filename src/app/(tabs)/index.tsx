@@ -56,10 +56,10 @@ export default function Home() {
   // Show the biggest pile big when nothing is in the home currency.
   const big = (totals.ready[home] ?? 0) > 0 || !nonZero(totals.ready) ? home : Object.entries(totals.ready).sort((a, b) => b[1] - a[1])[0]![0];
   const actions: { icon: IconName; tone: IconTone; label: string; href: Href }[] = [
-    { icon: 'clipboard', tone: 'orange', label: 'Add a text', href: '/add-text' },
-    { icon: 'storefront', tone: 'teal', label: 'Before you pay', href: '/checkout' },
+    { icon: 'add', tone: 'green', label: 'Add', href: '/add' },
+    { icon: 'search', tone: 'orange', label: 'Hidden money', href: '/hidden-money' },
     { icon: 'airplane', tone: 'blue', label: 'Card perks', href: '/perks' },
-    ...(data.profile?.is_student ? [{ icon: 'school' as IconName, tone: 'purple' as IconTone, label: 'Student', href: '/student' as Href }] : []),
+    { icon: 'storefront', tone: 'teal', label: 'Before you pay', href: '/checkout' },
   ];
 
   return (
@@ -99,10 +99,10 @@ export default function Home() {
             key={a.label}
             onPress={() => router.push(a.href)}
             accessibilityRole="button"
-            style={({ pressed }) => ({ flex: 1, alignItems: 'center', gap: space.xs, paddingVertical: space.md, borderRadius: 16, backgroundColor: c.surface, borderWidth: 1, borderColor: c.border, opacity: pressed ? 0.7 : 1 })}
+            style={({ pressed }) => ({ flex: 1, alignItems: 'center', gap: space.xs, paddingVertical: space.md, paddingHorizontal: 4, borderRadius: 16, backgroundColor: c.surface, borderWidth: 1, borderColor: c.border, opacity: pressed ? 0.7 : 1 })}
           >
             <IconBubble icon={a.icon} tone={a.tone} size={40} />
-            <T variant="caption" center numberOfLines={1}>{a.label}</T>
+            <T variant="caption" center numberOfLines={2}>{a.label}</T>
           </Pressable>
         ))}
       </Row>

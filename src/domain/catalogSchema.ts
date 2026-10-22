@@ -122,3 +122,47 @@ export function studentToSql(f: StudentFile): string[] {
 export function settlementsToSql(f: SettlementFile): string[] {
   return f.settlements.map((s) => upsert('settlements', s, ['eligible_merchants', 'eligible_countries']));
 }
+
+export const PROGRAM_KINDS = ['loyalty', 'price_adjust', 'unclaimed', 'library', 'refund_rule', 'deadline_rule'] as const;
+
+export const programSchema = z
+  .object({
+    id: slug,
+    kind: z.enum(PROGRAM_KINDS),
+    name: z.string().min(1),
+    provider: z.string().min(1),
+    /** Where it applies; empty = anywhere. */
+    countries: z.array(country),
+    summary: z.string().min(1).max(300),
+    how_to: z.string().min(1).max(300),
+    url: https,
+    /** Lowercase store names a receipt's merchant must contain. */
+    merchants: z.array(z.string().min(2).regex(/^[a-z0-9 .&'-]+$/, 'Lowercase store names')),
+    /** Days after purchase a price adjustment is allowed; null = during the return period. */
+    window_days: z.number().int().min(1).max(365).nullable(),
+    status: z.enum(['active', 'TODO_VERIFY']),
+    source_url: https.nullable(),
+    last_verified: isoDate.nullable(),
+  })
+  .superRefine((p, ctx) => {
+    if (p.status === 'active' && (!p.source_url || !p.last_verified)) {
+      ctx.addIssue({ code: 'custom', path: ['status'], message: 'An active program needs source_url and last_verified' });
+    }
+    if (p.kind === 'price_adjust' && !p.merchants.length) {
+      ctx.addIssue({ code: 'custom', path: ['merchants'], message: 'A price adjustment policy needs the store names it applies to' });
+    }
+    if (p.kind !== 'price_adjust' && p.window_days !== null) {
+      ctx.addIssue({ code: 'custom', path: ['window_days'], message: 'window_days is only for price adjustment policies' });
+    }
+  });
+
+export const programFileSchema = z.object({
+  _readme: z.array(z.string()).optional(),
+  programs: z.array(programSchema),
+});
+
+export type ProgramFile = z.infer<typeof programFileSchema>;
+
+export function programsToSql(f: ProgramFile): string[] {
+  return f.programs.map((p, i) => upsert('perk_programs', { ...p, sort_order: i }, ['countries', 'merchants']));
+}

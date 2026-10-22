@@ -22,6 +22,7 @@ export interface Expected {
     alert_status?: string | null;
     purchase_type?: string;
     purchase_date?: string | null;
+    warranty_months?: number | null;
   } | null;
   offers?: ExpectedOffer[];
 }
@@ -68,6 +69,7 @@ export function scoreCase(expected: Expected, actual: ParsedEmail): Check[] {
       if (e.alert_status !== undefined) check('receipt.alert_status', e.alert_status === (a.alert_status ?? null), e.alert_status, a.alert_status ?? null);
       if (e.purchase_type !== undefined) check('receipt.purchase_type', e.purchase_type === a.purchase_type, e.purchase_type, a.purchase_type);
       if (e.purchase_date !== undefined) check('receipt.date', e.purchase_date === a.purchase_date, e.purchase_date, a.purchase_date);
+      if (e.warranty_months !== undefined) check('receipt.warranty', e.warranty_months === (a.warranty_months ?? null), e.warranty_months, a.warranty_months ?? null);
     }
   }
 

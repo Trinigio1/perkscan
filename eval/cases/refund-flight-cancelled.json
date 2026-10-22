@@ -1,0 +1,15 @@
+{
+  "origin": "synthetic",
+  "source": "email",
+  "input": {
+    "subject": "Your flight BW 484 has been cancelled",
+    "date": "2026-10-20T09:12:00-04:00",
+    "text": "Dear customer,\n\nWe regret that flight BW 484 from Port of Spain to New York on 24 October 2026 has been cancelled.\n\nYou may choose a free rebooking, or request a full refund of US$412.80 to your original form of payment by 20 November 2026 at caribbean-airlines.example/refund.\n\nWe apologise for the inconvenience.",
+    "from": "Islandhopper Air <notices@islandhopper.example>"
+  },
+  "expected": {
+    "kind": "other",
+    "merchant": "Islandhopper Air",
+    "offers": [{ "type": "refund", "amount": 412.8, "currency": "USD", "expires_on": "2026-11-20" }]
+  }
+}

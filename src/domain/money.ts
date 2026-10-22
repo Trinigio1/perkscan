@@ -5,32 +5,41 @@ import type { Opportunity } from './types';
 // One list for everything you can use: card credits, codes, gift cards, trials, protections.
 
 export type MoneyView = 'open' | 'used' | 'missed';
-export type MoneyKind = 'credits' | 'codes' | 'gift_cards' | 'trials' | 'protections' | 'other';
+export type MoneyKind = 'credits' | 'codes' | 'gift_cards' | 'points' | 'refunds' | 'benefits' | 'returns' | 'protections' | 'other';
 
 export const KIND_LABELS: Record<MoneyKind, string> = {
   credits: 'Card credits',
   codes: 'Codes',
   gift_cards: 'Gift cards',
-  trials: 'Trials & returns',
+  points: 'Points & miles',
+  refunds: 'Refunds',
+  benefits: 'Benefits',
+  returns: 'Returns & trials',
   protections: 'Protections',
   other: 'Settlements',
 };
-const KIND_ORDER: MoneyKind[] = ['credits', 'codes', 'gift_cards', 'trials', 'protections', 'other'];
+const KIND_ORDER: MoneyKind[] = ['credits', 'codes', 'gift_cards', 'points', 'refunds', 'benefits', 'returns', 'protections', 'other'];
 
 export function kindOf(o: Pick<Opportunity, 'type'>): MoneyKind {
   switch (o.type) {
     case 'card_credit':
       return 'credits';
     case 'promo':
-    case 'price_drop':
       return 'codes';
+    case 'price_drop':
+      return 'returns';
     case 'gift_card':
     case 'store_credit':
-    case 'points':
       return 'gift_cards';
+    case 'points':
+      return 'points';
+    case 'refund':
+      return 'refunds';
+    case 'benefit':
+      return 'benefits';
     case 'free_trial':
     case 'return_window':
-      return 'trials';
+      return 'returns';
     case 'protection':
       return 'protections';
     default:

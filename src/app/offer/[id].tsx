@@ -11,6 +11,7 @@ import { offerIcon, OFFER_TYPE_LABELS } from '@/domain/visuals';
 import { track } from '@/lib/analytics';
 import { useData } from '@/lib/data';
 import { markOpportunity } from '@/lib/inbox';
+import { removeItem } from '@/lib/programs';
 import { useToast } from '@/lib/toast';
 import { radius, space, useColors } from '@/theme';
 
@@ -41,8 +42,11 @@ export default function OfferDetail() {
   const soon = opp.status === 'open' && !missed && !!expires && expires.getTime() - now.getTime() <= 7 * 86_400_000;
   // Only real money (promos, gift cards, credit) is "recovered" when used.
   // A protection only becomes money once a claim pays out, so we ask how much.
-  const countsAsMoney = ['promo', 'gift_card', 'store_credit', 'settlement', 'points', 'protection'].includes(opp.type);
+  const countsAsMoney = ['promo', 'gift_card', 'store_credit', 'settlement', 'points', 'protection', 'refund', 'benefit', 'price_drop'].includes(opp.type);
   const isProtection = opp.type === 'protection';
+  // Money you get back rather than spend: ask how much came back.
+  const comesBack = opp.type === 'refund' || opp.type === 'price_drop';
+  const manual = !!opp.dedupe_key?.startsWith('manual:');
 
   const act = async (key: string, action: 'used' | 'dismiss' | 'reopen', amount: number | null, message: string) => {
     setBusy(key);
@@ -65,7 +69,7 @@ export default function OfferDetail() {
     const amount = saved ? Number(saved.replace(/[^0-9.]/g, '')) : null;
     if (amount !== null && (!Number.isFinite(amount) || amount < 0)) return setError('Enter an amount like 12.50');
     const value = amount ?? opp.value_estimate;
-    act('used', 'used', countsAsMoney ? amount : 0, countsAsMoney && value ? `Nice — ${formatMoney(value, { currency: opp.currency })} ${isProtection ? 'recovered' : 'saved'}` : 'Marked as done');
+    act('used', 'used', countsAsMoney ? amount : 0, countsAsMoney && value ? `Nice — ${formatMoney(value, { currency: opp.currency })} ${isProtection || comesBack ? 'recovered' : 'saved'}` : 'Marked as done');
   };
 
   return (
@@ -129,12 +133,12 @@ export default function OfferDetail() {
           <>
             {askSaved ? (
               <Panel>
-                <T variant="subheading">{isProtection || opp.type === 'settlement' ? 'How much did the claim pay you? (leave blank if you’re still waiting)' : 'How much did you save?'}</T>
+                <T variant="subheading">{isProtection || opp.type === 'settlement' ? 'How much did the claim pay you? (leave blank if you’re still waiting)' : comesBack ? 'How much did you get back?' : 'How much did you save?'}</T>
                 <Field label={`Amount in ${opp.currency} (optional)`} value={saved} onChangeText={setSaved} placeholder="0.00" keyboardType="decimal-pad" autoFocus />
               </Panel>
             ) : null}
             <Button
-              title={askSaved ? 'Save' : opp.type === 'free_trial' ? 'I cancelled / decided' : opp.type === 'return_window' ? 'Done with this' : isProtection || opp.type === 'settlement' ? 'I filed a claim' : 'I used it'}
+              title={askSaved ? 'Save' : opp.type === 'free_trial' ? 'I cancelled / decided' : opp.type === 'return_window' ? 'Done with this' : isProtection || opp.type === 'settlement' ? 'I filed a claim' : comesBack ? 'I got it back' : 'I used it'}
               icon="checkmark-circle"
               loading={busy === 'used'}
               disabled={!!busy}
@@ -170,7 +174,29 @@ export default function OfferDetail() {
         </Panel>
       ) : null}
 
-      <T variant="caption" faint center>Found in an email or text you sent to PerkScan. Double-check the details in the original.</T>
+      {manual ? (
+        <Button
+          title="Delete"
+          kind="ghost"
+          icon="trash-outline"
+          loading={busy === 'delete'}
+          disabled={!!busy}
+          onPress={async () => {
+            setBusy('delete');
+            try {
+              await removeItem(opp.id);
+              await refresh();
+              toast('Deleted', { tone: 'info' });
+              router.back();
+            } catch (e) {
+              setError((e as Error).message);
+              setBusy(null);
+            }
+          }}
+        />
+      ) : opp.source_message_id ? (
+        <T variant="caption" faint center>Found in an email or text you sent to PerkScan. Double-check the details in the original.</T>
+      ) : null}
       {opp.source_message_id && opp.type !== 'protection' ? <ReadCheck messageId={opp.source_message_id} opportunityId={opp.id} /> : null}
 
       <Disclaimer />

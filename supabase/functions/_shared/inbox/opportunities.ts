@@ -21,7 +21,7 @@ export interface ReceiptRow {
 }
 
 export interface OpportunityRow {
-  type: 'promo' | 'gift_card' | 'store_credit' | 'points' | 'free_trial' | 'settlement' | 'return_window';
+  type: 'promo' | 'gift_card' | 'store_credit' | 'points' | 'free_trial' | 'settlement' | 'return_window' | 'refund';
   title: string;
   description: string | null;
   merchant: string | null;
@@ -50,7 +50,7 @@ function addDays(d: string, days: number): string {
   return t.toISOString().slice(0, 10);
 }
 
-const PREFIX: Record<string, string> = { USD: 'US$', TTD: 'TT$', CAD: 'CA$', JMD: 'J$', BBD: 'Bds$', EUR: '€', GBP: '£' };
+const PREFIX: Record<string, string> = { USD: 'US$', TTD: 'TT$', CAD: 'CA$', JMD: 'J$', BBD: 'Bds$', BSD: 'B$', GYD: 'G$', EUR: '€', GBP: '£' };
 /** "US$25" / "TT$19.99" / "25 XYZ". */
 export function fmtMoney(n: number, currency: string): string {
   const num = Number.isInteger(n) ? String(n) : n.toFixed(2);
@@ -87,6 +87,10 @@ function offerRow(o: Offer, merchant: string | null, currency: string): Opportun
       title = o.title || `${who} trial ends`;
       steps.push({ step: `If you don't want it, cancel in your ${who} account before the trial ends.` });
       if (o.amount) steps.push({ step: `Otherwise you'll be charged ${fmt(o.amount)}.` });
+      break;
+    case 'refund':
+      steps.push({ step: `Ask ${who} for it as the email describes — don't accept a voucher if you'd rather have the money back.` });
+      if (o.claim_url) steps.push({ step: 'Where to claim', url: o.claim_url });
       break;
     case 'settlement':
       type = 'settlement';

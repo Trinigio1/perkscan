@@ -77,7 +77,7 @@ describe('computeScore', () => {
     ], [], NOW);
     expect(s.byCategory[0]).toMatchObject({ category: 'card_credits', leftOnTable: 15 });
     expect(s.byCategory.find((c) => c.category === 'promos')?.leftOnTable).toBe(7);
-    expect(s.byCategory).toHaveLength(8);
+    expect(s.byCategory).toHaveLength(10);
   });
 
   it('reports the share of value captured this year', () => {

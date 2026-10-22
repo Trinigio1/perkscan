@@ -1,4 +1,4 @@
-const PREFIX: Record<string, string> = { USD: 'US$', TTD: 'TT$', CAD: 'CA$', JMD: 'J$', BBD: 'Bds$', GBP: '£', EUR: '€' };
+const PREFIX: Record<string, string> = { USD: 'US$', TTD: 'TT$', CAD: 'CA$', JMD: 'J$', BBD: 'Bds$', BSD: 'B$', GYD: 'G$', GBP: '£', EUR: '€' };
 
 /** The signed-in user's home currency; set by the data layer once the profile loads. */
 let homeCurrency = 'USD';

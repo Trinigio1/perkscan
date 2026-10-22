@@ -1,0 +1,16 @@
+{
+  "origin": "synthetic",
+  "source": "email",
+  "input": {
+    "subject": "Your Courts order receipt",
+    "date": "2026-10-18T16:40:00-04:00",
+    "text": "Thank you for shopping with us!\n\nSamsung 55\" Smart TV   TT$5,499.00\nVAT                     TT$0.00\nTotal                   TT$5,499.00\n\nPaid with Visa ending in 7290 on 18 October 2026.\nThis product includes a 2-year manufacturer warranty. Keep this receipt.",
+    "from": "Courts <receipts@courts.example>"
+  },
+  "expected": {
+    "kind": "receipt",
+    "merchant": "Courts",
+    "receipt": { "total": 5499, "currency": "TTD", "card_last_four": "7290", "purchase_type": "electronics", "warranty_months": 24 },
+    "offers": []
+  }
+}

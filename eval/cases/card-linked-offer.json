@@ -1,0 +1,14 @@
+{
+  "origin": "synthetic",
+  "source": "email",
+  "input": {
+    "subject": "New offer for your card",
+    "date": "2026-10-19T10:00:00-04:00",
+    "text": "Add this offer to your card: Spend $50 or more at Bean & Leaf Coffee, get $10 back.\nEnroll by November 15, 2026. Offer valid once per card.",
+    "from": "Your Card Offers <offers@cardco.example>"
+  },
+  "expected": {
+    "kind": "promo",
+    "offers": [{ "type": "promo", "amount": 10, "currency": "USD", "expires_on": "2026-11-15" }]
+  }
+}

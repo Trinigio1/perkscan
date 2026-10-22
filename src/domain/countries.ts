@@ -13,18 +13,22 @@ export const COUNTRIES: Country[] = [
   { code: 'CA', name: 'Canada', currency: 'CAD', flag: '🇨🇦' },
   { code: 'JM', name: 'Jamaica', currency: 'JMD', flag: '🇯🇲' },
   { code: 'BB', name: 'Barbados', currency: 'BBD', flag: '🇧🇧' },
+  { code: 'BS', name: 'The Bahamas', currency: 'BSD', flag: '🇧🇸' },
+  { code: 'GY', name: 'Guyana', currency: 'GYD', flag: '🇬🇾' },
   { code: 'GB', name: 'United Kingdom', currency: 'GBP', flag: '🇬🇧' },
 ];
 
 export const OTHER_COUNTRY = 'ZZ';
 
 /** Currencies offered when the country isn't listed. */
-export const CURRENCIES = ['USD', 'TTD', 'CAD', 'JMD', 'BBD', 'GBP', 'EUR'];
+export const CURRENCIES = ['USD', 'TTD', 'CAD', 'JMD', 'BBD', 'BSD', 'GYD', 'GBP', 'EUR'];
 
 const BY_ZONE: Record<string, string> = {
   'America/Port_of_Spain': 'TT',
   'America/Jamaica': 'JM',
   'America/Barbados': 'BB',
+  'America/Nassau': 'BS',
+  'America/Guyana': 'GY',
   'Europe/London': 'GB',
   'America/Toronto': 'CA',
   'America/Vancouver': 'CA',

@@ -7,11 +7,11 @@ export type VerificationStatus = 'active' | 'TODO_VERIFY';
 
 export type OpportunityType =
   | 'card_credit' | 'protection' | 'promo' | 'gift_card' | 'store_credit' | 'points'
-  | 'return_window' | 'price_drop' | 'free_trial' | 'settlement' | 'student';
+  | 'return_window' | 'price_drop' | 'free_trial' | 'settlement' | 'student' | 'refund' | 'benefit';
 export type OpportunityStatus = 'open' | 'claimed' | 'expired' | 'dismissed';
 export type OpportunityCategory =
   | 'card_credits' | 'card_protections' | 'store_credit_gift_cards' | 'promos'
-  | 'points_miles' | 'settlements' | 'student' | 'returns_trials';
+  | 'points_miles' | 'settlements' | 'student' | 'returns_trials' | 'refunds' | 'benefits';
 
 export interface Card {
   id: string;
@@ -91,6 +91,8 @@ export interface Opportunity {
   code?: string | null;
   source_message_id?: string | null;
   source_receipt_id?: string | null;
+  /** "manual:…" for items the user added by hand. */
+  dedupe_key?: string | null;
   created_at: string;
 }
 
@@ -159,12 +161,14 @@ export const CATEGORY_LABELS: Record<OpportunityCategory, string> = {
   settlements: 'Settlements',
   student: 'Student',
   returns_trials: 'Returns & trials',
+  refunds: 'Refunds',
+  benefits: 'Benefits',
 };
 
 /** Display order on the home screen. */
 export const CATEGORY_ORDER: OpportunityCategory[] = [
   'card_credits', 'card_protections', 'store_credit_gift_cards', 'promos',
-  'points_miles', 'settlements', 'student', 'returns_trials',
+  'points_miles', 'settlements', 'student', 'returns_trials', 'refunds', 'benefits',
 ];
 
 export interface StudentOffer {

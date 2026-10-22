@@ -4,7 +4,7 @@ import { z } from 'zod';
 // structured-output JSON schema doesn't support numeric/string limits, so ranges
 // and formats are enforced afterwards in normalizeParsed().
 
-export const OFFER_TYPES = ['promo', 'gift_card', 'store_credit', 'points', 'free_trial', 'settlement'] as const;
+export const OFFER_TYPES = ['promo', 'gift_card', 'store_credit', 'points', 'free_trial', 'settlement', 'refund'] as const;
 
 export const PURCHASE_TYPES = [
   'electronics', 'appliance', 'phone', 'clothing', 'other_goods',
@@ -25,7 +25,7 @@ export const OfferSchema = z.object({
   expires_on: z.string().nullable().describe('YYYY-MM-DD; resolve relative dates against the email date'),
   min_spend: z.number().nullable(),
   points: z.number().nullable().describe('Points/miles quantity for loyalty offers'),
-  claim_url: z.string().nullable().describe('Official claim site for settlements, only if present in the email'),
+  claim_url: z.string().nullable().describe('Official claim site for settlements, or the refund request page, only if present in the email'),
   details: z.string().nullable().describe('One short sentence of important conditions'),
 });
 
@@ -41,6 +41,11 @@ export const ReceiptSchema = z.object({
   order_number: z.string().nullable(),
   return_by: z.string().nullable().describe('YYYY-MM-DD if a return deadline is stated'),
   return_window_days: z.number().nullable().describe('Return window length in days if stated instead of a date'),
+  warranty_months: z
+    .number()
+    .nullable()
+    .optional() // replies stored before warranties were read leave it out
+    .describe('Warranty length in months, only if the receipt states one (e.g. "2-year warranty" -> 24)'),
   items: z.array(z.object({ name: z.string(), price: z.number().nullable(), quantity: z.number().nullable() })),
   alert_status: z
     .enum(ALERT_STATUSES)
@@ -109,6 +114,10 @@ export function normalizeParsed(p: ParsedEmail): ParsedEmail {
               ? Math.round(p.receipt.return_window_days)
               : null,
           alert_status: p.receipt.alert_status ?? null,
+          warranty_months:
+            p.receipt.warranty_months != null && p.receipt.warranty_months > 0 && p.receipt.warranty_months <= 120
+              ? Math.round(p.receipt.warranty_months)
+              : null,
           items: p.receipt.items.slice(0, 50).map((i) => ({
             name: text(i.name, 120) ?? 'Item',
             price: money(i.price),

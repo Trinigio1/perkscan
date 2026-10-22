@@ -67,7 +67,7 @@ const TYPE_LABELS: Record<string, string> = {
 function Purchases({ receipts, opportunities }: { receipts: Receipt[]; opportunities: Opportunity[] }) {
   const linked = new Map<string, Opportunity[]>();
   for (const o of opportunities) {
-    if (!o.source_receipt_id || o.status === 'dismissed' || (o.type !== 'protection' && o.type !== 'return_window')) continue;
+    if (!o.source_receipt_id || o.status === 'dismissed' || !['protection', 'return_window', 'price_drop'].includes(o.type)) continue;
     linked.set(o.source_receipt_id, [...(linked.get(o.source_receipt_id) ?? []), o]);
   }
   return (
@@ -99,7 +99,7 @@ function Purchases({ receipts, opportunities }: { receipts: Receipt[]; opportuni
                   <Row gap={6} style={{ flexWrap: 'wrap', paddingLeft: 36 + space.md }}>
                     {prots.map((o) => (
                       <Pressable key={o.id} onPress={() => router.push({ pathname: '/offer/[id]', params: { id: o.id } })} accessibilityRole="button">
-                        <Badge label={o.type === 'protection' ? protectionLabel(o.benefit_id) : 'Return window'} icon="shield-checkmark" tone="good" />
+                        <Badge label={o.type === 'protection' ? protectionLabel(o.benefit_id) : o.type === 'price_drop' ? 'Price drop window' : 'Return window'} icon="shield-checkmark" tone="good" />
                       </Pressable>
                     ))}
                   </Row>
@@ -116,7 +116,9 @@ function Purchases({ receipts, opportunities }: { receipts: Receipt[]; opportuni
 }
 
 function protectionLabel(benefitId: string | null): string {
-  const kind = benefitId?.split('__')[1] ?? '';
+  // Protections without a card benefit come from the receipt itself: a stated warranty.
+  if (!benefitId) return 'Warranty';
+  const kind = benefitId.split('__')[1] ?? '';
   return kind ? kind.replace(/_/g, ' ').replace(/^./, (x) => x.toUpperCase()) : 'Protection';
 }
 

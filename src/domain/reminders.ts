@@ -25,6 +25,10 @@ const NOUN: Record<string, string> = {
   free_trial: 'free trial',
   return_window: 'return window',
   settlement: 'settlement claim',
+  refund: 'refund request',
+  benefit: 'benefit',
+  price_drop: 'price-drop window',
+  protection: 'warranty or protection',
 };
 
 /**

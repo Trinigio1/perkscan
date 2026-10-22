@@ -1,0 +1,15 @@
+{
+  "origin": "synthetic",
+  "source": "email",
+  "input": {
+    "subject": "Your miles are about to expire",
+    "date": "2026-10-15T08:00:00-04:00",
+    "text": "Hi Alex,\n\n18,500 SkyHopper miles in your account will expire on December 31, 2026 unless you earn or redeem before then.\n\nBook a flight or shop with a partner to keep them.",
+    "from": "SkyHopper Rewards <rewards@skyhopper.example>"
+  },
+  "expected": {
+    "kind": "loyalty",
+    "merchant": "SkyHopper Rewards",
+    "offers": [{ "type": "points", "expires_on": "2026-12-31" }]
+  }
+}

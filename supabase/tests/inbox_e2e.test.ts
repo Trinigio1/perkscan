@@ -42,6 +42,12 @@ const fakeModel: ModelCall = async (input) => {
     out = { ...base, kind: 'receipt', merchant: 'Uber Eats', summary: 'Uber Eats order, $23.50', receipt: { total: 23.5, currency: 'USD', purchase_type: 'food_delivery', travel_date: null, purchase_date: new Date().toISOString().slice(0, 10), card_last_four: '4242', order_number: null, return_by: null, return_window_days: null, items: [] } };
   } else if (input.includes('THANKS10')) {
     out = { ...base, kind: 'promo', merchant: 'PerkScan Test Shop', summary: '$10 off test code', offers: [{ type: 'promo', currency: null, title: '$10 off $50', amount: 10, percent_off: null, code: 'THANKS10', expires_on: '2099-01-01', min_spend: 50, points: null, claim_url: null, details: null }] };
+  } else if (input.includes('TARGET RECEIPT')) {
+    out = { ...base, kind: 'receipt', merchant: 'Target', summary: 'Order from Target, $199.99', receipt: { total: 199.99, currency: 'USD', purchase_type: 'electronics', travel_date: null, purchase_date: new Date().toISOString().slice(0, 10), card_last_four: '7777', order_number: 'T-1', return_by: null, return_window_days: null, items: [], warranty_months: 12 } };
+  } else if (input.includes('KFC CHARGE')) {
+    out = { ...base, kind: 'card_alert', merchant: 'KFC', summary: 'KFC, TT$85', receipt: { total: 85, currency: 'TTD', purchase_type: 'restaurant', travel_date: null, purchase_date: new Date().toISOString().slice(0, 10), card_last_four: '7777', order_number: null, return_by: null, return_window_days: null, items: [], alert_status: 'approved' } };
+  } else if (input.includes('FLIGHT CANCELLED')) {
+    out = { ...base, kind: 'other', merchant: 'Islandhopper Air', summary: 'Flight cancelled, refund available', offers: [{ type: 'refund', currency: 'USD', title: 'Refund for cancelled flight', amount: 412.8, percent_off: null, code: null, expires_on: '2099-11-20', min_spend: null, points: null, claim_url: 'https://islandhopper.example/refund', details: null }] };
   } else {
     out = { ...base, kind: 'other', merchant: null, summary: 'Newsletter' };
   }
@@ -215,6 +221,47 @@ Deno.test('inbox pipeline end to end', async () => {
     await admin.from('settlements').delete().eq('id', settlementId);
     await admin.auth.admin.deleteUser(alice.id);
     await admin.auth.admin.deleteUser(bob.id);
+  }
+});
+
+Deno.test('hidden money: price adjustments, warranties, double charges, refunds, items added by hand', async () => {
+  const cara = await makeUser('cara');
+  try {
+    await admin.from('profiles').update({ country: 'US', home_currency: 'USD' }).eq('id', cara.id);
+    const card = await cara.client.from('user_cards').insert({ card_id: 'scotiabank_tt_visa_classic', last_four: '7777' }).select('id').single();
+    assert(!card.error, `add card: ${card.error?.message}`);
+    const tok = await cara.client.rpc('create_ingest_token', { p_label: 'Gmail' });
+    const token = tok.data as string;
+
+    // A Target receipt with a stated warranty: a 14-day price-adjustment window and a warranty countdown
+    await post(ingest, { messages: [{ id: 'h-target', subject: 'Your Target order', text: 'TARGET RECEIPT — thanks for shopping' }] }, token);
+    const fromReceipt = await cara.client.from('opportunities').select('type, title, expires_at, value_estimate, source_receipt_id, dedupe_key').like('dedupe_key', '%:%').not('source_receipt_id', 'is', null);
+    const adjust = fromReceipt.data?.find((o) => o.type === 'price_drop');
+    const in14 = new Date(Date.now() + 14 * 86_400_000).toISOString().slice(0, 10);
+    assert(adjust && adjust.expires_at.startsWith(in14) && adjust.value_estimate === null, `price adjustment window: ${JSON.stringify(fromReceipt.data)}`);
+    const warranty = fromReceipt.data?.find((o) => o.dedupe_key.startsWith('warranty:'));
+    assert(warranty?.type === 'protection', `warranty from the receipt: ${JSON.stringify(fromReceipt.data)}`);
+
+    // Two identical settled card charges on the same day: "charged twice?" — never claimed as money owed
+    await post(ingest, { messages: [{ id: 'h-kfc-1', text: 'KFC CHARGE one' }, { id: 'h-kfc-2', text: 'KFC CHARGE two' }] }, token);
+    const twice = await cara.client.from('opportunities').select('type, value_estimate, category').like('dedupe_key', 'double_charge:%');
+    assert(twice.data?.length === 1 && twice.data[0]!.type === 'refund' && twice.data[0]!.value_estimate === null && twice.data[0]!.category === 'refunds',
+      `double charge flagged once: ${JSON.stringify(twice.data)}`);
+
+    // A refund the email says you're owed
+    await post(ingest, { messages: [{ id: 'h-flight', subject: 'Flight update', text: 'FLIGHT CANCELLED — you can request a refund' }] }, token);
+    const refund = await cara.client.from('opportunities').select('type, value_estimate, currency, action_steps').eq('title', 'Refund for cancelled flight');
+    assert(refund.data?.[0]?.type === 'refund' && Number(refund.data[0]!.value_estimate) === 412.8 && refund.data[0]!.currency === 'USD', `refund owed: ${JSON.stringify(refund.data)}`);
+
+    // Adding your own, then removing it
+    const added = await cara.client.rpc('add_my_item', { p_type: 'benefit', p_title: 'FSA balance', p_amount: 250, p_expires_on: '2099-12-31' });
+    assert(!added.error && typeof added.data === 'string', `added by hand: ${added.error?.message}`);
+    const mine = await cara.client.from('opportunities').select('value_estimate, currency').eq('id', added.data);
+    assert(Number(mine.data?.[0]?.value_estimate) === 250 && mine.data?.[0]?.currency === 'USD', `uses the home currency: ${JSON.stringify(mine.data)}`);
+    await cara.client.rpc('remove_my_item', { p_id: added.data });
+    assert((await cara.client.from('opportunities').select('id').eq('id', added.data)).data?.length === 0, 'removed');
+  } finally {
+    await admin.auth.admin.deleteUser(cara.id);
   }
 });
 

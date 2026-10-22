@@ -1,5 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { matchAndApply } from '../matching/apply.ts';
+import { doubleChargeRow, isDoubleCharge, priceAdjustment, statedWarranty, type ExtraRow, type PriceProgramIn, type PurchaseIn } from '../matching/programs.ts';
 import { findDuplicate, mergeFields, MERGE_WINDOW_DAYS, type ExistingReceipt } from './merge.ts';
 import { toRows, type ReceiptRow } from './opportunities.ts';
 import { costUsd, parseEmail, type ModelCall } from './parse.ts';
@@ -83,7 +84,7 @@ export async function processMessages(db: SupabaseClient, ids: string[], call: M
       continue;
     }
 
-    const { data: profile } = await db.from('profiles').select('home_currency').eq('id', claimed.user_id).maybeSingle();
+    const { data: profile } = await db.from('profiles').select('home_currency, country').eq('id', claimed.user_id).maybeSingle();
     const rows = toRows(parsed.data, today, (profile?.home_currency as string | undefined) ?? 'USD');
     const receiptId = rows.receipt ? await saveReceipt(db, claimed.user_id as string, id, rows.receipt) : null;
 
@@ -97,6 +98,16 @@ export async function processMessages(db: SupabaseClient, ids: string[], call: M
       });
       if (!error) created += 1;
       else if (error.code !== '23505') throw new Error(`opportunities: ${error.message}`); // 23505 = already have this offer
+    }
+
+    // Money from the purchase itself: price adjustments, a stated warranty, a possible double charge.
+    if (receiptId) {
+      const extras = await purchaseExtras(db, claimed.user_id as string, receiptId, parsed.data.receipt?.warranty_months ?? null, (profile?.country as string | null) ?? null, today);
+      for (const o of extras) {
+        const { error } = await db.from('opportunities').insert({ ...o, user_id: claimed.user_id, source_message_id: id, source_receipt_id: receiptId });
+        if (!error) created += 1;
+        else if (error.code !== '23505') throw new Error(`opportunities: ${error.message}`);
+      }
     }
 
     // Match the receipt to a card: protections, and credits it used up.
@@ -158,4 +169,44 @@ async function saveReceipt(db: SupabaseClient, userId: string, messageId: string
   const { data, error } = await db.from('receipts').insert({ ...row, user_id: userId, source_message_id: messageId }).select('id').single();
   if (error) throw new Error(`receipts: ${error.message}`);
   return data.id as string;
+}
+
+/** Price adjustment, stated warranty and double-charge checks for a saved receipt. */
+async function purchaseExtras(db: SupabaseClient, userId: string, receiptId: string, warrantyMonths: number | null, country: string | null, today: string): Promise<ExtraRow[]> {
+  const cols = 'id, kind, pending, merchant, total, currency, purchase_date, return_by, last_four, purchase_type';
+  const { data: r, error } = await db.from('receipts').select(cols).eq('id', receiptId).single();
+  if (error) throw new Error(`receipts: ${error.message}`);
+  const p: PurchaseIn = { ...(r as PurchaseIn), total: r.total === null ? null : Number(r.total) };
+  const rows: ExtraRow[] = [];
+
+  const { data: programs, error: pErr } = await db
+    .from('perk_programs')
+    .select('id, name, countries, merchants, window_days, how_to, url, status, kind')
+    .in('kind', ['price_adjust', 'refund_rule']);
+  if (pErr) throw new Error(`perk_programs: ${pErr.message}`);
+  const adjust = priceAdjustment(p, (programs ?? []).filter((x) => x.kind === 'price_adjust') as PriceProgramIn[], country, today);
+  if (adjust) rows.push(adjust);
+  const warranty = statedWarranty(p, warrantyMonths, today);
+  if (warranty) rows.push(warranty);
+
+  if (p.kind === 'card_alert' && p.total !== null && p.purchase_date && p.last_four) {
+    const { data: same, error: sErr } = await db
+      .from('receipts')
+      .select(cols)
+      .eq('user_id', userId)
+      .eq('kind', 'card_alert')
+      .eq('total', p.total)
+      .eq('currency', p.currency)
+      .eq('last_four', p.last_four)
+      .eq('purchase_date', p.purchase_date)
+      .neq('id', p.id)
+      .limit(5);
+    if (sErr) throw new Error(`receipts: ${sErr.message}`);
+    if ((same ?? []).some((o) => isDoubleCharge(p, { ...(o as PurchaseIn), total: o.total === null ? null : Number(o.total) }))) {
+      // US cards get the official dispute rules; elsewhere, the bank is the way.
+      const usRule = p.currency === 'USD' || country === 'US' ? (programs ?? []).find((x) => x.id === 'us_billing_errors') : undefined;
+      rows.push(doubleChargeRow(p, usRule ? { how_to: usRule.how_to as string, url: usRule.url as string } : null));
+    }
+  }
+  return rows;
 }
