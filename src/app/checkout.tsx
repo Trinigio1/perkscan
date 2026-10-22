@@ -8,6 +8,7 @@ import { OfferRow } from '@/components/OfferRow';
 import { Button, Chip, Empty, Note, Panel, Row, Screen, T } from '@/components/ui';
 import { checkoutStack, guessCategory, knownMerchants, SPEND_LABELS, type CardPick, type Reason, type SpendCategory } from '@/domain/checkout';
 import { formatMoney } from '@/domain/format';
+import { track } from '@/lib/analytics';
 import { useData, useLookups } from '@/lib/data';
 import { font, radius, space, useColors } from '@/theme';
 
@@ -31,6 +32,7 @@ export default function Checkout() {
     setQuery(m);
     setMerchant(m);
     setCategory(guessCategory(m, data.receipts));
+    track('checkout_viewed', { has_cards: data.userCards.length > 0 });
   };
 
   const stack = useMemo(

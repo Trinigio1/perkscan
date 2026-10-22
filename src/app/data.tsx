@@ -35,7 +35,7 @@ export default function YourData() {
     setError(null);
     try {
       await deleteAccount();
-      await signOut(); // the account no longer exists; this clears the session on this device
+      await signOut('local'); // the account no longer exists on the server; just clear this device
     } catch (e) {
       setError((e as Error).message);
       setBusy(null);

@@ -1,5 +1,6 @@
 import type { Accuracy, WrongField } from '@/domain/accuracy';
 import type { InboundMessage } from '@/domain/types';
+import { track } from './analytics';
 import { supabase } from './supabase';
 
 // Reviews of what PerkScan read from each email or text ("right" / "something's wrong").
@@ -105,6 +106,7 @@ export async function submitReview(input: {
     p_receipt_id: input.receiptId ?? null,
   });
   if (error) throw new Error(error.message);
+  track('review_submitted', { verdict: input.verdict });
 }
 
 export async function getAccuracy(): Promise<Accuracy> {

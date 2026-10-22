@@ -8,6 +8,7 @@ import { ReadCheck } from '@/components/ReadCheck';
 import { Badge, Button, ErrorNote, Field, IconBubble, Money, Panel, Row, Screen, T } from '@/components/ui';
 import { formatMoney, lastDayLabel, relativeDays } from '@/domain/format';
 import { offerIcon, OFFER_TYPE_LABELS } from '@/domain/visuals';
+import { track } from '@/lib/analytics';
 import { useData } from '@/lib/data';
 import { markOpportunity } from '@/lib/inbox';
 import { useToast } from '@/lib/toast';
@@ -48,6 +49,7 @@ export default function OfferDetail() {
     setError(null);
     try {
       await markOpportunity(opp.id, action, amount);
+      if (action === 'used') track('offer_marked_used', { type: opp.type });
       await refresh();
       toast(message, { tone: action === 'used' ? 'success' : 'info' });
       router.back();

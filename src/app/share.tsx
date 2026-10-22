@@ -1,11 +1,12 @@
 import * as Clipboard from 'expo-clipboard';
-import { useMemo } from 'react';
+import { useEffect, useMemo } from 'react';
 import { Share, View } from 'react-native';
 import { Hero } from '@/components/Hero';
 import { Button, Note, Screen, T } from '@/components/ui';
 import { shareText } from '@/domain/digest';
 import { addToBag, formatBag, getHomeCurrency, type MoneyBag } from '@/domain/format';
 import { scoreByCurrency } from '@/domain/score';
+import { track } from '@/lib/analytics';
 import { useData } from '@/lib/data';
 import { useToast } from '@/lib/toast';
 import { space, useColors } from '@/theme';
@@ -16,6 +17,7 @@ export default function ShareCard() {
   const toast = useToast();
   const { data } = useData();
   const home = data.profile?.home_currency?.trim() || getHomeCurrency();
+  useEffect(() => track('share_opened'), []);
 
   // "Found" = recovered this year + still available: money PerkScan surfaced that was easy to miss.
   const found = useMemo(() => {

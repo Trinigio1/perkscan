@@ -111,6 +111,7 @@ export async function signInWithApple() {
   return true;
 }
 
-export async function signOut() {
-  await supabase.auth.signOut();
+/** `local` only clears this device's session (used after the account was deleted on the server). */
+export async function signOut(scope: 'global' | 'local' = 'global') {
+  await supabase.auth.signOut({ scope });
 }

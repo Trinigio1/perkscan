@@ -82,6 +82,7 @@ function RootNavigator() {
         <Stack.Screen name="share" options={{ ...modal, title: 'Share' }} />
         <Stack.Screen name="data" options={{ ...header, title: 'Your data' }} />
         <Stack.Screen name="sources" options={{ ...header, title: 'Connected sources' }} />
+        <Stack.Screen name="legal" options={{ ...header, title: '' }} />
       </Stack.Protected>
     </Stack>
   );

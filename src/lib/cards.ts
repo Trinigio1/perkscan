@@ -1,4 +1,5 @@
 import { draftToRow, type CardDraft } from '@/domain/cardDraft';
+import { track } from './analytics';
 import { friendlyDbError } from './dbErrors';
 import { rematchReceipts } from './inbox';
 import { supabase } from './supabase';
@@ -9,6 +10,7 @@ export async function addUserCards(drafts: CardDraft[]) {
     if (error.code === '23505') throw new Error('One of these cards (same card and last 4 digits) is already in your wallet.');
     throw new Error(error.message);
   }
+  track('card_added', { count: drafts.length });
   // Receipts that arrived before the card was added can now be matched to it.
   await rematchReceipts();
 }

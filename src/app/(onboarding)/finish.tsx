@@ -4,6 +4,7 @@ import { Disclaimer } from '@/components/Disclaimer';
 import { ListRow } from '@/components/ListRow';
 import { Steps } from '@/components/Steps';
 import { Button, ErrorNote, Panel, Screen, T } from '@/components/ui';
+import { track } from '@/lib/analytics';
 import { useAuth } from '@/lib/auth';
 import { deviceTimeZone, updateProfile } from '@/lib/cards';
 import { useData } from '@/lib/data';
@@ -12,7 +13,7 @@ import { space } from '@/theme';
 
 export default function Finish() {
   const { session } = useAuth();
-  const { refresh } = useData();
+  const { data, refresh } = useData();
   const [student, setStudent] = useState(false);
   const [reminders, setReminders] = useState(true);
   const [busy, setBusy] = useState(false);
@@ -29,6 +30,7 @@ export default function Finish() {
         timezone: deviceTimeZone(),
         onboarded_at: new Date().toISOString(),
       });
+      track('onboarding_completed', { cards: data.userCards.length, student });
       // The navigator moves to Home once the reloaded profile shows onboarded_at.
       const r = await refresh();
       if (!r.data?.profile?.onboarded_at) {

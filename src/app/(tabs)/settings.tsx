@@ -7,6 +7,7 @@ import { ErrorNote, Panel, Row, Screen, T } from '@/components/ui';
 import { signOut, useAuth } from '@/lib/auth';
 import { accuracyPercent, type Accuracy } from '@/domain/accuracy';
 import { countryByCode } from '@/domain/countries';
+import { analyticsConfigured, analyticsOptedOut, setAnalyticsOptOut } from '@/lib/analytics';
 import { updateProfile } from '@/lib/cards';
 import { getAccuracy } from '@/lib/feedback';
 import { useData } from '@/lib/data';
@@ -33,6 +34,10 @@ export default function Settings() {
   const [error, setError] = useState<string | null>(null);
 
   const [accuracy, setAccuracy] = useState<Accuracy | null>(null);
+  const [analyticsOff, setAnalyticsOff] = useState(false);
+  useEffect(() => {
+    analyticsOptedOut().then(setAnalyticsOff);
+  }, []);
   useFocusEffect(
     useCallback(() => {
       getAccuracy().then(setAccuracy).catch(() => setAccuracy(null));
@@ -123,6 +128,19 @@ export default function Settings() {
           onPress={() => router.push('/review')}
         />
         <ListRow icon="shield-checkmark" tone="green" title="Verified benefits" subtitle="Unverified amounts count as zero" value={`${verified} of ${data.benefits.length}`} />
+        {analyticsConfigured ? (
+          <ListRow
+            icon="stats-chart"
+            tone="gray"
+            title="Share anonymous usage stats"
+            subtitle="Which features get used — never your emails, cards, stores or amounts"
+            toggle={!analyticsOff}
+            onToggle={async (v) => {
+              await setAnalyticsOptOut(!v);
+              setAnalyticsOff(!v);
+            }}
+          />
+        ) : null}
         <ListRow icon="lock-closed" tone="blue" title="Your privacy" subtitle="Card names and last 4 digits only. Email text is deleted once read. Never sold or shared." />
       </Group>
 
@@ -135,15 +153,16 @@ export default function Settings() {
             ))}
           </View>
         ) : null}
-        <ListRow icon="reader" tone="gray" title="Privacy policy & terms" subtitle="Published before launch" />
+        <ListRow icon="reader" tone="gray" title="Privacy policy" subtitle="Draft — reviewed before launch" onPress={() => router.push({ pathname: '/legal', params: { doc: 'privacy' } })} />
+        <ListRow icon="document-text-outline" tone="gray" title="Terms of use" subtitle="Draft — reviewed before launch" onPress={() => router.push({ pathname: '/legal', params: { doc: 'terms' } })} />
       </Group>
 
       <Group title="Account">
-        <ListRow icon="log-out" tone="gray" title="Sign out" onPress={signOut} />
+        <ListRow icon="log-out" tone="gray" title="Sign out" onPress={() => signOut()} />
         <ListRow icon="download" tone="gray" title="Export or delete my data" subtitle="Download everything, or delete your account" onPress={() => router.push('/data')} />
       </Group>
 
-      <T variant="caption" faint center>PerkScan · Phase 5 preview</T>
+      <T variant="caption" faint center>PerkScan · Phase 6 preview</T>
     </Screen>
   );
 }

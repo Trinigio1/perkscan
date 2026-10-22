@@ -1,11 +1,12 @@
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Pressable } from 'react-native';
 import { Hero } from '@/components/Hero';
 import { Button, Panel, Row, Screen, T } from '@/components/ui';
 import { monthlyRecap } from '@/domain/digest';
 import { formatBag, formatMoney, getHomeCurrency, type MoneyBag } from '@/domain/format';
+import { track } from '@/lib/analytics';
 import { useData } from '@/lib/data';
 import { space, useColors } from '@/theme';
 
@@ -16,6 +17,7 @@ export default function Recap() {
   const c = useColors();
   const { data } = useData();
   const [offset, setOffset] = useState(0); // 0 = this month, -1 = last month, ...
+  useEffect(() => track('recap_viewed'), []);
   const home = data.profile?.home_currency?.trim() || getHomeCurrency();
   const { month, r } = useMemo(() => {
     const now = new Date();

@@ -1,4 +1,5 @@
 import type { InboundMessage, IngestToken } from '@/domain/types';
+import { track } from './analytics';
 import { SUPABASE_URL } from './env';
 import { supabase } from './supabase';
 
@@ -34,6 +35,7 @@ export async function listTokens(): Promise<IngestToken[]> {
 export async function createToken(label = 'Gmail'): Promise<string> {
   const { data, error } = await supabase.rpc('create_ingest_token', { p_label: label });
   if (error) throw new Error(error.message);
+  track(label.startsWith('iPhone') ? 'texts_token_created' : 'gmail_token_created');
   return data as string;
 }
 
@@ -62,7 +64,16 @@ export const sendTestEmail = () => invokeProcess('test');
 export const retryFailed = () => invokeProcess('retry');
 export const sendTestText = () => invokeProcess('test_sms');
 /** A text the user pasted or shared into the app. */
-export const submitText = (text: string) => invokeProcess('submit', text);
+export async function submitText(text: string) {
+  try {
+    const r = await invokeProcess('submit', text);
+    track('text_added', { result: r.skipped ?? (r.result?.status === 'parsed' ? 'parsed' : 'failed') });
+    return r;
+  } catch (e) {
+    track('text_added', { result: 'failed' });
+    throw e;
+  }
+}
 
 /**
  * Re-checks recent receipts against the user's cards, e.g. after adding a card or

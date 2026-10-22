@@ -5,6 +5,7 @@ import { Pressable, TextInput, View } from 'react-native';
 import { ErrorNote, Loading, Note, Panel, Screen, T } from '@/components/ui';
 import { countryByCode } from '@/domain/countries';
 import type { University } from '@/domain/types';
+import { track } from '@/lib/analytics';
 import { useAuth } from '@/lib/auth';
 import { updateProfile } from '@/lib/cards';
 import { useData } from '@/lib/data';
@@ -57,6 +58,7 @@ export default function School() {
     if (!session) return;
     try {
       await updateProfile(session.user.id, { university_id: id });
+      if (id) track('school_selected', { country: country === 'TT' || country === 'US' ? country : 'other' });
       await refresh();
       toast(id ? `${label} saved` : 'School cleared', { tone: 'info' });
       if (router.canGoBack()) router.back();
