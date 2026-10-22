@@ -22,7 +22,7 @@ export function deviceTimeZone(): string {
 }
 
 /** Saves profile settings; falls back to UTC if the device reports a zone Postgres doesn't know. */
-export async function updateProfile(userId: string, patch: { is_student?: boolean; onboarded_at?: string; timezone?: string; country?: string | null; home_currency?: string }) {
+export async function updateProfile(userId: string, patch: { is_student?: boolean; onboarded_at?: string; timezone?: string; country?: string | null; home_currency?: string; university_id?: string | null }) {
   let { data, error } = await supabase.from('profiles').update(patch).eq('id', userId).select('id');
   if (error?.code === '22023' && patch.timezone) {
     ({ data, error } = await supabase.from('profiles').update({ ...patch, timezone: 'UTC' }).eq('id', userId).select('id'));

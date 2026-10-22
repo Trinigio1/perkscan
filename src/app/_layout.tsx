@@ -76,6 +76,7 @@ function RootNavigator() {
         <Stack.Screen name="report" options={{ ...modal, title: 'Something’s wrong' }} />
         <Stack.Screen name="checkout" options={{ ...modal, title: 'Before you pay' }} />
         <Stack.Screen name="student" options={{ ...header, title: 'Student offers' }} />
+        <Stack.Screen name="school" options={{ ...modal, title: 'Your school' }} />
       </Stack.Protected>
     </Stack>
   );

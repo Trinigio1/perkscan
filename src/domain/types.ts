@@ -58,6 +58,7 @@ export interface Profile {
   timezone: string;
   country: string | null;
   home_currency: string;
+  university_id: string | null;
   onboarded_at: string | null;
 }
 
@@ -175,7 +176,16 @@ export interface StudentOffer {
   url: string;
   /** Empty = available worldwide. */
   countries: string[];
+  /** Empty = any school. */
+  university_ids: string[];
   status: VerificationStatus;
   source_url: string | null;
   last_verified: string | null;
+}
+
+export interface University {
+  id: string;
+  name: string;
+  short_name: string;
+  country: string;
 }

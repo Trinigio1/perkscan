@@ -8,6 +8,7 @@ import { Hero } from '@/components/Hero';
 import { Button, Empty, ErrorNote, IconBubble, Money, Note, Panel, ProgressBar, Row, Screen, SectionHeader, T } from '@/components/ui';
 import { addToBag, formatBag, formatMoney, getHomeCurrency, type MoneyBag } from '@/domain/format';
 import { remainingValue, scoreByCurrency } from '@/domain/score';
+import { zeroReasons } from '@/domain/zeroReasons';
 import { CATEGORY_LABELS, type OpportunityCategory } from '@/domain/types';
 import { greeting, type IconTone } from '@/domain/visuals';
 import type { IconName } from '@/components/ui';
@@ -43,6 +44,7 @@ export default function Home() {
   const { data, error, refresh } = useData();
   const { benefitById, cardById, recoveredByOpp, userCardLabel } = useLookups();
   const [refreshing, setRefreshing] = useState(false);
+  const [showWhy, setShowWhy] = useState(false);
 
   const { now, home, score, totals, categories, atRiskItems, unverifiedCount, upNext, perCard } = useMemo(() => {
     const at = new Date();
@@ -74,7 +76,12 @@ export default function Home() {
       now: at,
       home: homeCur,
       score: s,
-      totals: { left: bag((x) => x.leftOnTable), atRisk: bag((x) => x.atRiskThisWeek), recovered: bag((x) => x.recoveredThisYear) },
+      totals: {
+        left: bag((x) => x.leftOnTable),
+        atRisk: bag((x) => x.atRiskThisWeek),
+        recovered: bag((x) => x.recoveredThisYear),
+        ready: bag((x) => x.available + x.atRiskThisWeek),
+      },
       categories: cats,
       atRiskItems: risky,
       unverifiedCount: scores.reduce((n, x) => n + x.score.unverifiedCount, 0),
@@ -93,6 +100,20 @@ export default function Home() {
   // Show credits always, and other categories once something has been found for them.
   const live = categories.filter((x) => x.category === 'card_credits' || (!OWN_ROW.has(x.category) && x.count > 0));
   const isStudent = !!data.profile?.is_student;
+  // Nothing missed yet: lead with what's still usable, and explain the $0 honestly.
+  const missedNothing = !nonZero(totals.left);
+  const readyCurrency = nonZero(totals.ready)
+    ? (totals.ready[home] ?? 0) > 0
+      ? home
+      : Object.entries(totals.ready).sort((a, b) => b[1] - a[1])[0]![0]
+    : null;
+  const reasons = zeroReasons({
+    cards: data.cards,
+    benefits: data.benefits,
+    userCards: data.userCards,
+    opportunities: data.opportunities,
+    readyToUse: readyCurrency ? formatBag(totals.ready, readyCurrency) : null,
+  });
   const studentClaimed = data.studentOffers.filter((o) => data.studentClaims.includes(o.id)).length;
   const emailFound = categories.some((x) => x.category !== 'card_credits' && x.count > 0);
 
@@ -126,10 +147,21 @@ export default function Home() {
       ) : null}
 
       <Hero>
-        <T variant="label" color={c.heroMuted}>You left</T>
-        <Money value={score.leftOnTable} size={60} color={c.heroText} currency={home} animate />
-        {others(totals.left, home) ? <T variant="heading" color={c.heroText}>{others(totals.left, home)}</T> : null}
-        <T variant="subheading" color={c.heroText}>on the table in {now.getFullYear()}</T>
+        {missedNothing && readyCurrency ? (
+          <>
+            <T variant="label" color={c.heroMuted}>Ready to use</T>
+            <Money value={totals.ready[readyCurrency] ?? 0} size={60} color={c.heroText} currency={readyCurrency} animate />
+            {others(totals.ready, readyCurrency) ? <T variant="heading" color={c.heroText}>{others(totals.ready, readyCurrency)}</T> : null}
+            <T variant="subheading" color={c.heroText}>Nothing left on the table in {now.getFullYear()} — yet</T>
+          </>
+        ) : (
+          <>
+            <T variant="label" color={c.heroMuted}>You left</T>
+            <Money value={score.leftOnTable} size={60} color={c.heroText} currency={home} animate />
+            {others(totals.left, home) ? <T variant="heading" color={c.heroText}>{others(totals.left, home)}</T> : null}
+            <T variant="subheading" color={c.heroText}>on the table in {now.getFullYear()}</T>
+          </>
+        )}
         <View style={{ marginTop: space.lg, gap: space.sm }}>
           {score.captureRate !== null ? (
             <>
@@ -139,11 +171,35 @@ export default function Home() {
               </Row>
               <ProgressBar value={score.captureRate} color={c.heroFill} track={c.heroTrack} />
             </>
-          ) : (
+          ) : missedNothing ? null : (
             <T variant="caption" color={c.heroMuted}>Counted from the day you added each card. Mark credits as used to see your score.</T>
           )}
         </View>
       </Hero>
+
+      {missedNothing && reasons.length ? (
+        <Panel style={{ gap: space.sm }}>
+          <Pressable onPress={() => setShowWhy(!showWhy)} accessibilityRole="button" accessibilityState={{ expanded: showWhy }}>
+            <Row>
+              <Ionicons name="help-circle-outline" size={18} color={c.textMuted} />
+              <T variant="subheading" style={{ flex: 1 }}>Why is “left on the table” $0?</T>
+              <Ionicons name={showWhy ? 'chevron-up' : 'chevron-down'} size={18} color={c.textFaint} />
+            </Row>
+          </Pressable>
+          {showWhy
+            ? reasons.map((r) => (
+                <View key={r.id} style={{ gap: 4, paddingTop: space.xs }}>
+                  <T variant="caption">{r.text}</T>
+                  {r.action ? (
+                    <Pressable onPress={() => router.push(r.action!.route)} hitSlop={6}>
+                      <T variant="label" color={c.accent}>{r.action.label} →</T>
+                    </Pressable>
+                  ) : null}
+                </View>
+              ))
+            : null}
+        </Panel>
+      ) : null}
 
       <Row gap={space.md} style={{ alignItems: 'stretch' }}>
         <Panel style={{ flex: 1 }} onPress={() => router.push('/credits')}>

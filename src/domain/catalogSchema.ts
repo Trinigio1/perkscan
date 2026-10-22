@@ -22,6 +22,8 @@ export const studentOfferSchema = z
     url: https,
     /** Countries where it's available; empty = available worldwide (per the provider). */
     countries: z.array(country),
+    /** Only students of these schools (ids from seed/universities.json); empty = any school. */
+    university_ids: z.array(slug).default([]),
     status: z.enum(['active', 'TODO_VERIFY']),
     source_url: https.nullable(),
     last_verified: isoDate.nullable(),
@@ -31,6 +33,33 @@ export const studentOfferSchema = z
       ctx.addIssue({ code: 'custom', path: ['status'], message: 'An active offer needs source_url and last_verified' });
     }
   });
+
+export const universitySchema = z.object({
+  id: slug,
+  name: z.string().min(1),
+  short_name: z.string().min(1),
+  country,
+  /** The official list it comes from, e.g. a national accreditation body. */
+  source_url: https,
+  last_verified: isoDate,
+});
+
+export const universityFileSchema = z.object({
+  _readme: z.array(z.string()).optional(),
+  universities: z.array(universitySchema),
+});
+
+export type UniversityFile = z.infer<typeof universityFileSchema>;
+
+/** Offers can only point at schools that exist. */
+export function unknownUniversityIds(students: StudentFile, universities: UniversityFile): string[] {
+  const ids = new Set(universities.universities.map((u) => u.id));
+  return students.offers.flatMap((o) => o.university_ids.filter((u) => !ids.has(u)).map((u) => `${o.id} → ${u}`));
+}
+
+export function universitiesToSql(f: UniversityFile): string[] {
+  return f.universities.map((u, i) => upsert('universities', { ...u, sort_order: i }));
+}
 
 export const studentFileSchema = z.object({
   _readme: z.array(z.string()).optional(),
@@ -83,7 +112,7 @@ function upsert(table: string, row: Record<string, unknown>, arrays: string[] = 
 }
 
 export function studentToSql(f: StudentFile): string[] {
-  return f.offers.map((o, i) => upsert('student_offers', { ...o, sort_order: i }, ['countries']));
+  return f.offers.map((o, i) => upsert('student_offers', { ...o, sort_order: i }, ['countries', 'university_ids']));
 }
 
 export function settlementsToSql(f: SettlementFile): string[] {

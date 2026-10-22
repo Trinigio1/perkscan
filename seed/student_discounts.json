@@ -2,8 +2,9 @@
   "_readme": [
     "Student offers shown in PerkScan's Student mode. Only add an offer from the provider's own page,",
     "with source_url and last_verified. No prices: they change and differ by country.",
-    "countries: [] means the provider offers it worldwide. Then run: npm run seed:build",
-    "Checked 2026-10-22 against the providers' official help/education pages (via web search)."
+    "countries: [] means the provider offers it worldwide; otherwise only students at schools in those countries qualify.",
+    "university_ids: [] means any school; otherwise only students of those schools (ids from seed/universities.json).",
+    "Then run: npm run seed:build. Checked 2026-10-22 against official pages (via web search)."
   ],
   "offers": [
     {
@@ -18,7 +19,8 @@
       "countries": [],
       "status": "active",
       "source_url": "https://help.github.com/articles/applying-for-a-student-developer-pack",
-      "last_verified": "2026-10-22"
+      "last_verified": "2026-10-22",
+      "university_ids": []
     },
     {
       "id": "jetbrains_student",
@@ -32,7 +34,8 @@
       "countries": [],
       "status": "active",
       "source_url": "https://www.jetbrains.com/student/",
-      "last_verified": "2026-10-22"
+      "last_verified": "2026-10-22",
+      "university_ids": []
     },
     {
       "id": "figma_education",
@@ -46,7 +49,8 @@
       "countries": [],
       "status": "active",
       "source_url": "https://help.figma.com/hc/en-us/articles/360041061214",
-      "last_verified": "2026-10-22"
+      "last_verified": "2026-10-22",
+      "university_ids": []
     },
     {
       "id": "notion_education",
@@ -60,7 +64,8 @@
       "countries": [],
       "status": "active",
       "source_url": "https://www.notion.com/help/notion-for-education",
-      "last_verified": "2026-10-22"
+      "last_verified": "2026-10-22",
+      "university_ids": []
     },
     {
       "id": "autodesk_education",
@@ -74,7 +79,8 @@
       "countries": [],
       "status": "active",
       "source_url": "https://www.autodesk.com/education/home",
-      "last_verified": "2026-10-22"
+      "last_verified": "2026-10-22",
+      "university_ids": []
     },
     {
       "id": "microsoft_365_education",
@@ -88,7 +94,62 @@
       "countries": [],
       "status": "active",
       "source_url": "https://www.microsoft.com/en-us/education/products/microsoft-365",
+      "last_verified": "2026-10-22",
+      "university_ids": []
+    },
+    {
+      "id": "uwi_microsoft_365",
+      "name": "Microsoft 365 through UWI",
+      "provider": "The University of the West Indies",
+      "category": "productivity",
+      "summary": "UWI gives every St. Augustine student an Office 365 account: email, OneDrive and Office apps such as Word, Excel and PowerPoint.",
+      "eligibility": "Registered UWI St. Augustine students.",
+      "how_to_verify": "Sign in with your UWI student account. Campus IT (sta.uwi.edu/cits) has setup guides.",
+      "url": "https://uwi.edu/o365/",
+      "countries": [],
+      "university_ids": [
+        "uwi_st_augustine"
+      ],
+      "status": "active",
+      "source_url": "https://uwi.edu/o365/",
       "last_verified": "2026-10-22"
+    },
+    {
+      "id": "uwi_pelican_perks",
+      "name": "Pelican Perks",
+      "provider": "UWI Alumni Association",
+      "category": "shopping",
+      "summary": "Discounts at partner businesses, many in Trinidad and Tobago. Partners and discounts change often.",
+      "eligibility": "UWI students with a valid UWI student ID.",
+      "how_to_verify": "Show your UWI student ID at the partner business.",
+      "url": "https://uwi.edu/alumnionline/membership/pelican-perks",
+      "countries": [],
+      "university_ids": [
+        "uwi_st_augustine"
+      ],
+      "status": "active",
+      "source_url": "https://uwi.edu/alumnionline/membership/pelican-perks",
+      "last_verified": "2026-10-22"
+    },
+    {
+      "id": "amazon_prime_student",
+      "name": "Prime Student",
+      "provider": "Amazon",
+      "category": "shopping",
+      "summary": "A discounted Amazon Prime membership for students — only for students at schools in countries where Amazon offers it.",
+      "eligibility": "Enrolled at a college or university in a country where Prime Student is offered (for example the UK or Ireland), usually with a school email.",
+      "how_to_verify": "Sign up on that country's Amazon site with your school email.",
+      "url": "https://www.amazon.co.uk/gp/help/customer/display.html?nodeId=GAHEWLGGJTWD9NK5",
+      "countries": [
+        "GB",
+        "IE",
+        "US",
+        "CA"
+      ],
+      "university_ids": [],
+      "status": "TODO_VERIFY",
+      "source_url": null,
+      "last_verified": null
     }
   ]
 }

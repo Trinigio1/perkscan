@@ -1,0 +1,105 @@
+{
+  "_readme": [
+    "Schools students can pick in Student mode. Trinidad & Tobago: the institutions on the Accreditation Council",
+    "of Trinidad and Tobago's list of accredited institutions (checked 2026-10-22). Add other countries the same way,",
+    "from an official accreditation list. Then run: npm run seed:build"
+  ],
+  "universities": [
+    {
+      "id": "uwi_st_augustine",
+      "name": "The University of the West Indies, St. Augustine Campus",
+      "short_name": "UWI St. Augustine",
+      "country": "TT",
+      "source_url": "https://actt.org.tt/services/accreditation/list-of-accredited-institutions",
+      "last_verified": "2026-10-22"
+    },
+    {
+      "id": "utt",
+      "name": "The University of Trinidad and Tobago",
+      "short_name": "UTT",
+      "country": "TT",
+      "source_url": "https://actt.org.tt/services/accreditation/list-of-accredited-institutions",
+      "last_verified": "2026-10-22"
+    },
+    {
+      "id": "usc",
+      "name": "University of the Southern Caribbean",
+      "short_name": "USC",
+      "country": "TT",
+      "source_url": "https://actt.org.tt/services/accreditation/list-of-accredited-institutions",
+      "last_verified": "2026-10-22"
+    },
+    {
+      "id": "costaatt",
+      "name": "College of Science, Technology and Applied Arts of Trinidad and Tobago",
+      "short_name": "COSTAATT",
+      "country": "TT",
+      "source_url": "https://actt.org.tt/services/accreditation/list-of-accredited-institutions",
+      "last_verified": "2026-10-22"
+    },
+    {
+      "id": "uwi_lok_jack",
+      "name": "Arthur Lok Jack Global School of Business (UWI)",
+      "short_name": "Lok Jack GSB",
+      "country": "TT",
+      "source_url": "https://actt.org.tt/services/accreditation/list-of-accredited-institutions",
+      "last_verified": "2026-10-22"
+    },
+    {
+      "id": "uwi_roytec",
+      "name": "UWI School of Business and Applied Studies (UWI-ROYTEC)",
+      "short_name": "UWI-ROYTEC",
+      "country": "TT",
+      "source_url": "https://actt.org.tt/services/accreditation/list-of-accredited-institutions",
+      "last_verified": "2026-10-22"
+    },
+    {
+      "id": "caribbean_nazarene_college",
+      "name": "Caribbean Nazarene College",
+      "short_name": "CNC",
+      "country": "TT",
+      "source_url": "https://actt.org.tt/services/accreditation/list-of-accredited-institutions",
+      "last_verified": "2026-10-22"
+    },
+    {
+      "id": "cipriani_college",
+      "name": "Cipriani College of Labour and Co-operative Studies",
+      "short_name": "Cipriani College",
+      "country": "TT",
+      "source_url": "https://actt.org.tt/services/accreditation/list-of-accredited-institutions",
+      "last_verified": "2026-10-22"
+    },
+    {
+      "id": "mic_institute",
+      "name": "MIC Institute of Technology",
+      "short_name": "MIC-IT",
+      "country": "TT",
+      "source_url": "https://actt.org.tt/services/accreditation/list-of-accredited-institutions",
+      "last_verified": "2026-10-22"
+    },
+    {
+      "id": "nesc_technical_institute",
+      "name": "NESC Technical Institute",
+      "short_name": "NESC",
+      "country": "TT",
+      "source_url": "https://actt.org.tt/services/accreditation/list-of-accredited-institutions",
+      "last_verified": "2026-10-22"
+    },
+    {
+      "id": "tobago_hospitality_tourism",
+      "name": "Tobago Hospitality and Tourism Institute",
+      "short_name": "THTI",
+      "country": "TT",
+      "source_url": "https://actt.org.tt/services/accreditation/list-of-accredited-institutions",
+      "last_verified": "2026-10-22"
+    },
+    {
+      "id": "west_indies_school_of_theology",
+      "name": "West Indies School of Theology",
+      "short_name": "WIST",
+      "country": "TT",
+      "source_url": "https://actt.org.tt/services/accreditation/list-of-accredited-institutions",
+      "last_verified": "2026-10-22"
+    }
+  ]
+}
