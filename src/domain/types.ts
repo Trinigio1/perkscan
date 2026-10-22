@@ -193,3 +193,15 @@ export interface University {
   email_domains: string[];
   website: string | null;
 }
+
+/** A perk the user added from their own school. Private to them. */
+export interface UserPerk {
+  id: string;
+  university_id: string | null;
+  title: string;
+  details: string | null;
+  url: string | null;
+  /** The user agreed PerkScan may review it to add for everyone at the school. */
+  suggest: boolean;
+  created_at: string;
+}

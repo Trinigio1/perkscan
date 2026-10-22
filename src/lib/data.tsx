@@ -2,7 +2,7 @@ import { createContext, useContext, useEffect, useMemo, useRef, useState, type R
 import { AppState } from 'react-native';
 import { setHomeCurrency } from '@/domain/format';
 import { singleFlight } from '@/domain/singleFlight';
-import type { BenefitUsage, Card, CardBenefit, Opportunity, Profile, Receipt, Recovered, StudentOffer, University, UserCard } from '@/domain/types';
+import type { BenefitUsage, Card, CardBenefit, Opportunity, Profile, Receipt, Recovered, StudentOffer, University, UserCard, UserPerk } from '@/domain/types';
 import { useAuth } from './auth';
 import { deviceTimeZone } from './cards';
 import { friendlyDbError } from './dbErrors';
@@ -25,6 +25,8 @@ export interface AppData {
   studentClaims: string[];
   /** The user's school, if they picked one. */
   school: University | null;
+  /** Perks the user added from their school. */
+  myPerks: UserPerk[];
 }
 
 export interface RefreshResult {
@@ -40,7 +42,7 @@ interface DataState {
   refresh: () => Promise<RefreshResult>;
 }
 
-const empty: AppData = { profile: null, cards: [], benefits: [], userCards: [], opportunities: [], recovered: [], usage: [], receipts: [], studentOffers: [], studentClaims: [], school: null };
+const empty: AppData = { profile: null, cards: [], benefits: [], userCards: [], opportunities: [], recovered: [], usage: [], receipts: [], studentOffers: [], studentClaims: [], school: null, myPerks: [] };
 const DataContext = createContext<DataState>({ data: empty, loading: true, error: null, refresh: async () => ({ data: null, error: null }) });
 
 function must<T>(what: string, res: { data: T | null; error: { message: string; code?: string } | null }): T {
@@ -62,7 +64,7 @@ async function load(userId: string): Promise<AppData> {
 
   const yearStart = new Date(new Date().getFullYear(), 0, 1).toISOString();
   const since = new Date(Date.now() - 180 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
-  const [profile, cards, benefits, userCards, opportunities, recovered, usage, receipts, studentOffers, studentClaims] = await Promise.all([
+  const [profile, cards, benefits, userCards, opportunities, recovered, usage, receipts, studentOffers, studentClaims, myPerks] = await Promise.all([
     supabase
       .from('profiles')
       .select('*')
@@ -82,6 +84,7 @@ async function load(userId: string): Promise<AppData> {
       .limit(300),
     supabase.from('student_offers').select('*').order('sort_order'),
     supabase.from('student_offer_claims').select('offer_id'),
+    supabase.from('user_perks').select('id, university_id, title, details, url, suggest, created_at').order('created_at'),
   ]);
 
   // numeric columns arrive as numbers from PostgREST; normalize defensively.
@@ -105,6 +108,8 @@ async function load(userId: string): Promise<AppData> {
     studentOffers: (studentOffers.data ?? []) as StudentOffer[],
     studentClaims: ((studentClaims.data ?? []) as { offer_id: string }[]).map((c) => c.offer_id),
     school,
+    // Optional like the rest of Student mode: missing table (database not updated) just means none.
+    myPerks: (myPerks.data ?? []) as UserPerk[],
   };
 }
 

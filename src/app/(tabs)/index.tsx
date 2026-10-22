@@ -325,9 +325,13 @@ export default function Home() {
           <Row gap={space.md} style={{ paddingVertical: space.xs }}>
             <IconBubble icon={CATEGORY_ICON.student.icon} tone={CATEGORY_ICON.student.tone} size={36} />
             <View style={{ flex: 1 }}>
-              <T variant="subheading">{isStudent ? 'Student offers' : 'Student?'}</T>
+              <T variant="subheading">{isStudent ? (data.school ? 'Your student perks' : 'Student offers') : 'Student?'}</T>
               <T variant="caption" muted>
-                {isStudent ? `${data.studentOffers.length} offers · ${studentClaimed} claimed` : 'Turn on Student mode for student offers'}
+                {isStudent
+                  ? data.school
+                    ? `Your perks at ${data.school.short_name} · ${studentClaimed} claimed`
+                    : `${data.studentOffers.length} offers · pick your school for yours`
+                  : 'Turn on Student mode for student offers'}
               </T>
             </View>
             <Ionicons name="chevron-forward" size={18} color={c.textFaint} />

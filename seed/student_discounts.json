@@ -217,6 +217,57 @@
       "status": "TODO_VERIFY",
       "source_url": null,
       "last_verified": null
+    },
+    {
+      "id": "uwi_endnote",
+      "name": "EndNote for UWI students",
+      "provider": "UWI Libraries",
+      "category": "software",
+      "summary": "The EndNote reference manager, free to download for UWI St. Augustine students.",
+      "eligibility": "UWI St. Augustine students.",
+      "how_to_verify": "Log in at my.uwi.edu (pick St. Augustine) with your student ID, then myDocuments → EndNote.",
+      "url": "https://uwi-sta.libanswers.com/reference/faq/343584",
+      "countries": [],
+      "university_ids": [
+        "uwi_st_augustine"
+      ],
+      "status": "active",
+      "source_url": "https://uwi-sta.libanswers.com/reference/faq/343584",
+      "last_verified": "2026-10-22"
+    },
+    {
+      "id": "uwi_health_services",
+      "name": "Campus Health Services",
+      "provider": "UWI St. Augustine Health Services Unit",
+      "category": "other",
+      "summary": "A walk-in clinic and pharmacy on campus with free screenings and nurse evaluations; full-time registered students have the Student Health Plan.",
+      "eligibility": "Registered UWI St. Augustine students (the Student Health Plan is for full-time students).",
+      "how_to_verify": "Show your valid UWI student ID at the front desk.",
+      "url": "https://sta.uwi.edu/HEALTH/about",
+      "countries": [],
+      "university_ids": [
+        "uwi_st_augustine"
+      ],
+      "status": "active",
+      "source_url": "https://sta.uwi.edu/HEALTH/about",
+      "last_verified": "2026-10-22"
+    },
+    {
+      "id": "uwi_counselling",
+      "name": "Free counselling (CAPS)",
+      "provider": "UWI St. Augustine Counselling and Psychological Services",
+      "category": "other",
+      "summary": "Free, confidential counselling for students, in person or online; no referral needed.",
+      "eligibility": "Students of The UWI St. Augustine.",
+      "how_to_verify": "Book with the counsellor for your faculty (contact details are in campus notices).",
+      "url": "https://sta.uwi.edu/current-students2/",
+      "countries": [],
+      "university_ids": [
+        "uwi_st_augustine"
+      ],
+      "status": "TODO_VERIFY",
+      "source_url": null,
+      "last_verified": null
     }
   ]
 }

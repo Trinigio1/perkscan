@@ -1,4 +1,4 @@
-import type { StudentOffer } from './types';
+import type { StudentOffer, University } from './types';
 
 export interface StudentGroups {
   /** Offers only for students of your school. */
@@ -21,4 +21,19 @@ export function groupStudentOffers(offers: StudentOffer[], who: { country: strin
     else g.elsewhere.push(o);
   }
   return g;
+}
+
+/**
+ * The one line that says how *you* get an offer at your school, e.g. "Use your @ufl.edu email".
+ * Only from what the offer says it needs; null when there's nothing specific to add.
+ */
+export function personalHow(o: StudentOffer, school: University | null): string | null {
+  if (!school) return null;
+  const how = `${o.how_to_verify} ${o.eligibility}`;
+  const domain = school.email_domains[0];
+  if (/school(-issued)? email|\.edu|academic email/i.test(how) && domain) return `Use your @${domain} email`;
+  if (/sheerid/i.test(how)) return `Pick ${school.name} on the SheerID form`;
+  if (/unidays/i.test(how)) return `Verify as a ${school.short_name} student with UNiDAYS`;
+  if (/student id/i.test(how)) return `Have your ${school.short_name} student ID ready`;
+  return null;
 }
