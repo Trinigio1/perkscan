@@ -1,6 +1,6 @@
+import Constants, { ExecutionEnvironment } from 'expo-constants';
 import * as Device from 'expo-device';
-import * as Notifications from 'expo-notifications';
-import { AndroidImportance } from 'expo-notifications';
+import type * as NotificationsModule from 'expo-notifications';
 import * as SecureStore from 'expo-secure-store';
 import { Platform } from 'react-native';
 import { planWeeklyDigest } from '@/domain/digest';
@@ -13,33 +13,49 @@ const CHANNEL = 'credit-reminders';
 // 'credit-' was the Phase 1 prefix; still cancel those so old reminders don't linger.
 const PREFIXES = ['remind-', 'credit-', 'digest-'];
 
-Notifications.setNotificationHandler({
-  handleNotification: async () => ({
-    shouldShowBanner: true,
-    shouldShowList: true,
-    shouldPlaySound: false,
-    shouldSetBadge: false,
-  }),
-});
+/**
+ * Expo Go on Android ships without parts of expo-notifications, and importing it there crashes the app.
+ * So it's loaded only where it works: PerkScan's own builds, and Expo Go on iPhone.
+ */
+export const remindersAvailable =
+  Platform.OS !== 'web' && !(Platform.OS === 'android' && Constants.executionEnvironment === ExecutionEnvironment.StoreClient);
+
+let loaded: typeof NotificationsModule | null = null;
+function notificationsModule(): typeof NotificationsModule {
+  if (!loaded) {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    loaded = require('expo-notifications') as typeof NotificationsModule;
+    loaded.setNotificationHandler({
+      handleNotification: async () => ({
+        shouldShowBanner: true,
+        shouldShowList: true,
+        shouldPlaySound: false,
+        shouldSetBadge: false,
+      }),
+    });
+  }
+  return loaded;
+}
 
 export async function remindersEnabled(): Promise<boolean> {
-  if (Platform.OS === 'web') return false;
+  if (!remindersAvailable) return false;
   return (await SecureStore.getItemAsync(PREF_KEY)) !== 'false';
 }
 
 export async function setRemindersEnabled(enabled: boolean) {
-  if (Platform.OS === 'web') return;
+  if (!remindersAvailable) return;
   await SecureStore.setItemAsync(PREF_KEY, String(enabled));
   if (!enabled) await cancelCreditReminders();
 }
 
 /** Asks for permission (once). Returns whether reminders can be shown. */
 export async function requestReminderPermission(): Promise<boolean> {
-  if (Platform.OS === 'web' || !Device.isDevice) return false;
+  if (!remindersAvailable || !Device.isDevice) return false;
+  const Notifications = notificationsModule();
   if (Platform.OS === 'android') {
     await Notifications.setNotificationChannelAsync(CHANNEL, {
       name: 'Expiry reminders',
-      importance: AndroidImportance.DEFAULT,
+      importance: Notifications.AndroidImportance.DEFAULT,
     });
   }
   const current = await Notifications.getPermissionsAsync();
@@ -49,6 +65,7 @@ export async function requestReminderPermission(): Promise<boolean> {
 }
 
 async function cancelCreditReminders() {
+  const Notifications = notificationsModule();
   const scheduled = await Notifications.getAllScheduledNotificationsAsync();
   await Promise.all(
     scheduled.filter((n) => PREFIXES.some((p) => n.identifier.startsWith(p))).map((n) => Notifications.cancelScheduledNotificationAsync(n.identifier)),
@@ -57,8 +74,8 @@ async function cancelCreditReminders() {
 
 /** Replaces scheduled reminders (expiring soon + the weekly digest) with the current plan. Local notifications. */
 export async function syncReminders(opportunities: Opportunity[], recovered: Recovered[]) {
-  if (Platform.OS === 'web') return;
   if (!(await remindersEnabled())) return;
+  const Notifications = notificationsModule();
   const perms = await Notifications.getPermissionsAsync();
   if (!perms.granted) return;
 

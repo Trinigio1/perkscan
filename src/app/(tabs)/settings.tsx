@@ -11,7 +11,7 @@ import { analyticsConfigured, analyticsOptedOut, setAnalyticsOptOut } from '@/li
 import { updateProfile } from '@/lib/cards';
 import { getAccuracy } from '@/lib/feedback';
 import { useData } from '@/lib/data';
-import { remindersEnabled, requestReminderPermission, setRemindersEnabled, syncReminders } from '@/lib/notifications';
+import { remindersAvailable, remindersEnabled, requestReminderPermission, setRemindersEnabled, syncReminders } from '@/lib/notifications';
 import { useToast } from '@/lib/toast';
 import { space, useColors } from '@/theme';
 
@@ -61,6 +61,10 @@ export default function Settings() {
   const toggleReminders = async (v: boolean) => {
     if (Platform.OS === 'web') {
       toast('Reminders work in the phone app', { tone: 'info' });
+      return;
+    }
+    if (!remindersAvailable) {
+      toast('Expo Go on Android can’t show reminders. They work in PerkScan’s own build.', { tone: 'info' });
       return;
     }
     if (v && !(await requestReminderPermission())) {
