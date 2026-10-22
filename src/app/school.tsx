@@ -8,7 +8,7 @@ import type { University } from '@/domain/types';
 import { useAuth } from '@/lib/auth';
 import { updateProfile } from '@/lib/cards';
 import { useData } from '@/lib/data';
-import { searchSchools } from '@/lib/schools';
+import { schoolListLoaded, searchSchools } from '@/lib/schools';
 import { useToast } from '@/lib/toast';
 import { font, radius, space, useColors } from '@/theme';
 
@@ -24,6 +24,14 @@ export default function School() {
   const current = data.profile?.university_id ?? null;
 
   const [list, setList] = useState<University[] | null>(null);
+  const [loaded, setLoaded] = useState<boolean | null>(null);
+
+  // An empty result can mean the list was never loaded into this database: say so instead of showing nothing.
+  useEffect(() => {
+    schoolListLoaded()
+      .then(setLoaded)
+      .catch((e: Error) => setError(`Couldn’t load schools: ${e.message}`));
+  }, []);
   // Big lists (the US has thousands of schools) wait for a search; small ones show straight away.
   const needsSearch = country === 'US' && q.trim().length < 2;
 
@@ -32,8 +40,12 @@ export default function School() {
     let live = true;
     const t = setTimeout(() => {
       searchSchools(country, q)
-        .then((rows) => live && setList(rows))
-        .catch((e: Error) => live && setError(e.message));
+        .then((rows) => {
+          if (!live) return;
+          setList(rows);
+          setError(null);
+        })
+        .catch((e: Error) => live && setError(`Couldn’t search schools: ${e.message}`));
     }, 250);
     return () => {
       live = false;
@@ -68,8 +80,14 @@ export default function School() {
         />
       </View>
       {error ? <ErrorNote message={error} /> : null}
-      {list === null && !needsSearch ? <Loading /> : null}
-      {needsSearch ? <T variant="caption" muted>Type at least 2 letters of your school’s name or website.</T> : null}
+      {loaded === false ? (
+        <ErrorNote message="PerkScan’s school list isn’t in your database yet. On your computer, in the PerkScan folder, run: npx supabase db push — then reopen this screen." />
+      ) : null}
+      {list === null && !needsSearch && loaded !== false && !error ? <Loading /> : null}
+      {needsSearch && loaded !== false ? <T variant="caption" muted>Type at least 2 letters of your school’s name or website.</T> : null}
+      {loaded && !needsSearch && list?.length === 0 && q.trim() ? (
+        <T variant="caption" muted>No schools match “{q.trim()}”. Try part of the name, or the website (for example “ufl” for the University of Florida).</T>
+      ) : null}
       <Panel style={{ paddingVertical: space.xs, gap: 0 }}>
         {(needsSearch ? [] : (list ?? [])).map((u, i) => (
           <View key={u.id} style={i > 0 ? { borderTopWidth: 1, borderTopColor: c.border } : undefined}>

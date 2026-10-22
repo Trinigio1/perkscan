@@ -19,3 +19,10 @@ export async function searchSchools(country: string | null, query: string, limit
   if (error) throw new Error(error.message);
   return (data ?? []) as University[];
 }
+
+/** False when the school list hasn't been loaded into this database (migrations not pushed yet). */
+export async function schoolListLoaded(): Promise<boolean> {
+  const { count, error } = await supabase.from('universities').select('id', { count: 'exact', head: true });
+  if (error) throw new Error(error.message);
+  return (count ?? 0) > 0;
+}

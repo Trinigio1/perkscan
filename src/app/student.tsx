@@ -82,7 +82,7 @@ export default function Student() {
           <T muted>perks you can get, claimed</T>
         </Row>
       ) : (
-        <T muted>No student offers yet. Update PerkScan’s database to load them.</T>
+        <T muted>No student offers loaded. On your computer, in the PerkScan folder, run: npx supabase db push — then pull down to refresh.</T>
       )}
 
       {error ? <ErrorNote message={error} /> : null}
