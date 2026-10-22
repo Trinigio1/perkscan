@@ -124,4 +124,49 @@ No new env keys.
 - The student list is short and global on purpose. If you study at a T&T school with its own deals, send them to me with
   links and I'll add them.
 
+## Update: the $0 on Home, and your school
+
+### Why Home said $0, and what it shows now
+"Left on the table" only counts money that **expired unused** this year. For a new account that's usually $0, for good
+reasons:
+- **The card has no statement credits.** The Scotiabank Visa Classic has none in PerkScan, so nothing on it can expire
+  unused. Its protections are coverage, not cash.
+- **Unverified credit amounts count as $0** rather than a guess.
+- **Offers only count if they state a dollar amount** and then expire unused.
+
+Home now does two things:
+- **When nothing has been missed yet,** the big number shows what's **ready to use** (for example "TT$10 · Nothing left
+  on the table in 2026 — yet").
+- **A "Why is left on the table $0?" section** lists the actual reasons for *your* account, with links to fix them:
+  add cards, connect Gmail, see credits, see offers.
+
+PerkScan still never estimates money it doesn't know about.
+
+### Pick your school (Student mode)
+- **Student offers → Your school.** The list is the 12 institutions on the Accreditation Council of Trinidad and
+  Tobago's list of accredited institutions (`seed/universities.json`, checked 2026-10-22). There's also a "My school
+  isn't listed" option.
+- **Offers are grouped:**
+  - **From your school:** perks only for that school's students
+  - **For students everywhere**
+  - **Not available in Trinidad & Tobago:** shown with the reason, and with no claim button
+- **UWI St. Augustine perks**, from UWI's own pages:
+  - **Microsoft 365 through UWI:** every St. Augustine student has an Office 365 account.
+  - **Pelican Perks:** discounts at partner businesses with a valid UWI student ID.
+- **Amazon Prime Student** is listed under "Not available in Trinidad & Tobago". It's only for students at schools in
+  countries where Amazon offers it (e.g. UK and Ireland), so a T&T school doesn't qualify. Its exact country list
+  isn't confirmed, so it's marked "Not verified".
+- **More school perks:** I'll only add a school-specific perk from an official page. If you know one (UTT, USC,
+  COSTAATT…), send the link.
+- **Tests:** 5 new database tests (users can read the school list but not change it, you can set your own school, and
+  only real schools are accepted) and unit tests for the grouping and the $0 reasons.
+
+### Setup for this update
+1. `git pull`. If it complains about `supabase/seed.sql`, run `git checkout -- supabase/seed.sql` first.
+2. `npx supabase db push`
+3. `npx supabase db push --include-seed`, or paste `supabase/seed.sql` into the SQL Editor and run it.
+4. `npx expo start --clear`
+
+The functions don't need redeploying for this update.
+
 *PerkScan informs and guides. It does not file claims, sign you up for offers, or give financial or legal advice.*
