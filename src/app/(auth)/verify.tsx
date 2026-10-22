@@ -1,4 +1,4 @@
-import { router, useLocalSearchParams } from 'expo-router';
+import { Redirect, router, useLocalSearchParams } from 'expo-router';
 import { useRef, useState, type ComponentRef } from 'react';
 import { Pressable, TextInput, View } from 'react-native';
 import { Button, ErrorNote, IconBubble, Screen, T } from '@/components/ui';
@@ -68,6 +68,9 @@ export default function Verify() {
   const [resent, setResent] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // Opened without an email (e.g. Android restoring this screen on launch): there's no code to enter.
+  if (!email) return <Redirect href="/sign-in" />;
+
   const submit = async (value = code) => {
     if (!new RegExp(`^\\d{${MIN_CODE},${MAX_CODE}}$`).test(value)) return setError('Enter the code from the email.');
     setBusy(true);
@@ -119,7 +122,7 @@ export default function Verify() {
             }
           }}
         />
-        <Button title="Use a different email" kind="ghost" size="sm" onPress={() => router.back()} />
+        <Button title="Use a different email" kind="ghost" size="sm" onPress={() => (router.canGoBack() ? router.back() : router.replace('/sign-in'))} />
       </View>
     </Screen>
   );
