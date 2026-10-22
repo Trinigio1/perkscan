@@ -5,7 +5,7 @@ import { Alert, Linking, Platform, Pressable, View } from 'react-native';
 import { CardArt } from '@/components/CardArt';
 import { CardDetailsForm } from '@/components/CardDetailsForm';
 import { Disclaimer } from '@/components/Disclaimer';
-import { Badge, Button, ErrorNote, IconBubble, Note, Panel, Row, Screen, T } from '@/components/ui';
+import { Badge, Button, ErrorNote, IconBubble, Panel, Row, Screen, Segmented, T } from '@/components/ui';
 import { draftToRow, validateDraft, type CardDraft } from '@/domain/cardDraft';
 import { formatMoney, PERIOD_LABELS } from '@/domain/format';
 import type { BenefitType, Card, CardBenefit, Opportunity, Receipt } from '@/domain/types';
@@ -16,13 +16,13 @@ import { supabase } from '@/lib/supabase';
 import { useToast } from '@/lib/toast';
 import { space, useColors } from '@/theme';
 
-const SECTIONS: { type: BenefitType; title: string; blurb: string }[] = [
-  { type: 'credit', title: 'Credits', blurb: 'Statement credits that reset on a schedule.' },
-  { type: 'protection', title: 'Protections', blurb: 'Insurance-style coverage when you pay with this card.' },
-  { type: 'perk', title: 'Perks', blurb: 'Status, access and other extras.' },
+type Tab = BenefitType | 'purchases';
+const TABS: { value: Tab; label: string }[] = [
+  { value: 'credit', label: 'Credits' },
+  { value: 'protection', label: 'Protections' },
+  { value: 'perk', label: 'Perks' },
+  { value: 'purchases', label: 'Purchases' },
 ];
-
-const checkedOn = (d: string) => new Date(`${d}T12:00:00Z`).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
 
 function BenefitLine({ b, card }: { b: CardBenefit; card: Card }) {
   const c = useColors();
@@ -45,17 +45,12 @@ function BenefitLine({ b, card }: { b: CardBenefit; card: Card }) {
           ) : null}
         </Row>
         <Row style={{ flexWrap: 'wrap' }} gap={6}>
-          {amount ? (
-            <Badge label={amount} tone="good" />
-          ) : b.status === 'active' && b.last_verified ? (
-            <Badge label={`Checked ${checkedOn(b.last_verified)}`} tone="good" icon="checkmark" />
-          ) : (
-            <Badge label="Not verified" />
-          )}
+          {amount ? <Badge label={amount} tone="good" /> : null}
           {b.type === 'credit' && b.period !== 'per_claim' && b.period_anchor === 'cardmember_year' ? <Badge label="Resets on anniversary" /> : null}
           {b.enrollment_required ? <Badge label="Enroll first" icon="alert-circle" tone="warn" /> : null}
+          {b.status === 'active' ? null : <T variant="caption" faint>Unconfirmed</T>}
         </Row>
-        {b.terms_summary ? <T variant="caption" muted>{b.terms_summary}</T> : null}
+        {b.terms_summary ? <T variant="caption" muted numberOfLines={2}>{b.terms_summary}</T> : null}
       </View>
     </Row>
   );
@@ -77,14 +72,10 @@ function Purchases({ receipts, opportunities }: { receipts: Receipt[]; opportuni
   }
   return (
     <View style={{ gap: space.sm }}>
-      <View>
-        <T variant="heading">Recent purchases on this card</T>
-        <T variant="caption" muted>From receipts and bank alerts that show this card’s last 4 digits.</T>
-      </View>
       <Panel style={{ paddingVertical: space.xs }}>
         {receipts.length === 0 ? (
           <T variant="caption" muted style={{ paddingVertical: space.md }}>
-            Nothing matched yet. Purchases are matched when a receipt or bank alert shows the card’s last 4 digits.
+            No purchases yet. They appear when a receipt or bank alert shows this card’s last 4 digits.
           </T>
         ) : (
           receipts.slice(0, 20).map((r) => {
@@ -135,6 +126,7 @@ export default function CardScreen() {
   const { data, refresh } = useData();
   const uc = data.userCards.find((x) => x.id === id);
   const card = uc ? data.cards.find((x) => x.id === uc.card_id) : undefined;
+  const [tab, setTab] = useState<Tab>('credit');
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState<CardDraft | null>(null);
   const [busy, setBusy] = useState(false);
@@ -148,6 +140,9 @@ export default function CardScreen() {
     );
   }
   const benefits = data.benefits.filter((b) => b.card_id === card.id);
+  // Only tabs with something in them; purchases always.
+  const tabs = TABS.filter((t) => t.value === 'purchases' || benefits.some((b) => b.type === t.value));
+  const shownTab = tabs.some((t) => t.value === tab) ? tab : tabs[0]!.value;
 
   const startEdit = () => {
     setDraft({ card_id: uc.card_id, last_four: uc.last_four, open_date: uc.open_date ?? '', nickname: uc.nickname ?? '' });
@@ -192,24 +187,13 @@ export default function CardScreen() {
   return (
     <Screen edges={[]}>
       <CardArt cardId={card.id} issuer={card.issuer} name={uc.nickname || card.product_name.replace(/®/g, '')} lastFour={uc.last_four} />
-      <Row style={{ justifyContent: 'space-between' }}>
-        <View>
-          <T variant="caption" muted>Annual fee</T>
-          <T variant="heading">{card.annual_fee === null ? 'Not verified' : formatMoney(card.annual_fee, { currency: card.currency })}</T>
-        </View>
-        <View style={{ alignItems: 'flex-end' }}>
-          <T variant="caption" muted>Opened</T>
-          <T variant="heading">{uc.open_date ?? '—'}</T>
-        </View>
-      </Row>
       <Row gap={space.sm}>
-        <Button
-          title="Worth the fee?"
-          icon="calculator"
-          style={{ flex: 1 }}
-          onPress={() => router.push({ pathname: '/card/[id]/worth-it', params: { id: uc.id } })}
-        />
-        <Button title={editing ? 'Cancel' : 'Edit'} icon={editing ? 'close' : 'create-outline'} kind="secondary" onPress={() => (editing ? setEditing(false) : startEdit())} />
+        <View style={{ flex: 1 }}>
+          <T variant="caption" muted>Annual fee</T>
+          <T variant="subheading">{card.annual_fee === null ? 'Unconfirmed' : card.annual_fee === 0 ? 'None' : formatMoney(card.annual_fee, { currency: card.currency })}</T>
+        </View>
+        <Button title="Worth it?" icon="calculator" size="sm" kind="secondary" onPress={() => router.push({ pathname: '/card/[id]/worth-it', params: { id: uc.id } })} />
+        <Button title={editing ? 'Cancel' : 'Edit'} icon={editing ? 'close' : 'create-outline'} size="sm" kind="secondary" onPress={() => (editing ? setEditing(false) : startEdit())} />
       </Row>
 
       {editing && draft ? (
@@ -221,31 +205,15 @@ export default function CardScreen() {
       ) : null}
       {error ? <ErrorNote message={error} /> : null}
 
-      {SECTIONS.map(({ type, title, blurb }) => {
-        const list = benefits.filter((b) => b.type === type);
-        if (!list.length) return null;
-        return (
-          <View key={type} style={{ gap: space.sm }}>
-            <View>
-              <T variant="heading">{title}</T>
-              <T variant="caption" muted>{blurb}</T>
-            </View>
-            <Panel style={{ paddingVertical: space.xs }}>
-              {list.map((b) => <BenefitLine key={b.id} b={b} card={card} />)}
-            </Panel>
-          </View>
-        );
-      })}
+      <Segmented<Tab> value={shownTab} onChange={setTab} options={tabs.map((t) => ({ label: t.label, value: t.value }))} />
 
-      {!benefits.some((b) => b.type === 'credit') ? (
-        <Note icon="information-circle-outline">
-          {benefits.some((b) => b.type === 'protection')
-            ? 'This card has no statement credits, so it adds nothing to “left on the table” by itself. PerkScan uses its protections instead: when a receipt or bank alert shows a purchase on this card, you’ll see what’s covered and until when.'
-            : 'This card has no statement credits or purchase protections that PerkScan can find on the bank’s pages, so it adds nothing to your totals. Its value is in the perks above. Purchases on it still show below from your receipts and bank alerts.'}
-        </Note>
-      ) : null}
-
-      <Purchases receipts={data.receipts.filter((r) => r.matched_user_card_id === uc.id)} opportunities={data.opportunities} />
+      {shownTab === 'purchases' ? (
+        <Purchases receipts={data.receipts.filter((r) => r.matched_user_card_id === uc.id)} opportunities={data.opportunities} />
+      ) : (
+        <Panel style={{ paddingVertical: space.xs }}>
+          {benefits.filter((b) => b.type === shownTab).map((b) => <BenefitLine key={b.id} b={b} card={card} />)}
+        </Panel>
+      )}
 
       <Disclaimer />
       <Button title="Remove card" kind="danger" icon="trash-outline" onPress={remove} />

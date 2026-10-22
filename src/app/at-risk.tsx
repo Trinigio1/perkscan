@@ -3,7 +3,7 @@ import { router } from 'expo-router';
 import { useMemo } from 'react';
 import { Pressable, View } from 'react-native';
 import { OpportunityRow } from '@/components/OfferRow';
-import { Empty, IconBubble, Note, Panel, Row, Screen, T } from '@/components/ui';
+import { Empty, IconBubble, Panel, Row, Screen, T } from '@/components/ui';
 import { groupAtRisk, type SourceKind } from '@/domain/atRisk';
 import { addToBag, formatBag, getHomeCurrency, type MoneyBag } from '@/domain/format';
 import { scoreByCurrency } from '@/domain/score';
@@ -51,7 +51,7 @@ export default function AtRisk() {
         <T variant="caption" muted>Expires in the next 7 days</T>
         <T variant="title" color={c.warn}>{nonZero(total) ? formatBag(total, home) : 'Value not known'}</T>
         <T variant="caption" muted>
-          From {sources.length} {sources.length === 1 ? 'place' : 'places'} · {sources.reduce((n, s) => n + s.items.length, 0)} things to use
+          {sources.reduce((n, s) => n + s.items.length, 0)} things from {sources.length} {sources.length === 1 ? 'place' : 'places'}
         </T>
       </Panel>
 
@@ -61,12 +61,7 @@ export default function AtRisk() {
         const header = (
           <Row gap={space.md}>
             <IconBubble icon={icon} tone={tone} size={36} />
-            <View style={{ flex: 1 }}>
-              <T variant="subheading" numberOfLines={1}>{s.label}</T>
-              <T variant="caption" muted>
-                {s.kind === 'card' ? 'Card benefits' : s.kind === 'store' ? 'Codes, gift cards and credit' : 'Found in your email or texts'}
-              </T>
-            </View>
+            <T variant="subheading" numberOfLines={1} style={{ flex: 1 }}>{s.label}</T>
             {nonZero(s.total) ? <T variant="subheading" color={c.warn}>{formatBag(s.total, home)}</T> : null}
             {cardId ? <Ionicons name="chevron-forward" size={18} color={c.textFaint} /> : null}
           </Row>
@@ -98,9 +93,7 @@ export default function AtRisk() {
       })}
 
       {unknown ? (
-        <Note icon="information-circle-outline">
-          {unknown} of these {unknown === 1 ? 'has' : 'have'} no verified amount, so {unknown === 1 ? 'it isn’t' : 'they aren’t'} in the total. Still worth using before {unknown === 1 ? 'it expires' : 'they expire'}.
-        </Note>
+        <T variant="caption" faint center>{unknown} without a confirmed amount {unknown === 1 ? 'isn’t' : 'aren’t'} in the total.</T>
       ) : null}
     </Screen>
   );

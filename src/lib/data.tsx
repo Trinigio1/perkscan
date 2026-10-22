@@ -1,6 +1,6 @@
 import { createContext, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { AppState } from 'react-native';
-import { setHomeCurrency } from '@/domain/format';
+import { setHomeCurrency, shortCardName } from '@/domain/format';
 import { singleFlight } from '@/domain/singleFlight';
 import type { BenefitUsage, Card, CardBenefit, Opportunity, Profile, Receipt, Recovered, StudentOffer, University, UserCard, UserPerk } from '@/domain/types';
 import { useAuth } from './auth';
@@ -178,7 +178,7 @@ export function useLookups() {
     const userCardLabel = (id: string | null) => {
       const uc = id ? userCardById.get(id) : undefined;
       if (!uc) return '';
-      return uc.nickname || `${(cardById.get(uc.card_id)?.product_name ?? 'Card').replace(/®/g, '')} ·· ${uc.last_four}`;
+      return uc.nickname || `${shortCardName(cardById.get(uc.card_id)?.product_name ?? 'Card')} ·· ${uc.last_four}`;
     };
     return { cardById, benefitById, userCardById, recoveredByOpp, userCardLabel };
   }, [data]);

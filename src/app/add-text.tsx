@@ -18,7 +18,7 @@ export default function AddText() {
   const [error, setError] = useState<string | null>(null);
 
   // Opened straight from a share there may be nothing to go back to.
-  const close = () => (router.canGoBack() ? router.back() : router.replace('/offers'));
+  const close = () => (router.canGoBack() ? router.back() : router.replace('/money'));
 
   const send = async () => {
     if (!text.trim()) return setError('Paste a text message first.');

@@ -3,7 +3,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { Alert, Linking, Platform, View } from 'react-native';
 import { DISCLAIMER_FULL } from '@/components/Disclaimer';
 import { ListRow } from '@/components/ListRow';
-import { ErrorNote, Panel, Row, Screen, T } from '@/components/ui';
+import { ErrorNote, Panel, Screen, T } from '@/components/ui';
 import { signOut, useAuth } from '@/lib/auth';
 import { accuracyPercent, type Accuracy } from '@/domain/accuracy';
 import { countryByCode } from '@/domain/countries';
@@ -13,7 +13,7 @@ import { getAccuracy } from '@/lib/feedback';
 import { useData } from '@/lib/data';
 import { remindersAvailable, remindersEnabled, requestReminderPermission, setRemindersEnabled, syncReminders } from '@/lib/notifications';
 import { useToast } from '@/lib/toast';
-import { space, useColors } from '@/theme';
+import { space } from '@/theme';
 
 function Group({ title, children }: { title: string; children: React.ReactNode }) {
   return (
@@ -25,7 +25,6 @@ function Group({ title, children }: { title: string; children: React.ReactNode }
 }
 
 export default function Settings() {
-  const c = useColors();
   const toast = useToast();
   const { session } = useAuth();
   const { data, refresh } = useData();
@@ -83,61 +82,42 @@ export default function Settings() {
   const region = data.profile?.country
     ? countryByCode(data.profile.country) ?? { name: 'Somewhere else' }
     : null;
-  const verified = data.benefits.filter((b) => b.status === 'active').length;
 
   return (
     <Screen title="Settings">
       {error ? <ErrorNote message={error} /> : null}
 
-      <Panel>
-        <Row gap={space.md}>
-          <View style={{ width: 52, height: 52, borderRadius: 26, backgroundColor: c.accentSoft, alignItems: 'center', justifyContent: 'center' }}>
-            <T variant="title" color={c.accentStrong}>{email.slice(0, 1).toUpperCase()}</T>
-          </View>
-          <View style={{ flex: 1 }}>
-            <T variant="caption" muted>Signed in as</T>
-            <T variant="subheading" numberOfLines={1}>{email}</T>
-          </View>
-        </Row>
-      </Panel>
-
-      <Group title="Preferences">
-        <ListRow
-          icon="globe-outline"
-          tone="blue"
-          title="Country & currency"
-          subtitle={region ? `${region.name} · amounts in ${data.profile?.home_currency}` : 'Not set'}
-          onPress={() => router.push('/country')}
-        />
-        <ListRow icon="notifications" tone="orange" title="Reminders" subtitle="7 and 2 days before credits and offers expire" toggle={reminders && Platform.OS !== 'web'} onToggle={toggleReminders} />
-        <ListRow icon="school" tone="purple" title="I’m a student" subtitle="Shows student offers on Home" toggle={!!data.profile?.is_student} onToggle={toggleStudent} />
-        {data.profile?.is_student ? <ListRow icon="gift" tone="purple" title="Student offers" subtitle="Free software and more for students" onPress={() => router.push('/student')} /> : null}
-      </Group>
-
-      <Group title="Email & texts">
-        <ListRow icon="mail" tone="blue" title="Connect Gmail" subtitle="Emails you label “PerkScan” — add more Gmail accounts too" onPress={() => router.push('/connect-gmail')} />
-        <ListRow icon="chatbubbles" tone="green" title="Connect texts" subtitle="Bank alerts and offers you get by text" onPress={() => router.push('/connect-texts')} />
-        <ListRow icon="clipboard" tone="orange" title="Paste a text" subtitle="Add one bank alert or offer by hand" onPress={() => router.push('/add-text')} />
-        <ListRow icon="file-tray-full" tone="gray" title="Inbox" subtitle="Emails and texts PerkScan has read" onPress={() => router.push('/inbox')} />
-        <ListRow icon="key" tone="gray" title="Connected sources" subtitle="See and revoke Gmail and texts tokens" onPress={() => router.push('/sources')} />
-      </Group>
-
-      <Group title="About the numbers">
+      <Group title="Find money">
+        <ListRow icon="mail" tone="blue" title="Gmail" subtitle="Read emails you label “PerkScan”" onPress={() => router.push('/connect-gmail')} />
+        <ListRow icon="chatbubbles" tone="green" title="Texts" subtitle="Bank alerts and offers by SMS" onPress={() => router.push('/connect-texts')} />
+        <ListRow icon="clipboard" tone="orange" title="Add a text" onPress={() => router.push('/add-text')} />
+        <ListRow icon="file-tray-full" tone="gray" title="Inbox" onPress={() => router.push('/inbox')} />
         <ListRow
           icon="analytics"
           tone="purple"
           title="Reading accuracy"
-          subtitle="Check what PerkScan read from your emails and texts"
-          value={accuracy && accuracy.checked ? `${accuracyPercent(accuracy)}%` : 'Not checked'}
+          value={accuracy && accuracy.checked ? `${accuracyPercent(accuracy)}%` : undefined}
           onPress={() => router.push('/review')}
         />
-        <ListRow icon="shield-checkmark" tone="green" title="Verified benefits" subtitle="Unverified amounts count as zero" value={`${verified} of ${data.benefits.length}`} />
+      </Group>
+
+      <Group title="You">
+        <ListRow icon="globe-outline" tone="blue" title="Country" value={region ? `${region.name} · ${data.profile?.home_currency}` : 'Not set'} onPress={() => router.push('/country')} />
+        <ListRow icon="notifications" tone="orange" title="Reminders" toggle={reminders && Platform.OS !== 'web'} onToggle={toggleReminders} />
+        <ListRow icon="school" tone="purple" title="I’m a student" toggle={!!data.profile?.is_student} onToggle={toggleStudent} />
+        {data.profile?.is_student ? (
+          <ListRow icon="gift" tone="purple" title="Student perks" value={data.school?.short_name} onPress={() => router.push('/student')} />
+        ) : null}
+      </Group>
+
+      <Group title="Privacy & data">
+        <ListRow icon="key" tone="gray" title="Connected accounts" onPress={() => router.push('/sources')} />
+        <ListRow icon="download" tone="gray" title="Export or delete my data" onPress={() => router.push('/data')} />
         {analyticsConfigured ? (
           <ListRow
             icon="stats-chart"
             tone="gray"
-            title="Share anonymous usage stats"
-            subtitle="Which features get used — never your emails, cards, stores or amounts"
+            title="Anonymous usage stats"
             toggle={!analyticsOff}
             onToggle={async (v) => {
               await setAnalyticsOptOut(!v);
@@ -145,11 +125,9 @@ export default function Settings() {
             }}
           />
         ) : null}
-        <ListRow icon="lock-closed" tone="blue" title="Your privacy" subtitle="Card names and last 4 digits only. Email text is deleted once read. Never sold or shared." />
-      </Group>
-
-      <Group title="Legal">
-        <ListRow icon="document-text" tone="gray" title="Disclaimer" subtitle="What PerkScan does and doesn’t do" onPress={() => setShowLegal(!showLegal)} />
+        <ListRow icon="reader" tone="gray" title="Privacy policy" onPress={() => router.push({ pathname: '/legal', params: { doc: 'privacy' } })} />
+        <ListRow icon="document-text-outline" tone="gray" title="Terms of use" onPress={() => router.push({ pathname: '/legal', params: { doc: 'terms' } })} />
+        <ListRow icon="information-circle-outline" tone="gray" title="What PerkScan does" onPress={() => setShowLegal(!showLegal)} />
         {showLegal ? (
           <View style={{ gap: space.sm, paddingBottom: space.sm }}>
             {DISCLAIMER_FULL.map((p) => (
@@ -157,16 +135,11 @@ export default function Settings() {
             ))}
           </View>
         ) : null}
-        <ListRow icon="reader" tone="gray" title="Privacy policy" subtitle="Draft — reviewed before launch" onPress={() => router.push({ pathname: '/legal', params: { doc: 'privacy' } })} />
-        <ListRow icon="document-text-outline" tone="gray" title="Terms of use" subtitle="Draft — reviewed before launch" onPress={() => router.push({ pathname: '/legal', params: { doc: 'terms' } })} />
       </Group>
 
-      <Group title="Account">
+      <Group title={email}>
         <ListRow icon="log-out" tone="gray" title="Sign out" onPress={() => signOut()} />
-        <ListRow icon="download" tone="gray" title="Export or delete my data" subtitle="Download everything, or delete your account" onPress={() => router.push('/data')} />
       </Group>
-
-      <T variant="caption" faint center>PerkScan · Phase 6 preview</T>
     </Screen>
   );
 }

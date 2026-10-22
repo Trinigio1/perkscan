@@ -1,4 +1,4 @@
-import { addToBag, currencyPrefix, formatBag, formatMoney, relativeDays, type MoneyBag } from '../format';
+import { addToBag, currencyPrefix, formatBag, formatMoney, relativeDays, shortCardName, type MoneyBag } from '../format';
 
 describe('formatMoney', () => {
   it.each([
@@ -46,4 +46,12 @@ describe('relativeDays', () => {
     expect(relativeDays(new Date(2026, 9, 25), now)).toBe('in 5 days');
     expect(relativeDays(new Date(2026, 9, 17), now)).toBe('3 days ago');
   });
+});
+
+describe('shortCardName', () => {
+  it.each([
+    ['The Platinum Card® from American Express', 'Platinum Card'],
+    ['Scotiabank No Fee Visa Classic', 'Scotiabank No Fee Visa Classic'],
+    ['Chase Sapphire Reserve®', 'Chase Sapphire Reserve'],
+  ])('%s → %s', (a, b) => expect(shortCardName(a)).toBe(b));
 });

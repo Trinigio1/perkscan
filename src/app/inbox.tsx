@@ -95,8 +95,7 @@ export default function Inbox() {
       }
     >
       <Note icon="lock-closed-outline">
-        Only emails you label “PerkScan” and texts your Shortcut sends (or you paste) come here. Their text is deleted as
-        soon as it’s been read; only what’s listed below is kept.
+        Message text is deleted once read. Only what’s listed below is kept.
       </Note>
       {messages?.length ? (
         <Button title="Check what PerkScan read" icon="checkmark-done" kind="secondary" onPress={() => router.push('/review')} />

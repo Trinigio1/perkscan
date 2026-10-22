@@ -4,13 +4,13 @@ import type { CardBenefit } from './types';
 
 export type PerkGroup = 'airport' | 'travel' | 'status' | 'rewards' | 'shopping' | 'card';
 
-export const PERK_GROUPS: { group: PerkGroup; title: string; blurb: string }[] = [
-  { group: 'airport', title: 'At the airport', blurb: 'Lounges and faster security.' },
-  { group: 'travel', title: 'When you travel', blurb: 'Insurance and help on trips you pay for with the card.' },
-  { group: 'status', title: 'Status and concierge', blurb: 'Hotel status, concierge and member access.' },
-  { group: 'rewards', title: 'Rewards', blurb: 'Points, miles and cash back.' },
-  { group: 'shopping', title: 'Shopping protections', blurb: 'Coverage on things you buy with the card.' },
-  { group: 'card', title: 'Card services', blurb: 'Fees, extra cards and emergency help.' },
+export const PERK_GROUPS: { group: PerkGroup; title: string }[] = [
+  { group: 'airport', title: 'At the airport' },
+  { group: 'travel', title: 'When you travel' },
+  { group: 'status', title: 'Status and concierge' },
+  { group: 'rewards', title: 'Rewards' },
+  { group: 'shopping', title: 'Shopping protections' },
+  { group: 'card', title: 'Card services' },
 ];
 
 // Matched against the benefit key (the part after "__" in the id), first match wins.
@@ -43,7 +43,7 @@ export function groupPerks(
   userCards: { id: string; card_id: string }[],
   benefits: CardBenefit[],
   cardLabel: (userCardId: string) => string,
-): { group: PerkGroup; title: string; blurb: string; lines: PerkLine[] }[] {
+): { group: PerkGroup; title: string; lines: PerkLine[] }[] {
   const lines = new Map<string, PerkLine>();
   for (const uc of userCards) {
     for (const b of benefits) {

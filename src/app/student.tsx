@@ -1,10 +1,10 @@
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { useState } from 'react';
-import { Linking, View } from 'react-native';
+import { Linking, Pressable, View } from 'react-native';
 import { Hero } from '@/components/Hero';
 import { ListRow } from '@/components/ListRow';
-import { Badge, Button, ErrorNote, IconBubble, Note, Panel, Row, Screen, T } from '@/components/ui';
+import { Badge, Button, ErrorNote, IconBubble, Panel, Row, Screen, T } from '@/components/ui';
 import { countryByCode } from '@/domain/countries';
 import { groupStudentOffers, personalHow } from '@/domain/student';
 import type { StudentOffer, UserPerk } from '@/domain/types';
@@ -76,12 +76,12 @@ export default function Student() {
   return (
     <Screen edges={[]}>
       <Panel style={{ gap: 0, paddingVertical: space.xs }}>
-        <ListRow icon="school" tone="purple" title="I’m a student" subtitle="Shows student offers on your home screen" toggle={isStudent} onToggle={toggleStudent} />
+        <ListRow icon="school" tone="purple" title="I’m a student" toggle={isStudent} onToggle={toggleStudent} />
         <ListRow
           icon="business"
           tone="blue"
           title="Your school"
-          subtitle={school ? (schoolEmail ? `Most offers verify with your @${schoolEmail} email` : 'Perks that come with your school are shown first') : 'Pick it to see perks that come with your school'}
+          subtitle={school && schoolEmail ? `Sign up with your @${schoolEmail} email` : undefined}
           value={school ? school.short_name : 'Choose'}
           onPress={() => router.push('/school')}
         />
@@ -100,18 +100,7 @@ export default function Student() {
             </T>
           ) : null}
         </Hero>
-      ) : (
-        <Panel onPress={() => router.push('/school')}>
-          <Row gap={space.md}>
-            <IconBubble icon="business" tone="blue" />
-            <View style={{ flex: 1 }}>
-              <T variant="subheading">Pick your school to see your perks</T>
-              <T variant="caption" muted>Perks only for your school, plus how to get the general ones with your school email.</T>
-            </View>
-            <Ionicons name="chevron-forward" size={18} color={c.textFaint} />
-          </Row>
-        </Panel>
-      )}
+      ) : null}
 
       {!data.studentOffers.length ? (
         <T muted>No student offers loaded. On your computer, in the PerkScan folder, run: npx supabase db push — then pull down to refresh.</T>
@@ -129,7 +118,7 @@ export default function Student() {
           ))}
           {!groups.school.length && !myPerks.length ? (
             <T variant="caption" muted>
-              PerkScan doesn’t list perks only for {school.short_name} yet — we only add them from the school’s own pages. Know one? Add it below.
+              None listed yet. Know one? Add it.
             </T>
           ) : null}
           <Button
@@ -159,17 +148,11 @@ export default function Student() {
       {groups.elsewhere.length ? (
         <View style={{ gap: space.sm }}>
           <T variant="overline" muted>Not available in {countryByCode(country)?.name ?? 'your country'}</T>
-          <T variant="caption" muted>
-            Only for students at schools in other countries, so a {countryByCode(country)?.name ?? 'local'} school doesn’t qualify.
-          </T>
           {groups.elsewhere.map((o) => card(o, true))}
         </View>
       ) : null}
 
-      <Note icon="information-circle-outline">
-        Offers and what they include change, and some need a school email. Check the terms on the provider’s site before
-        signing up. PerkScan isn’t affiliated with these providers and doesn’t sign you up.
-      </Note>
+      <T variant="caption" faint center>Offers change. Check the provider’s terms before you sign up.</T>
     </Screen>
   );
 }
@@ -192,6 +175,7 @@ function OfferCard({
   personal?: string | null;
 }) {
   const c = useColors();
+  const [open, setOpen] = useState(false);
   return (
     <Panel style={{ gap: space.sm }}>
       <Row gap={space.md}>
@@ -203,18 +187,26 @@ function OfferCard({
         {claimed ? <Ionicons name="checkmark-circle" size={22} color={c.accent} /> : null}
       </Row>
       <T>{o.summary}</T>
-      <T variant="caption" muted><T variant="caption" style={{ fontWeight: '600' }}>Who: </T>{o.eligibility}</T>
-      <T variant="caption" muted><T variant="caption" style={{ fontWeight: '600' }}>How: </T>{o.how_to_verify}</T>
+      {open ? (
+        <>
+          <T variant="caption" muted><T variant="caption" style={{ fontWeight: '600' }}>Who: </T>{o.eligibility}</T>
+          <T variant="caption" muted><T variant="caption" style={{ fontWeight: '600' }}>How: </T>{o.how_to_verify}</T>
+          <Row gap={6} style={{ flexWrap: 'wrap' }}>
+            {o.status === 'active' && o.last_verified ? <Badge label={`Checked ${checked(o.last_verified)}`} tone="good" icon="checkmark" /> : <Badge label="Not verified" />}
+            <Badge label={o.countries.length ? `Only ${o.countries.join(', ')}` : o.university_ids.length ? 'Your school' : 'Worldwide'} icon="globe-outline" />
+          </Row>
+        </>
+      ) : (
+        <Pressable onPress={() => setOpen(true)} hitSlop={6} accessibilityRole="button">
+          <T variant="caption" color={c.accent}>Who can get it ›</T>
+        </Pressable>
+      )}
       {personal ? (
         <Row gap={6} style={{ backgroundColor: c.accentSoft, borderRadius: 8, paddingHorizontal: space.sm, paddingVertical: 6 }}>
           <Ionicons name="person-circle-outline" size={16} color={c.accentStrong} />
           <T variant="caption" color={c.accentStrong} style={{ flex: 1 }}>For you: {personal}</T>
         </Row>
       ) : null}
-      <Row gap={6} style={{ flexWrap: 'wrap' }}>
-        {o.status === 'active' && o.last_verified ? <Badge label={`Checked ${checked(o.last_verified)}`} tone="good" icon="checkmark" /> : <Badge label="Not verified" />}
-        <Badge label={o.countries.length ? `Only ${o.countries.join(', ')}` : o.university_ids.length ? 'Your school' : 'Worldwide'} icon="globe-outline" />
-      </Row>
       <Row gap={space.sm}>
         <Button title="Open offer" icon="open-outline" size="sm" kind="secondary" style={{ flex: 1 }} onPress={() => Linking.openURL(o.url)} />
         {unavailable ? null : (

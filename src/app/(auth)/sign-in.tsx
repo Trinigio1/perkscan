@@ -11,10 +11,10 @@ import { space, useColors } from '@/theme';
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-const POINTS: { icon: 'card' | 'notifications' | 'trending-up'; text: string }[] = [
-  { icon: 'card', text: 'Tracks every credit on your cards' },
-  { icon: 'notifications', text: 'Reminds you before they reset' },
-  { icon: 'trending-up', text: 'Shows what you’ve recovered' },
+const POINTS: { icon: 'card' | 'notifications' | 'ticket'; text: string }[] = [
+  { icon: 'card', text: 'Card credits and perks' },
+  { icon: 'ticket', text: 'Codes and gift cards from your inbox' },
+  { icon: 'notifications', text: 'Reminders before they expire' },
 ];
 
 export default function SignIn() {
@@ -52,9 +52,6 @@ export default function SignIn() {
           <LogoMark />
           <T variant="display" color={c.heroText} style={{ marginTop: space.lg }}>
             Stop leaving money on the table.
-          </T>
-          <T color={c.heroMuted} style={{ marginTop: space.xs }}>
-            PerkScan finds the credits and perks your cards already owe you.
           </T>
           <View style={{ gap: space.sm, marginTop: space.lg }}>
             {POINTS.map((p) => (
@@ -105,7 +102,7 @@ export default function SignIn() {
 
         <Row style={{ justifyContent: 'center' }} gap={6}>
           <Ionicons name="lock-closed" size={13} color={c.textFaint} />
-          <T variant="caption" faint>We never store full card numbers — only the last 4 digits.</T>
+          <T variant="caption" faint>Only your cards’ last 4 digits. Never sold.</T>
         </Row>
       </Screen>
     </KeyboardAvoidingView>

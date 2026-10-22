@@ -16,7 +16,7 @@ export default function Where() {
       <Steps step={1} total={4} />
       <View style={{ gap: space.xs }}>
         <T variant="display">Where do you live?</T>
-        <T muted>So we show your cards first and your money in your currency.</T>
+        <T muted>Sets your currency and which cards we show first.</T>
       </View>
       <CountryPicker
         initial={data.profile}

@@ -69,3 +69,8 @@ export const PERIOD_LABELS = {
   annual: 'Yearly',
   per_claim: 'Per claim',
 } as const;
+
+/** "The Platinum Card® from American Express" → "Platinum Card": short enough for a list row. */
+export function shortCardName(productName: string): string {
+  return productName.replace(/®|™/g, '').replace(/^The\s+/i, '').replace(/\s+from\s+.+$/i, '').trim();
+}

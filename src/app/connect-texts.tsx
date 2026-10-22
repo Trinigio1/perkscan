@@ -88,8 +88,7 @@ export default function ConnectTexts() {
         </View>
       </Row>
       <Note icon="lock-closed-outline">
-        Only texts that match the words you choose are sent. Texts with sign-in or verification codes are thrown away
-        on arrival — never stored or read. The rest is deleted as soon as PerkScan has read it.
+        Only texts matching your words are sent. Sign-in codes are thrown away unread; the rest is deleted once read.
       </Note>
 
       <Segmented<Phone>

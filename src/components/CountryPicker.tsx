@@ -108,9 +108,6 @@ export function CountryPicker({
         </View>
       ) : null}
 
-      <T variant="caption" muted>
-        Amounts in other currencies are kept separate and never converted, e.g. “TT$450 + US$35”.
-      </T>
       {error ? <ErrorNote message={error} /> : null}
       <Button title={country ? saveTitle : 'Pick your country'} icon={country ? 'arrow-forward' : undefined} disabled={!country} loading={busy} onPress={save} />
     </View>

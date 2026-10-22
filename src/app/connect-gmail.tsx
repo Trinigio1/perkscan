@@ -74,8 +74,7 @@ export default function ConnectGmail() {
         </View>
       </Row>
       <Note icon="lock-closed-outline">
-        PerkScan only sees emails you label “PerkScan”. A small script in your own Google account sends them; nothing
-        else in your inbox is read.
+        PerkScan only sees emails you label “PerkScan”. Nothing else in your inbox is read.
       </Note>
 
       <Panel style={{ gap: space.lg }}>

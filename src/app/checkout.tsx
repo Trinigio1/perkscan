@@ -5,7 +5,7 @@ import { Pressable, TextInput, View } from 'react-native';
 import { CardArt } from '@/components/CardArt';
 import { Disclaimer } from '@/components/Disclaimer';
 import { OfferRow } from '@/components/OfferRow';
-import { Button, Chip, Empty, Note, Panel, Row, Screen, T } from '@/components/ui';
+import { Button, Chip, Empty, Panel, Row, Screen, T } from '@/components/ui';
 import { checkoutStack, guessCategory, knownMerchants, SPEND_LABELS, type CardPick, type Reason, type SpendCategory } from '@/domain/checkout';
 import { formatMoney } from '@/domain/format';
 import { track } from '@/lib/analytics';
@@ -114,7 +114,7 @@ export default function Checkout() {
               {stack.best ? (
                 <CardChoice pick={stack.best} label={userCardLabel(stack.best.userCardId)} highlight />
               ) : (
-                <T muted>No card stands out here — nothing PerkScan knows about (credits or protections) applies at {merchant}.</T>
+                <T muted>No card has a credit or protection for {merchant}.</T>
               )}
               {stack.cards.filter((p) => p !== stack.best && p.reasons.length).map((p) => (
                 <View key={p.userCardId} style={{ borderTopWidth: 1, borderTopColor: c.border, paddingTop: space.md }}>
@@ -127,7 +127,7 @@ export default function Checkout() {
           <View style={{ gap: space.sm }}>
             <T variant="heading">Use with it</T>
             {stack.promos.length + stack.storeCredit.length === 0 ? (
-              <T variant="caption" muted>No open codes, gift cards or store credit for {merchant} in PerkScan.</T>
+              <T variant="caption" muted>No codes or gift cards for {merchant}.</T>
             ) : (
               <Panel style={{ paddingVertical: space.xs }}>
                 {[...stack.storeCredit, ...stack.promos].map((o, i) => (
@@ -139,10 +139,7 @@ export default function Checkout() {
             )}
           </View>
 
-          <Note icon="information-circle-outline">
-            Points and cash-back rates aren’t compared yet — PerkScan only uses the credits and protections it knows about
-            for your cards. Unverified terms are marked.
-          </Note>
+          <T variant="caption" faint center>Points and cash-back rates aren’t compared yet.</T>
           <Disclaimer />
         </>
       ) : null}

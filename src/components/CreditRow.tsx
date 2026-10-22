@@ -75,7 +75,8 @@ export function CreditRow({
         </View>
         <View style={{ alignItems: 'flex-end', minWidth: 56 }}>
           {value === null ? (
-            <T variant="caption" faint>No amount</T>
+            // Amount not confirmed from the issuer yet: say nothing rather than guess.
+            <T variant="subheading" faint>—</T>
           ) : (
             <>
               <T

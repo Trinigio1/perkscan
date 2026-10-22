@@ -48,14 +48,13 @@ export default function Finish() {
       <Steps step={4} total={4} />
       <View style={{ gap: space.xs }}>
         <T variant="display">Last thing</T>
-        <T muted>Two quick preferences. You can change them anytime in Settings.</T>
+        <T muted>You can change these in Settings.</T>
       </View>
       <Panel>
         <ListRow
           icon="notifications"
           tone="orange"
-          title="Remind me before credits reset"
-          subtitle="A week before, and two days before"
+          title="Remind me before things expire"
           toggle={reminders}
           onToggle={setReminders}
         />
@@ -63,7 +62,6 @@ export default function Finish() {
           icon="school"
           tone="purple"
           title="I’m a student"
-          subtitle="Shows free software and other student offers"
           toggle={student}
           onToggle={setStudent}
         />

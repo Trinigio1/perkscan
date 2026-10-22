@@ -2,7 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { useMemo } from 'react';
 import { Linking, Pressable, View } from 'react-native';
-import { Badge, Empty, IconBubble, Note, Panel, Row, Screen, T, Button } from '@/components/ui';
+import { Badge, Button, Empty, IconBubble, Panel, Row, Screen, T } from '@/components/ui';
 import { formatMoney } from '@/domain/format';
 import { groupPerks, loungeCards, type PerkGroup } from '@/domain/perks';
 import type { CardBenefit } from '@/domain/types';
@@ -51,7 +51,7 @@ export default function Perks() {
             <T variant="subheading" color={c.accentStrong} style={{ flex: 1 }}>You fly on {day(nextFlight.travel_date!)}</T>
           </Row>
           <T variant="caption">
-            {nextFlight.merchant}. Your {lounges.join(' and ')} can get you into an airport lounge — check the rules below before you go.
+            {nextFlight.merchant} · lounge access with your {lounges.join(' and ')}
           </T>
         </Panel>
       ) : null}
@@ -63,10 +63,7 @@ export default function Perks() {
           <View key={g.group} style={{ gap: space.sm }}>
             <Row gap={space.sm}>
               <IconBubble icon={GROUP_ICON[g.group].icon} tone={GROUP_ICON[g.group].tone} size={32} />
-              <View style={{ flex: 1 }}>
-                <T variant="heading">{g.title}</T>
-                <T variant="caption" muted>{g.blurb}</T>
-              </View>
+              <T variant="heading" style={{ flex: 1 }}>{g.title}</T>
             </Row>
             <Panel style={{ paddingVertical: space.xs }}>
               {g.lines.map((l, i) => (
@@ -79,10 +76,7 @@ export default function Perks() {
         ))
       )}
 
-      <Note icon="information-circle-outline">
-        Perks come from each bank’s own pages and change over time. “Not verified” means we couldn’t confirm it for your card yet.
-        Statement credits are on the Credits tab.
-      </Note>
+      <T variant="caption" faint center>From each bank’s own pages. Terms change — tap ↗ to check.</T>
     </Screen>
   );
 }
@@ -101,12 +95,14 @@ function PerkLineView({ b, cards }: { b: CardBenefit; cards: string[] }) {
         ) : null}
       </Row>
       <T variant="caption" muted numberOfLines={1}>{cards.join(' · ')}</T>
-      {b.terms_summary ? <T variant="caption">{b.terms_summary}</T> : null}
-      <Row gap={6} style={{ flexWrap: 'wrap', marginTop: 2 }}>
-        {limit ? <Badge label={limit} tone="good" /> : null}
-        {b.status === 'active' && b.last_verified ? <Badge label={`Checked ${day(b.last_verified)}`} tone="good" icon="checkmark" /> : <Badge label="Not verified" />}
-        {b.enrollment_required ? <Badge label="Enroll first" icon="alert-circle" tone="warn" /> : null}
-      </Row>
+      {b.terms_summary ? <T variant="caption" numberOfLines={3}>{b.terms_summary}</T> : null}
+      {limit || b.enrollment_required || b.status !== 'active' ? (
+        <Row gap={6} style={{ flexWrap: 'wrap', marginTop: 2 }}>
+          {limit ? <Badge label={limit} tone="good" /> : null}
+          {b.enrollment_required ? <Badge label="Enroll first" icon="alert-circle" tone="warn" /> : null}
+          {b.status === 'active' ? null : <T variant="caption" faint>Unconfirmed</T>}
+        </Row>
+      ) : null}
     </View>
   );
 }
