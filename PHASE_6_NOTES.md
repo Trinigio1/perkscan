@@ -181,3 +181,51 @@ analytics.
 1. `git pull`
 2. `npx supabase db push` to load the new cards and remove the guessed benefit.
 3. In the app, open your card to see what's verified.
+
+## Update: lounges and other card perks (2026-10-22)
+
+### New: Your card perks
+Open it from **Home → Your card perks** or from the Wallet.
+
+**What it shows:** every non-credit benefit across your cards, grouped by when you'd use it:
+- **At the airport:** lounges, Global Entry and CLEAR
+- **When you travel:** travel medical and accident insurance, trip delay, baggage, car rental
+- **Status and concierge:** hotel status and concierge services
+- **Rewards:** points, miles and cash back
+- **Shopping protections**
+- **Card services:** fees, extra cards and emergency help
+
+**Each perk shows:**
+- which of your cards has it
+- what it includes
+- whether it's checked or not verified
+- "Enroll first" when you have to sign up before you can use it
+- a link to the bank's page
+
+**Flight nudge:** when PerkScan finds a flight booking with a future departure date, a banner says "You fly on [date] — your [card] can get you into an airport lounge".
+
+**Wallet:** each card now also shows how many perks it has.
+
+### Perks added or checked (2026-10-22, from each issuer's own page via web search)
+- **Lounge access:**
+  - **Amex Platinum:** Centurion Lounges, Delta Sky Club when flying Delta (10 visits a year), and Priority Pass (enroll first).
+  - **Chase Sapphire Reserve:** Priority Pass Select and Sapphire Lounges, with 2 guests free and US$27 for each extra guest.
+  - **Capital One Venture X:** Capital One Lounges and Priority Pass. Guest rules have changed, so check them first.
+- **Amex Platinum hotel status:** Marriott Bonvoy Gold Elite. Amex also lists Hilton Honors Gold, but confirm it applies to your card.
+- **Scotiabank AERO Platinum:**
+  - a Priority Pass membership (600+ lounges; the number of free visits isn't stated)
+  - travel medical insurance for trips up to 60 days
+  - travel accident insurance up to US$500,000
+- **New cards:**
+  - **Republic Bank / AAdvantage Visa Infinite** (US$150): Priority Pass with 2 free visits every 12 months.
+  - **Republic Bank Visa Signature** (US$100): concierge, hotel perks, and travel insurance when the whole fare is paid with the card.
+  - **First Citizens Visa Signature** (TT$600):
+    - Visa Airport Companion. Visits may be charged, so check before you go.
+    - Visa Concierge.
+    - Baggage delay up to US$500 and baggage loss up to US$1,000.
+    - Purchase protection and extended warranty up to US$5,000.
+- **Not checked for the US cards:** annual fees and statement credits are still unverified. Only the perks above were checked.
+
+### Your setup
+1. `git pull`
+2. `npx supabase db push`

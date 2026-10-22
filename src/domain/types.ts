@@ -107,6 +107,8 @@ export interface Receipt {
   kind: 'receipt' | 'card_alert';
   /** An authorization the bank hasn't settled yet. */
   pending: boolean;
+  /** Departure / pick-up / check-in date for travel bookings. */
+  travel_date?: string | null;
 }
 
 export type ParseStatus = 'pending' | 'parsing' | 'parsed' | 'failed' | 'ignored';

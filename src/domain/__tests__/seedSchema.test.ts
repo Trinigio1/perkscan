@@ -27,6 +27,7 @@ describe('seed/card_benefits.json', () => {
       'first_citizens_tt_visa_classic', 'first_citizens_tt_visa_gold', 'first_citizens_tt_visa_platinum', 'first_citizens_tt_purple',
       'first_citizens_tt_2_in_1', 'first_citizens_tt_vacation_lifestyle_mc',
       'republic_tt_visa_classic', 'republic_tt_visa_gold', 'republic_tt_pricesmart_visa_platinum',
+      'republic_tt_aadvantage_visa_infinite', 'republic_tt_visa_signature', 'first_citizens_tt_visa_signature',
     ]);
   });
 
@@ -42,7 +43,7 @@ describe('seed/card_benefits.json', () => {
     for (const card of seedJson.cards.filter((c: { country: string }) => c.country === 'TT')) {
       const host = Object.entries(own).find(([name]) => card.issuer.startsWith(name))![1];
       for (const b of card.benefits.filter((x: { status: string }) => x.status === 'active')) {
-        expect(new URL(b.source_url).hostname).toBe(host);
+        expect(new URL(b.source_url).hostname.replace(/^www\./, '')).toBe(host);
       }
     }
   });

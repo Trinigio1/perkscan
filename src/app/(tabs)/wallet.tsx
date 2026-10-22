@@ -24,16 +24,18 @@ export default function Wallet() {
         available: open.reduce((bag, o) => addToBag(bag, o.currency, remainingValue(o, recoveredByOpp)), {} as MoneyBag),
         credits: data.benefits.filter((b) => b.card_id === uc.card_id && b.type === 'credit').length,
         protections: data.benefits.filter((b) => b.card_id === uc.card_id && b.type === 'protection').length,
+        perks: data.benefits.filter((b) => b.card_id === uc.card_id && b.type === 'perk').length,
       };
     });
   }, [data, recoveredByOpp]);
 
   return (
     <Screen title="Wallet" right={<Button title="Add" icon="add" size="sm" kind="secondary" onPress={() => router.push('/add-card')} />}>
+      {rows.length ? <Button title="All your card perks" icon="airplane-outline" kind="secondary" size="sm" style={{ alignSelf: 'flex-start' }} onPress={() => router.push('/perks')} /> : null}
       {rows.length === 0 ? (
         <Empty icon="wallet" title="Your wallet is empty" body="Add the cards you carry to start tracking their credits." action={<Button title="Add cards" icon="add" onPress={() => router.push('/add-card')} />} />
       ) : null}
-      {rows.map(({ uc, card, available, credits, protections }) =>
+      {rows.map(({ uc, card, available, credits, protections, perks }) =>
         card ? (
           <View key={uc.id} style={{ gap: space.md }}>
             <Pressable onPress={() => router.push({ pathname: '/card/[id]', params: { id: uc.id } })} style={({ pressed }) => ({ transform: [{ scale: pressed ? 0.98 : 1 }] })}>
@@ -43,7 +45,7 @@ export default function Wallet() {
               <View style={{ flex: 1 }}>
                 <T variant="subheading">{Object.values(available).some((v) => v > 0) ? formatBag(available, card.currency) : formatMoney(0, { currency: card.currency })} <T variant="caption" muted>available now</T></T>
                 <T variant="caption" muted>
-                  {credits} credits · {protections} protections · {card.annual_fee === null ? 'fee not verified' : `${formatMoney(card.annual_fee, { currency: card.currency })} fee`}
+                  {credits} credits · {protections} protections · {perks} perks · {card.annual_fee === null ? 'fee not verified' : `${formatMoney(card.annual_fee, { currency: card.currency })} fee`}
                 </T>
               </View>
               <Pressable onPress={() => router.push({ pathname: '/card/[id]/worth-it', params: { id: uc.id } })} accessibilityLabel="Is it worth the fee?">

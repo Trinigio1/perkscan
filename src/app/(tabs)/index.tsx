@@ -241,6 +241,19 @@ export default function Home() {
       </Row>
 
       {data.userCards.length ? (
+        <Panel onPress={() => router.push('/perks')}>
+          <Row gap={space.md}>
+            <IconBubble icon="airplane" tone="blue" size={40} />
+            <View style={{ flex: 1 }}>
+              <T variant="subheading">Your card perks</T>
+              <T variant="caption" muted>Lounges, travel insurance, rewards and protections</T>
+            </View>
+            <Ionicons name="chevron-forward" size={18} color={c.textFaint} />
+          </Row>
+        </Panel>
+      ) : null}
+
+      {data.userCards.length ? (
         <Panel onPress={() => router.push('/checkout')}>
           <Row gap={space.md}>
             <IconBubble icon="storefront" tone="teal" size={40} />
