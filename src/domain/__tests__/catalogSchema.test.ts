@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
-import { settlementFileSchema, settlementsToSql, studentFileSchema, studentToSql } from '../catalogSchema';
+import { settlementFileSchema, settlementsToSql, studentFileSchema, studentToSql, universityFileSchema, unknownUniversityIds } from '../catalogSchema';
 
 const read = (f: string) => JSON.parse(readFileSync(resolve(__dirname, '../../../seed', f), 'utf8'));
 const offer = {
@@ -42,5 +42,17 @@ describe('settlements file', () => {
     const sql = settlementsToSql({ settlements: [settlement] as never })[0]!;
     expect(sql).toContain("array['acme']::text[]");
     expect(sql).toContain('on conflict (id) do update set');
+  });
+});
+
+describe('school files', () => {
+  it('both school lists are valid, ids are unique, and offers only name real schools', () => {
+    const tt = universityFileSchema.parse(read('universities.json'));
+    const us = universityFileSchema.parse(read('universities_us.json'));
+    const all = [...tt.universities, ...us.universities];
+    expect(new Set(all.map((u) => u.id)).size).toBe(all.length);
+    expect(us.universities.length).toBeGreaterThan(1000);
+    expect(us.universities.every((u) => u.country === 'US')).toBe(true);
+    expect(unknownUniversityIds(studentFileSchema.parse(read('student_discounts.json')), { universities: all })).toEqual([]);
   });
 });

@@ -132,19 +132,86 @@
       "last_verified": "2026-10-22"
     },
     {
+      "id": "spotify_premium_student_us",
+      "name": "Spotify Premium Student (with Hulu)",
+      "provider": "Spotify",
+      "category": "music",
+      "summary": "Discounted Spotify Premium for students; in the US it includes Hulu (With Ads) at no extra cost. Up to 4 years, re-verify every 12 months.",
+      "eligibility": "18 or older and enrolled at a US Title IV accredited college or university.",
+      "how_to_verify": "Verified by SheerID — you may log in to your school portal or upload proof of enrollment.",
+      "url": "https://www.spotify.com/us/student/",
+      "countries": [
+        "US"
+      ],
+      "university_ids": [],
+      "status": "active",
+      "source_url": "https://support.spotify.com/us/account_payment_help/subscription_information/spotify-and-hulu",
+      "last_verified": "2026-10-22"
+    },
+    {
+      "id": "apple_music_student",
+      "name": "Apple Music student subscription",
+      "provider": "Apple",
+      "category": "music",
+      "summary": "Discounted Apple Music for students, with Apple TV+ included. Up to 48 months; re-verify once a year.",
+      "eligibility": "Students at a college or university in a country where the student plan is offered.",
+      "how_to_verify": "In Apple Music choose Student → Verify Eligibility; checked by UNiDAYS or SheerID.",
+      "url": "https://support.apple.com/106008",
+      "countries": [
+        "US"
+      ],
+      "university_ids": [],
+      "status": "active",
+      "source_url": "https://support.apple.com/106008",
+      "last_verified": "2026-10-22"
+    },
+    {
+      "id": "youtube_premium_student",
+      "name": "YouTube Premium student membership",
+      "provider": "YouTube",
+      "category": "music",
+      "summary": "Discounted YouTube Premium or YouTube Music Premium for students. Up to 4 years; re-verify every year.",
+      "eligibility": "Enrolled at a higher-education institution approved by SheerID, in a country where student plans are offered.",
+      "how_to_verify": "Pick your school on the SheerID form from YouTube's student plan page.",
+      "url": "https://support.google.com/youtube/answer/9158808",
+      "countries": [
+        "US"
+      ],
+      "university_ids": [],
+      "status": "active",
+      "source_url": "https://support.google.com/youtube/answer/9158808",
+      "last_verified": "2026-10-22"
+    },
+    {
+      "id": "adobe_creative_cloud_students",
+      "name": "Adobe Creative Cloud for students",
+      "provider": "Adobe",
+      "category": "design",
+      "summary": "A student and teacher discount on Creative Cloud Pro (all the Creative Cloud apps).",
+      "eligibility": "13 or older and enrolled at an accredited school or qualifying online program; bought by someone 18+ with a credit card.",
+      "how_to_verify": "Confirm a school email at checkout, or send proof such as a student ID, schedule or transcript.",
+      "url": "https://www.adobe.com/creativecloud/buy/students.html",
+      "countries": [
+        "US"
+      ],
+      "university_ids": [],
+      "status": "active",
+      "source_url": "https://www.adobe.com/students",
+      "last_verified": "2026-10-22"
+    },
+    {
       "id": "amazon_prime_student",
       "name": "Prime Student",
       "provider": "Amazon",
       "category": "shopping",
-      "summary": "A discounted Amazon Prime membership for students — only for students at schools in countries where Amazon offers it.",
-      "eligibility": "Enrolled at a college or university in a country where Prime Student is offered (for example the UK or Ireland), usually with a school email.",
-      "how_to_verify": "Sign up on that country's Amazon site with your school email.",
-      "url": "https://www.amazon.co.uk/gp/help/customer/display.html?nodeId=GAHEWLGGJTWD9NK5",
+      "summary": "A discounted Amazon Prime membership for college students, usually starting with a free trial.",
+      "eligibility": "Enrolled at a college or university in a country where Amazon offers Prime Student (such as the US, UK or Ireland).",
+      "how_to_verify": "Sign up on that country's Amazon site, usually with your school (.edu) email.",
+      "url": "https://www.amazon.com/joinstudent",
       "countries": [
-        "GB",
-        "IE",
         "US",
-        "CA"
+        "GB",
+        "IE"
       ],
       "university_ids": [],
       "status": "TODO_VERIFY",

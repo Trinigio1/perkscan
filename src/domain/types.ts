@@ -188,4 +188,8 @@ export interface University {
   name: string;
   short_name: string;
   country: string;
+  state: string | null;
+  /** e.g. ["ufl.edu"]; most student offers verify with a school email. */
+  email_domains: string[];
+  website: string | null;
 }

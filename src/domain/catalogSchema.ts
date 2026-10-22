@@ -39,7 +39,11 @@ export const universitySchema = z.object({
   name: z.string().min(1),
   short_name: z.string().min(1),
   country,
-  /** The official list it comes from, e.g. a national accreditation body. */
+  state: z.string().min(1).nullable().default(null),
+  /** School email domains, e.g. ["ufl.edu"]. Most student offers verify with these. */
+  email_domains: z.array(z.string().regex(/^[a-z0-9-]+(\.[a-z0-9-]+)+$/, 'A lowercase domain like ufl.edu')).default([]),
+  website: z.string().url().nullable().default(null),
+  /** The list it comes from: an accreditation body, the US College Scorecard, or a community list (named in _readme). */
   source_url: https,
   last_verified: isoDate,
 });
@@ -58,7 +62,7 @@ export function unknownUniversityIds(students: StudentFile, universities: Univer
 }
 
 export function universitiesToSql(f: UniversityFile): string[] {
-  return f.universities.map((u, i) => upsert('universities', { ...u, sort_order: i }));
+  return f.universities.map((u, i) => upsert('universities', { ...u, sort_order: i }, ['email_domains']));
 }
 
 export const studentFileSchema = z.object({

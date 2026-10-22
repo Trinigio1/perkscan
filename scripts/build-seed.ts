@@ -24,7 +24,14 @@ function load<T>(file: string, schema: ZodType<T>): T {
 const cards = load('seed/card_benefits.json', seedFileSchema);
 const students = load('seed/student_discounts.json', studentFileSchema);
 const settlements = load('seed/settlements.json', settlementFileSchema);
-const universities = load('seed/universities.json', universityFileSchema);
+const ttSchools = load('seed/universities.json', universityFileSchema);
+const usSchools = load('seed/universities_us.json', universityFileSchema);
+const universities = { universities: [...ttSchools.universities, ...usSchools.universities] };
+const dupes = universities.universities.map((u) => u.id).filter((id, i, all) => all.indexOf(id) !== i);
+if (dupes.length) {
+  console.error(`Duplicate school ids: ${[...new Set(dupes)].join(', ')}`);
+  process.exit(1);
+}
 const unknown = unknownUniversityIds(students, universities);
 if (unknown.length) {
   console.error(`seed/student_discounts.json points at schools that aren't in seed/universities.json: ${unknown.join(', ')}`);

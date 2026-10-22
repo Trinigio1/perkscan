@@ -1,12 +1,14 @@
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Pressable, TextInput, View } from 'react-native';
-import { ErrorNote, Note, Panel, Screen, T } from '@/components/ui';
+import { ErrorNote, Loading, Note, Panel, Screen, T } from '@/components/ui';
 import { countryByCode } from '@/domain/countries';
+import type { University } from '@/domain/types';
 import { useAuth } from '@/lib/auth';
 import { updateProfile } from '@/lib/cards';
 import { useData } from '@/lib/data';
+import { searchSchools } from '@/lib/schools';
 import { useToast } from '@/lib/toast';
 import { font, radius, space, useColors } from '@/theme';
 
@@ -21,11 +23,23 @@ export default function School() {
   const country = data.profile?.country ?? null;
   const current = data.profile?.university_id ?? null;
 
-  const needle = q.trim().toLowerCase();
-  const inCountry = data.universities.filter((u) => !country || u.country === country);
-  const list = (inCountry.length ? inCountry : data.universities).filter(
-    (u) => !needle || `${u.name} ${u.short_name}`.toLowerCase().includes(needle),
-  );
+  const [list, setList] = useState<University[] | null>(null);
+  // Big lists (the US has thousands of schools) wait for a search; small ones show straight away.
+  const needsSearch = country === 'US' && q.trim().length < 2;
+
+  useEffect(() => {
+    if (needsSearch) return;
+    let live = true;
+    const t = setTimeout(() => {
+      searchSchools(country, q)
+        .then((rows) => live && setList(rows))
+        .catch((e: Error) => live && setError(e.message));
+    }, 250);
+    return () => {
+      live = false;
+      clearTimeout(t);
+    };
+  }, [country, q, needsSearch]);
 
   const choose = async (id: string | null, label: string) => {
     if (!session) return;
@@ -47,27 +61,36 @@ export default function School() {
         <TextInput
           value={q}
           onChangeText={setQ}
-          placeholder="Search schools"
+          placeholder={country === 'US' ? 'Search by name or website, e.g. ufl' : 'Search schools'}
           placeholderTextColor={c.textFaint}
           accessibilityLabel="Search schools"
           style={{ flex: 1, paddingVertical: 13, fontSize: 16, fontFamily: font.medium, color: c.text }}
         />
       </View>
       {error ? <ErrorNote message={error} /> : null}
+      {list === null && !needsSearch ? <Loading /> : null}
+      {needsSearch ? <T variant="caption" muted>Type at least 2 letters of your school’s name or website.</T> : null}
       <Panel style={{ paddingVertical: space.xs, gap: 0 }}>
-        {list.map((u, i) => (
+        {(needsSearch ? [] : (list ?? [])).map((u, i) => (
           <View key={u.id} style={i > 0 ? { borderTopWidth: 1, borderTopColor: c.border } : undefined}>
-            <SchoolOption title={u.short_name} subtitle={u.name} selected={current === u.id} onPress={() => choose(u.id, u.short_name)} />
+            <SchoolOption
+              title={u.short_name}
+              subtitle={u.short_name === u.name ? [u.email_domains[0], u.state].filter(Boolean).join(' · ') || undefined : u.name}
+              selected={current === u.id}
+              onPress={() => choose(u.id, u.short_name)}
+            />
           </View>
         ))}
-        <View style={{ borderTopWidth: list.length ? 1 : 0, borderTopColor: c.border }}>
+        <View style={{ borderTopWidth: !needsSearch && list?.length ? 1 : 0, borderTopColor: c.border }}>
           <SchoolOption title="My school isn’t listed" subtitle="You’ll still see offers for students everywhere" selected={current === null} onPress={() => choose(null, '')} />
         </View>
       </Panel>
       <Note icon="information-circle-outline">
-        {country === 'TT' || !country
+        {country === 'TT'
           ? 'Schools come from the Accreditation Council of Trinidad and Tobago’s list of accredited institutions.'
-          : `PerkScan doesn’t list schools in ${countryByCode(country)?.name ?? 'your country'} yet.`}
+          : country === 'US'
+            ? 'US schools come from a public list of colleges and their email domains.'
+            : `PerkScan lists schools in Trinidad & Tobago and the US so far${country ? `, not yet ${countryByCode(country)?.name ?? 'your country'}` : ''}.`}
         {' '}Know a perk your school gives students? Send it with a link to the official page and we’ll add it.
       </Note>
     </Screen>

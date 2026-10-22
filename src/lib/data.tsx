@@ -7,6 +7,7 @@ import { useAuth } from './auth';
 import { deviceTimeZone } from './cards';
 import { friendlyDbError } from './dbErrors';
 import { syncReminders } from './notifications';
+import { SCHOOL_COLUMNS } from './schools';
 import { supabase } from './supabase';
 
 export interface AppData {
@@ -22,7 +23,8 @@ export interface AppData {
   studentOffers: StudentOffer[];
   /** Ids of student offers the user marked as claimed. */
   studentClaims: string[];
-  universities: University[];
+  /** The user's school, if they picked one. */
+  school: University | null;
 }
 
 export interface RefreshResult {
@@ -38,7 +40,7 @@ interface DataState {
   refresh: () => Promise<RefreshResult>;
 }
 
-const empty: AppData = { profile: null, cards: [], benefits: [], userCards: [], opportunities: [], recovered: [], usage: [], receipts: [], studentOffers: [], studentClaims: [], universities: [] };
+const empty: AppData = { profile: null, cards: [], benefits: [], userCards: [], opportunities: [], recovered: [], usage: [], receipts: [], studentOffers: [], studentClaims: [], school: null };
 const DataContext = createContext<DataState>({ data: empty, loading: true, error: null, refresh: async () => ({ data: null, error: null }) });
 
 function must<T>(what: string, res: { data: T | null; error: { message: string; code?: string } | null }): T {
@@ -60,7 +62,7 @@ async function load(userId: string): Promise<AppData> {
 
   const yearStart = new Date(new Date().getFullYear(), 0, 1).toISOString();
   const since = new Date(Date.now() - 180 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
-  const [profile, cards, benefits, userCards, opportunities, recovered, usage, receipts, studentOffers, studentClaims, universities] = await Promise.all([
+  const [profile, cards, benefits, userCards, opportunities, recovered, usage, receipts, studentOffers, studentClaims] = await Promise.all([
     supabase
       .from('profiles')
       .select('*')
@@ -80,12 +82,15 @@ async function load(userId: string): Promise<AppData> {
       .limit(300),
     supabase.from('student_offers').select('*').order('sort_order'),
     supabase.from('student_offer_claims').select('offer_id'),
-    supabase.from('universities').select('id, name, short_name, country').order('sort_order'),
   ]);
 
   // numeric columns arrive as numbers from PostgREST; normalize defensively.
   const num = (v: unknown) => (v === null || v === undefined ? null : Number(v));
   const prof = must<Profile>('profile', profile);
+  // Only the user's own school: there are thousands, and the picker searches them on demand.
+  const school = prof.university_id
+    ? ((await supabase.from('universities').select(SCHOOL_COLUMNS).eq('id', prof.university_id).maybeSingle()).data as University | null)
+    : null;
   setHomeCurrency(prof.home_currency?.trim() || 'USD');
   return {
     profile: prof,
@@ -99,7 +104,7 @@ async function load(userId: string): Promise<AppData> {
     // Student mode is optional; a missing table (database not updated yet) just means no offers.
     studentOffers: (studentOffers.data ?? []) as StudentOffer[],
     studentClaims: ((studentClaims.data ?? []) as { offer_id: string }[]).map((c) => c.offer_id),
-    universities: (universities.data ?? []) as University[],
+    school,
   };
 }
 

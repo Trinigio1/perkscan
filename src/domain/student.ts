@@ -3,7 +3,7 @@ import type { StudentOffer } from './types';
 export interface StudentGroups {
   /** Offers only for students of your school. */
   school: StudentOffer[];
-  /** Offers any student in your country can get. */
+  /** Offers any student in your country can get (worldwide ones included). */
   everywhere: StudentOffer[];
   /** Offers only for students at schools in other countries (shown so you know why you can't get them). */
   elsewhere: StudentOffer[];

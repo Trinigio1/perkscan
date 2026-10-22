@@ -169,4 +169,47 @@ PerkScan still never estimates money it doesn't know about.
 
 The functions don't need redeploying for this update.
 
+## Update: United States schools and student perks
+
+PerkScan already handled the US: the United States (USD) is a country choice, US time zones are detected, and the 10 US
+cards are in the card list. This update adds US schools and US student perks.
+
+### US schools
+- **2,349 US colleges**, each with its email domain (e.g. University of Florida → ufl.edu). They're in
+  `seed/universities_us.json`, which is built by `npm run schools:us`.
+- **Where the list comes from:** I couldn't reach the Department of Education's servers from my machine. The list
+  comes from the community-maintained **Hipo university-domains-list** on GitHub, which is widely used but **not an
+  official list**. The file says so.
+- **To switch to the official list:** on your PC, get a free key at https://api.data.gov/signup, then run
+  `npm run schools:us -- --scorecard YOUR_KEY` and `npm run seed:build`. That rebuilds the list from the US
+  Department of Education's College Scorecard (operating, degree-granting schools). This mode is written and unit
+  tested, but **I couldn't run it here**.
+- **Searching:** the app no longer downloads the whole list. In the US you type at least 2 letters, and the search
+  matches the name or website ("ufl" finds the University of Florida). The short T&T list still shows in full.
+- **Your school email:** once you pick a school, Student offers says which email most offers verify with (e.g.
+  "@ufl.edu").
+
+### US student perks (checked 2026-10-22 against official support pages; no prices)
+- **Spotify Premium Student, with Hulu (With Ads) included in the US.** For students 18+ at a US Title IV accredited
+  school, checked by SheerID.
+- **Apple Music student subscription, with Apple TV+ included.** Checked by UNiDAYS or SheerID, up to 48 months.
+- **YouTube Premium student membership.** At a SheerID-approved school, up to 4 years.
+- **Adobe Creative Cloud for students.** Accredited school; a school email or proof of enrolment.
+- **Amazon Prime Student.** Shown for US, UK and Ireland students, but marked **Not verified**: I only found blog
+  sources, not an Amazon page.
+- **Left out:** Apple education pricing, because no official page came up.
+- **Where they show:** these appear for US users under "For students in United States". For T&T users they show
+  under "Not available in Trinidad & Tobago".
+- **School-specific perks for US schools aren't listed:** there are thousands, and I'll only add one from the school's
+  own page. Send links for schools you care about.
+
+### Setup for this update
+1. `git pull`. If `supabase/seed.sql` blocks it, run `git checkout -- supabase/seed.sql` first.
+2. `npx supabase db push`
+3. `npx supabase db push --include-seed`. `seed.sql` is now about 1.9 MB because of the school list, so this is
+   easier than pasting it into the SQL Editor.
+4. `npx expo start --clear`
+
+No functions need redeploying.
+
 *PerkScan informs and guides. It does not file claims, sign you up for offers, or give financial or legal advice.*

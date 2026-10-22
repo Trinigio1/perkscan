@@ -28,7 +28,8 @@ export default function Student() {
   const isStudent = !!data.profile?.is_student;
   const country = data.profile?.country ?? null;
 
-  const school = data.universities.find((u) => u.id === data.profile?.university_id) ?? null;
+  const school = data.school;
+  const schoolEmail = school?.email_domains[0] ?? null;
   const groups = groupStudentOffers(data.studentOffers, { country, universityId: school?.id ?? null });
   const here = [...groups.school, ...groups.everywhere];
   const claimedCount = here.filter((o) => data.studentClaims.includes(o.id)).length;
@@ -69,7 +70,7 @@ export default function Student() {
           icon="business"
           tone="blue"
           title="Your school"
-          subtitle={school ? 'Perks that come with your school are shown first' : 'Pick it to see perks that come with your school'}
+          subtitle={school ? (schoolEmail ? `Most offers verify with your @${schoolEmail} email` : 'Perks that come with your school are shown first') : 'Pick it to see perks that come with your school'}
           value={school ? school.short_name : 'Choose'}
           onPress={() => router.push('/school')}
         />
@@ -95,7 +96,7 @@ export default function Student() {
 
       {groups.everywhere.length ? (
         <View style={{ gap: space.sm }}>
-          <T variant="overline" muted>For students everywhere</T>
+          <T variant="overline" muted>{country ? `For students in ${countryByCode(country)?.name ?? 'your country'}` : 'For students everywhere'}</T>
           {groups.everywhere.map((o) => card(o))}
         </View>
       ) : null}

@@ -1,10 +1,10 @@
 -- Schools: a read-only list; students pick theirs on their profile.
 begin;
-select plan(5);
+select plan(6);
 
 insert into auth.users (id, email) values ('bbbbbbbb-0000-0000-0000-000000000001', 'lee@example.com');
-insert into public.universities (id, name, short_name, country, source_url, last_verified)
-values ('test_uni', 'Test University', 'TU', 'TT', 'https://example.com/list', '2026-10-22');
+insert into public.universities (id, name, short_name, country, source_url, last_verified, email_domains, website)
+values ('test_uni', 'Test University', 'TU', 'US', 'https://example.com/list', '2026-10-22', array['test.edu'], 'http://www.test.edu/');
 
 create function pg_temp.act_as(uid uuid) returns void language sql as $$
   select set_config('role', 'authenticated', true),
@@ -18,6 +18,7 @@ select throws_ok($$ insert into public.universities (id, name, short_name, count
   values ('x', 'X', 'X', 'TT', 'https://x.example.com', '2026-10-22') $$, '42501', null, 'users cannot add schools');
 select lives_ok($$ update public.profiles set university_id = 'test_uni' $$, 'pick your school');
 select is((select university_id from public.profiles), 'test_uni', 'saved on your profile');
+select is((select email_domains[1] from public.universities where id = 'test_uni'), 'test.edu', 'schools carry their email domain');
 select throws_ok($$ update public.profiles set university_id = 'no_such_school' $$, '23503', null, 'only real schools');
 
 select * from finish();
