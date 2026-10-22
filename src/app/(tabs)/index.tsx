@@ -216,6 +216,21 @@ export default function Home() {
         </Panel>
       </Row>
 
+      <Row gap={space.md}>
+        <Panel style={{ flex: 1 }} onPress={() => router.push('/recap')}>
+          <Row gap={space.sm}>
+            <Ionicons name="calendar-outline" size={18} color={c.accentStrong} />
+            <T variant="label" style={{ flex: 1 }}>{now.toLocaleDateString('en-US', { month: 'long' })} recap</T>
+          </Row>
+        </Panel>
+        <Panel style={{ flex: 1 }} onPress={() => router.push('/share')}>
+          <Row gap={space.sm}>
+            <Ionicons name="share-social-outline" size={18} color={c.accentStrong} />
+            <T variant="label" style={{ flex: 1 }}>Share my total</T>
+          </Row>
+        </Panel>
+      </Row>
+
       {data.userCards.length ? (
         <Panel onPress={() => router.push('/checkout')}>
           <Row gap={space.md}>

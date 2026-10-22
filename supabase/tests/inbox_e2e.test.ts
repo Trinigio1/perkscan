@@ -217,3 +217,29 @@ Deno.test('inbox pipeline end to end', async () => {
     await admin.auth.admin.deleteUser(bob.id);
   }
 });
+
+Deno.test('account deletion removes the user and their data', async () => {
+  const { accountHandler } = await import('../functions/account/handler.ts');
+  const carol = await makeUser('carol');
+  let deleted = false;
+  try {
+    await carol.client.from('user_cards').insert({ card_id: 'amex_gold', last_four: '7777' });
+    await carol.client.from('user_perks').insert({ title: 'Campus perk' });
+    const handler = accountHandler({ db: admin, userFromRequest: async () => carol.id });
+    const call = (body: unknown) => handler(new Request('http://local/account', { method: 'POST', body: JSON.stringify(body) }));
+    assert((await call({ action: 'delete' })).status === 400, 'needs the typed confirmation');
+    assert((await accountHandler({ db: admin, userFromRequest: async () => null })(new Request('http://local/account', { method: 'POST', body: '{}' }))).status === 401, 'signed-out requests are refused');
+    const res = await (await call({ action: 'delete', confirm: 'DELETE' })).json();
+    assert(res.deleted === true, `deleted: ${JSON.stringify(res)}`);
+    deleted = true;
+    const gone = await admin.auth.admin.getUserById(carol.id);
+    assert(!gone.data.user, 'auth user is gone');
+    for (const t of ['profiles', 'user_cards', 'user_perks', 'opportunities']) {
+      const col = t === 'profiles' ? 'id' : 'user_id';
+      const { count } = await admin.from(t).select('*', { count: 'exact', head: true }).eq(col, carol.id);
+      assert(count === 0, `${t} emptied`);
+    }
+  } finally {
+    if (!deleted) await admin.auth.admin.deleteUser(carol.id);
+  }
+});

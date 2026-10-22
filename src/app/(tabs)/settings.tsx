@@ -110,6 +110,7 @@ export default function Settings() {
         <ListRow icon="chatbubbles" tone="green" title="Connect texts" subtitle="Bank alerts and offers you get by text" onPress={() => router.push('/connect-texts')} />
         <ListRow icon="clipboard" tone="orange" title="Paste a text" subtitle="Add one bank alert or offer by hand" onPress={() => router.push('/add-text')} />
         <ListRow icon="file-tray-full" tone="gray" title="Inbox" subtitle="Emails and texts PerkScan has read" onPress={() => router.push('/inbox')} />
+        <ListRow icon="key" tone="gray" title="Connected sources" subtitle="See and revoke Gmail and texts tokens" onPress={() => router.push('/sources')} />
       </Group>
 
       <Group title="About the numbers">
@@ -139,7 +140,7 @@ export default function Settings() {
 
       <Group title="Account">
         <ListRow icon="log-out" tone="gray" title="Sign out" onPress={signOut} />
-        <ListRow icon="download" tone="gray" title="Export or delete my data" subtitle="Coming in a later update" />
+        <ListRow icon="download" tone="gray" title="Export or delete my data" subtitle="Download everything, or delete your account" onPress={() => router.push('/data')} />
       </Group>
 
       <T variant="caption" faint center>PerkScan · Phase 5 preview</T>

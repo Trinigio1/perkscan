@@ -78,6 +78,10 @@ function RootNavigator() {
         <Stack.Screen name="student" options={{ ...header, title: 'Student offers' }} />
         <Stack.Screen name="school" options={{ ...modal, title: 'Your school' }} />
         <Stack.Screen name="my-perk" options={{ ...modal, title: 'A perk from your school' }} />
+        <Stack.Screen name="recap" options={{ ...header, title: 'Monthly recap' }} />
+        <Stack.Screen name="share" options={{ ...modal, title: 'Share' }} />
+        <Stack.Screen name="data" options={{ ...header, title: 'Your data' }} />
+        <Stack.Screen name="sources" options={{ ...header, title: 'Connected sources' }} />
       </Stack.Protected>
     </Stack>
   );

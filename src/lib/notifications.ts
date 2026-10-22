@@ -3,13 +3,15 @@ import * as Notifications from 'expo-notifications';
 import { AndroidImportance } from 'expo-notifications';
 import * as SecureStore from 'expo-secure-store';
 import { Platform } from 'react-native';
+import { planWeeklyDigest } from '@/domain/digest';
+import { getHomeCurrency } from '@/domain/format';
 import { planCreditReminders } from '@/domain/reminders';
 import type { Opportunity, Recovered } from '@/domain/types';
 
 const PREF_KEY = 'reminders_enabled';
 const CHANNEL = 'credit-reminders';
 // 'credit-' was the Phase 1 prefix; still cancel those so old reminders don't linger.
-const PREFIXES = ['remind-', 'credit-'];
+const PREFIXES = ['remind-', 'credit-', 'digest-'];
 
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
@@ -53,7 +55,7 @@ async function cancelCreditReminders() {
   );
 }
 
-/** Replaces scheduled "expiring soon" reminders with the current plan. Local only — no server push yet. */
+/** Replaces scheduled reminders (expiring soon + the weekly digest) with the current plan. Local notifications. */
 export async function syncReminders(opportunities: Opportunity[], recovered: Recovered[]) {
   if (Platform.OS === 'web') return;
   if (!(await remindersEnabled())) return;
@@ -67,6 +69,15 @@ export async function syncReminders(opportunities: Opportunity[], recovered: Rec
       identifier: r.id,
       content: { title: r.title, body: r.body, data: { opportunityId: r.opportunityId } },
       trigger: { type: Notifications.SchedulableTriggerInputTypes.DATE, date: r.fireAt, channelId: CHANNEL },
+    });
+  }
+  // Sunday-evening "money at risk this week" summary, rebuilt from fresh data every time the app syncs.
+  const digest = planWeeklyDigest(opportunities, recovered, new Date(), getHomeCurrency());
+  if (digest) {
+    await Notifications.scheduleNotificationAsync({
+      identifier: digest.id,
+      content: { title: digest.title, body: digest.body, data: { route: '/credits' } },
+      trigger: { type: Notifications.SchedulableTriggerInputTypes.DATE, date: digest.fireAt, channelId: CHANNEL },
     });
   }
 }
