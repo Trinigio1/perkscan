@@ -6,10 +6,12 @@ import { Hero } from '@/components/Hero';
 import { OpportunityRow } from '@/components/OfferRow';
 import { ErrorNote, IconBubble, Money, Panel, Row, Screen, SectionHeader, T, type IconName } from '@/components/ui';
 import { addToBag, formatBag, getHomeCurrency, type MoneyBag } from '@/domain/format';
-import { setupSteps, nextToUse } from '@/domain/money';
+import { nextToUse, setupSteps } from '@/domain/money';
 import { scoreByCurrency } from '@/domain/score';
+import { suggestions } from '@/domain/suggestions';
 import { greeting, type IconTone } from '@/domain/visuals';
 import { useData, useLookups } from '@/lib/data';
+import { useDismissed } from '@/lib/suggestions';
 import { space, useColors } from '@/theme';
 
 const nonZero = (bag: MoneyBag) => Object.values(bag).some((v) => v > 0);
@@ -24,6 +26,7 @@ export default function Home() {
   const { data, error, refresh } = useData();
   const { benefitById, recoveredByOpp, userCardLabel } = useLookups();
   const [refreshing, setRefreshing] = useState(false);
+  const [dismissed, dismiss] = useDismissed();
 
   const { now, home, totals, soon } = useMemo(() => {
     const at = new Date();
@@ -49,6 +52,27 @@ export default function Home() {
     await refresh();
     setRefreshing(false);
   };
+
+  // Things you probably qualify for, from your country, school, cards and who emails you.
+  const forYou = useMemo(
+    () =>
+      suggestions({
+        country: data.profile?.country ?? null,
+        isStudent: !!data.profile?.is_student,
+        school: data.school,
+        schoolHints: data.schoolHints,
+        studentOffers: data.studentOffers,
+        studentClaims: data.studentClaims,
+        programs: data.programs,
+        opportunities: data.opportunities,
+        receipts: data.receipts,
+        senderDomains: data.senderDomains,
+        userCards: data.userCards,
+        cards: data.cards,
+        benefits: data.benefits,
+      }),
+    [data],
+  ).filter((s) => !dismissed.has(s.id)).slice(0, 3);
 
   const name = data.profile?.display_name?.split(' ')[0];
   const steps = setupSteps(data);
@@ -106,6 +130,31 @@ export default function Home() {
           </Pressable>
         ))}
       </Row>
+
+      {forYou.length ? (
+        <>
+          <SectionHeader title="For you" />
+          <Panel style={{ paddingVertical: space.xs }}>
+            {forYou.map((sug, i) => (
+              <View key={sug.id} style={[{ paddingVertical: space.md, gap: space.xs }, i > 0 ? { borderTopWidth: 1, borderTopColor: c.border } : null]}>
+                <Row gap={space.md} style={{ alignItems: 'flex-start' }}>
+                  <IconBubble icon={sug.icon} tone={sug.tone} size={36} />
+                  <View style={{ flex: 1, gap: 2 }}>
+                    <T variant="subheading">{sug.title}</T>
+                    <T variant="caption" muted numberOfLines={2}>{sug.body}</T>
+                    <Pressable onPress={() => router.push({ pathname: sug.action.pathname, params: sug.action.params })} hitSlop={6} accessibilityRole="button">
+                      <T variant="label" color={c.accent} style={{ marginTop: 4 }}>{sug.action.label} ›</T>
+                    </Pressable>
+                  </View>
+                  <Pressable onPress={() => dismiss(sug.id)} hitSlop={10} accessibilityLabel={`Hide: ${sug.title}`}>
+                    <Ionicons name="close" size={18} color={c.textFaint} />
+                  </Pressable>
+                </Row>
+              </View>
+            ))}
+          </Panel>
+        </>
+      ) : null}
 
       <SectionHeader title="Use soon" action="See all" onAction={() => router.push('/money')} />
       {soon.length ? (

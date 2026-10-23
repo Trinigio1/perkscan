@@ -74,7 +74,8 @@ export default function ConnectGmail() {
         </View>
       </Row>
       <Note icon="lock-closed-outline">
-        PerkScan only sees emails you label “PerkScan”. Nothing else in your inbox is read.
+        The script runs in your own Google account and only sends receipts, bank alerts, codes, gift cards, expiring points,
+        refunds and trials. Sign-in and security-code emails are skipped. Email text is deleted once read.
       </Note>
 
       <Panel style={{ gap: space.lg }}>
@@ -95,8 +96,11 @@ export default function ConnectGmail() {
           </T>
           <Button title="Open setup guide" icon="open-outline" kind="secondary" size="sm" onPress={() => Linking.openURL(GMAIL_SCRIPT_URL)} style={{ alignSelf: 'flex-start' }} />
         </Step>
-        <Step n={3} title="Label emails “PerkScan”">
-          <T variant="caption" muted>The guide has a Gmail filter that labels receipts, coupons, gift cards and trials automatically.</T>
+        <Step n={3} title="Turn it on">
+          <T variant="caption" muted>
+            Run installPerkScanTrigger once: PerkScan then finds useful emails by itself every 10 minutes. Run scanPastYear to
+            also look through the last 12 months.
+          </T>
         </Step>
         <Step n={4} title="Check it works">
           <T variant="caption" muted>Runs a sample coupon through PerkScan’s email reader.</T>

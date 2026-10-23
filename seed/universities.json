@@ -11,7 +11,11 @@
       "short_name": "UWI St. Augustine",
       "country": "TT",
       "source_url": "https://actt.org.tt/services/accreditation/list-of-accredited-institutions",
-      "last_verified": "2026-10-22"
+      "last_verified": "2026-10-22",
+      "email_domains": [
+        "my.uwi.edu",
+        "sta.uwi.edu"
+      ]
     },
     {
       "id": "utt",

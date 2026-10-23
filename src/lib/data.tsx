@@ -1,6 +1,8 @@
 import { createContext, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { AppState } from 'react-native';
 import { setHomeCurrency, shortCardName } from '@/domain/format';
+import type { Program } from '@/domain/programs';
+import { domainsWithParents } from '@/domain/suggestions';
 import { singleFlight } from '@/domain/singleFlight';
 import type { BenefitUsage, Card, CardBenefit, Opportunity, Profile, Receipt, Recovered, StudentOffer, University, UserCard, UserPerk } from '@/domain/types';
 import { useAuth } from './auth';
@@ -27,6 +29,12 @@ export interface AppData {
   school: University | null;
   /** Perks the user added from their school. */
   myPerks: UserPerk[];
+  /** The "hidden money" catalog: loyalty, unclaimed money, price adjustments, refunds, libraries. */
+  programs: Program[];
+  /** Domains that emailed the user in the last year (only the domain is ever stored). */
+  senderDomains: string[];
+  /** Schools whose email domains appear among those senders, for "Studying at …?". */
+  schoolHints: University[];
 }
 
 export interface RefreshResult {
@@ -42,7 +50,7 @@ interface DataState {
   refresh: () => Promise<RefreshResult>;
 }
 
-const empty: AppData = { profile: null, cards: [], benefits: [], userCards: [], opportunities: [], recovered: [], usage: [], receipts: [], studentOffers: [], studentClaims: [], school: null, myPerks: [] };
+const empty: AppData = { profile: null, cards: [], benefits: [], userCards: [], opportunities: [], recovered: [], usage: [], receipts: [], studentOffers: [], studentClaims: [], school: null, myPerks: [], programs: [], senderDomains: [], schoolHints: [] };
 const DataContext = createContext<DataState>({ data: empty, loading: true, error: null, refresh: async () => ({ data: null, error: null }) });
 
 function must<T>(what: string, res: { data: T | null; error: { message: string; code?: string } | null }): T {
@@ -64,7 +72,8 @@ async function load(userId: string): Promise<AppData> {
 
   const yearStart = new Date(new Date().getFullYear(), 0, 1).toISOString();
   const since = new Date(Date.now() - 180 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
-  const [profile, cards, benefits, userCards, opportunities, recovered, usage, receipts, studentOffers, studentClaims, myPerks] = await Promise.all([
+  const yearAgo = new Date(Date.now() - 365 * 24 * 60 * 60 * 1000).toISOString();
+  const [profile, cards, benefits, userCards, opportunities, recovered, usage, receipts, studentOffers, studentClaims, myPerks, programs, senders] = await Promise.all([
     supabase
       .from('profiles')
       .select('*')
@@ -85,6 +94,8 @@ async function load(userId: string): Promise<AppData> {
     supabase.from('student_offers').select('*').order('sort_order'),
     supabase.from('student_offer_claims').select('offer_id'),
     supabase.from('user_perks').select('id, university_id, title, details, url, suggest, created_at').order('created_at'),
+    supabase.from('perk_programs').select('id, kind, name, provider, countries, summary, how_to, url, merchants, window_days, status, last_verified, sort_order').order('sort_order'),
+    supabase.from('inbound_messages').select('from_domain').not('from_domain', 'is', null).gte('received_at', yearAgo).limit(1000),
   ]);
 
   // numeric columns arrive as numbers from PostgREST; normalize defensively.
@@ -94,6 +105,13 @@ async function load(userId: string): Promise<AppData> {
   const school = prof.university_id
     ? ((await supabase.from('universities').select(SCHOOL_COLUMNS).eq('id', prof.university_id).maybeSingle()).data as University | null)
     : null;
+  const senderDomains = [...new Set(((senders.data ?? []) as { from_domain: string }[]).map((m) => m.from_domain))];
+  // A school emailing you hints you study there. Only looked up until a school is picked.
+  const parents = domainsWithParents(senderDomains);
+  const schoolHints =
+    !prof.university_id && parents.length
+      ? (((await supabase.from('universities').select(SCHOOL_COLUMNS).overlaps('email_domains', parents).limit(3)).data ?? []) as University[])
+      : [];
   setHomeCurrency(prof.home_currency?.trim() || 'USD');
   return {
     profile: prof,
@@ -110,6 +128,10 @@ async function load(userId: string): Promise<AppData> {
     school,
     // Optional like the rest of Student mode: missing table (database not updated) just means none.
     myPerks: (myPerks.data ?? []) as UserPerk[],
+    // Optional too: a database without the catalog yet just means no hidden-money suggestions.
+    programs: (programs.data ?? []) as Program[],
+    senderDomains,
+    schoolHints,
   };
 }
 

@@ -70,3 +70,48 @@ Grouped by what to do, filtered to your country, from official sources only:
 - **Refund rules for flights inside the Caribbean:** I found no general passenger-rights law to cite.
 - **Double charges outside the US** point you to your bank, since there's no US-style dispute law to cite.
 - **The "Refunds you may be owed" rules** are guidance with official links. PerkScan doesn't decide whether you qualify.
+
+## Update: automatic email scanning and "For you" suggestions (2026-10-23)
+
+### Gmail finds useful emails by itself
+The Gmail script (`gmail/PerkScan.gs`) now searches your mailbox for what PerkScan can use. No labels or filters to set up.
+- **What it sends:**
+  - Gmail's own Purchases category
+  - receipts and order or booking confirmations
+  - gift cards, store credit and vouchers
+  - promo codes and card-linked offers
+  - points or miles that expire
+  - trials and renewals
+  - bank card alerts
+  - settlement claims
+  - refunds for cancelled or delayed flights and orders
+- **Never sent:** sign-in, password and verification-code emails, plus social, forums, spam and bin.
+- **Past year:** run **scanPastYear** once. It works newest first, a few batches every 10 minutes, and respects PerkScan's 200-an-hour limit. **previewPerkScan** counts what would be sent without sending anything.
+- **Choosing emails yourself:** set `AUTO_SCAN = false` to go back to labeled emails only. Labeled emails are always included.
+- **Cost:** reading costs about US$0.0006 per email, under the monthly cap.
+- **Tested:** the script's batching, hourly-limit handling and past-year resume were run in a simulated Apps Script environment. Syntax is checked.
+
+### "For you" on Home
+PerkScan suggests things you probably qualify for, from what it already knows:
+- **School:** "Studying at UWI St. Augustine?" when your school's domain emails you and you haven't turned on Student mode.
+- **Unclaimed student perks:** "N student perks to claim".
+- **Loyalty programs you use:** spotted from senders (e.g. email.marriott.com) or stores on your receipts (e.g. Massy Stores). Opens "Add balance" with the program already picked.
+- **Lounge access** on a card you hold.
+- **Where you live:**
+  - unclaimed money to check
+  - the US health FSA deadline
+  - your national library card (NALIS in TT)
+
+Up to 3 at a time. Tap ✕ to hide one, and it stays hidden on that device. Only sender domains are used, never names or email text.
+
+UWI St. Augustine now has its official email domains (`my.uwi.edu` for students, `sta.uwi.edu` for campus offices). This means:
+- the school can be recognised from your emails
+- "For you" lines show "Use your @my.uwi.edu email"
+
+### Your setup
+1. `git pull`
+2. `npx supabase db push` (adds UWI's email domains)
+3. **Update the script in Google:** open your Apps Script project, replace the code with the new `gmail/PerkScan.gs`, keep your URL and token, then save.
+4. Run **installPerkScanTrigger** again. Optionally run **scanPastYear**. Do this in both Gmail accounts.
+
+No server functions changed this time.
