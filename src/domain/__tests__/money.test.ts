@@ -48,7 +48,7 @@ describe('moneyList', () => {
   ];
 
   it('splits open items into this week, later and no end date', () => {
-    const l = moneyList(items, 'open', 'all', NOW, new Map());
+    const l = moneyList(items, 'open', 'all', NOW, new Map(), () => 'active');
     expect(l.sections.map((s) => [s.title, s.items.map((o) => o.id)])).toEqual([
       ['This week', ['kfc']],
       ['Later', ['uber', 'prot']],
@@ -75,6 +75,28 @@ describe('moneyList', () => {
 
   it('is empty when there is nothing in the view', () => {
     expect(moneyList([], 'open', 'all', NOW, new Map())).toEqual({ sections: [], kinds: [], total: {}, count: 0 });
+  });
+});
+
+describe('confidence in the Money list', () => {
+  const list = [
+    opp({ id: 'kfc', type: 'promo', value_estimate: 10, currency: 'TTD', code: 'KFC10', expires_at: days(3) }),
+    opp({ id: 'twice', type: 'refund', value_estimate: 85, currency: 'TTD', dedupe_key: 'double_charge:7290:2026-10-22:85:kfc', expires_at: null }),
+    opp({ id: 'amex', type: 'card_credit', value_estimate: null, expires_at: days(2) }),
+    opp({ id: 'mine', type: 'benefit', value_estimate: 300, currency: 'TTD', dedupe_key: 'manual:1', expires_at: days(30) }),
+  ];
+
+  it('keeps guesses in their own "Worth checking" group', () => {
+    const l = moneyList(list, 'open', 'all', NOW, new Map());
+    expect(l.sections.map((s) => [s.title, s.items.map((o) => o.id)])).toEqual([
+      ['This week', ['kfc']],
+      ['Later', ['mine']],
+      ['Worth checking', ['amex', 'twice']],
+    ]);
+  });
+
+  it('never counts guesses toward the total', () => {
+    expect(moneyList(list, 'open', 'all', NOW, new Map()).total).toEqual({ TTD: 310 });
   });
 });
 

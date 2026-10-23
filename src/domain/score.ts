@@ -1,3 +1,4 @@
+import { confidenceOf } from './confidence';
 import { CATEGORY_ORDER, type Opportunity, type OpportunityCategory, type Recovered } from './types';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -91,7 +92,8 @@ export function computeScore(opportunities: Opportunity[], recovered: Recovered[
   for (const opp of opportunities) {
     if (opp.status === 'dismissed' || opp.status === 'claimed') continue;
     const cat = cats.get(opp.category)!;
-    const remaining = remainingValue(opp, recoveredByOpp);
+    // Guesses ("charged twice?", unconfirmed rules) never count as money available or missed.
+    const remaining = confidenceOf(opp) === 'check' ? 0 : remainingValue(opp, recoveredByOpp);
 
     if (isMissed(opp, now)) {
       // Only this year's misses count toward the headline.

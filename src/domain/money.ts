@@ -1,3 +1,4 @@
+import { confidenceOf, rankCompare, type BenefitStatusOf } from './confidence';
 import { addToBag, type MoneyBag } from './format';
 import { remainingValue } from './score';
 import type { Opportunity } from './types';
@@ -79,6 +80,7 @@ export function moneyList(
   kind: MoneyKind | 'all',
   now: Date,
   recoveredByOpp: Map<string, number>,
+  statusOf?: BenefitStatusOf,
 ): MoneyList {
   const inView = opportunities.filter((o) => viewOf(o, now) === view);
   const kinds = KIND_ORDER.filter((k) => inView.some((o) => kindOf(o) === k));
@@ -87,17 +89,22 @@ export function moneyList(
   const total: MoneyBag = {};
   for (const o of items) {
     if (o.type === 'protection') continue; // coverage, not cash
+    // Guesses never count toward totals; used items count what actually came back.
+    if (view !== 'used' && confidenceOf(o, statusOf) === 'check') continue;
     addToBag(total, o.currency, view === 'used' ? recoveredByOpp.get(o.id) ?? o.value_estimate ?? 0 : remainingValue(o, recoveredByOpp));
   }
 
   let sections: MoneySection[];
   if (view === 'open') {
-    const soonFirst = [...items].sort((a, b) => t(a) - t(b) || Number(a.value_estimate === null) - Number(b.value_estimate === null));
+    const ranked = [...items].sort(rankCompare(now, statusOf));
+    const sure = ranked.filter((o) => confidenceOf(o, statusOf) !== 'check');
     const end = now.getTime() + WEEK_MS;
     sections = [
-      { title: 'This week', items: soonFirst.filter((o) => t(o) <= end) },
-      { title: 'Later', items: soonFirst.filter((o) => t(o) > end && t(o) !== Infinity) },
-      { title: 'No end date', items: soonFirst.filter((o) => t(o) === Infinity) },
+      { title: 'This week', items: sure.filter((o) => t(o) <= end) },
+      { title: 'Later', items: sure.filter((o) => t(o) > end && t(o) !== Infinity) },
+      { title: 'No end date', items: sure.filter((o) => t(o) === Infinity) },
+      // Guesses and unconfirmed rules: kept apart so they never look like money in hand.
+      { title: 'Worth checking', items: ranked.filter((o) => confidenceOf(o, statusOf) === 'check') },
     ];
   } else {
     // Newest first: the last thing you used or missed is the one you remember.
@@ -107,16 +114,15 @@ export function moneyList(
 }
 
 /**
- * The few things to use next on Home, soonest first. Items with no known amount count as two weeks
- * later than they are, so real money isn't pushed off the list by unverified credits.
+ * The few things to use next on Home, in rank order. Guesses only fill the list when there's
+ * nothing surer to show.
  */
-export function nextToUse(opportunities: Opportunity[], now: Date, max = 4): Opportunity[] {
-  const rank = (o: Opportunity) => t(o) + (o.value_estimate === null ? 2 * WEEK_MS : 0);
-  return opportunities
+export function nextToUse(opportunities: Opportunity[], now: Date, max = 4, statusOf?: BenefitStatusOf): Opportunity[] {
+  const open = opportunities
     .filter((o) => viewOf(o, now) === 'open' && o.expires_at !== null && o.type !== 'protection')
-    .sort((a, b) => rank(a) - rank(b))
-    .slice(0, max)
-    .sort((a, b) => t(a) - t(b));
+    .sort(rankCompare(now, statusOf));
+  const sure = open.filter((o) => confidenceOf(o, statusOf) !== 'check');
+  return [...sure, ...open.filter((o) => !sure.includes(o))].slice(0, max);
 }
 
 export interface SetupStep {

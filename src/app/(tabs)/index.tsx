@@ -43,9 +43,9 @@ export default function Home() {
         used: bag((s) => s.recoveredThisYear),
         missed: bag((s) => s.leftOnTable),
       },
-      soon: nextToUse(data.opportunities, at),
+      soon: nextToUse(data.opportunities, at, 4, (id) => benefitById.get(id)?.status),
     };
-  }, [data]);
+  }, [data, benefitById]);
 
   const onRefresh = async () => {
     setRefreshing(true);

@@ -1,10 +1,12 @@
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { Pressable, View } from 'react-native';
+import { confidenceOf } from '@/domain/confidence';
 import { formatMoney, lastDayLabel, relativeDays } from '@/domain/format';
 import type { CardBenefit, Opportunity } from '@/domain/types';
 import { benefitIcon } from '@/domain/visuals';
 import { space, useColors } from '@/theme';
+import { ConfidenceTag } from './ConfidenceTag';
 import { IconBubble, ProgressBar, Row, T } from './ui';
 
 /** One credit for one period: icon, name, card, reset timing and what's left. */
@@ -73,7 +75,7 @@ export function CreditRow({
             </View>
           ) : null}
         </View>
-        <View style={{ alignItems: 'flex-end', minWidth: 56 }}>
+        <View style={{ alignItems: 'flex-end', minWidth: 56, gap: 4 }}>
           {value === null ? (
             // Amount not confirmed from the issuer yet: say nothing rather than guess.
             <T variant="subheading" faint>—</T>
@@ -89,6 +91,7 @@ export function CreditRow({
               {!used && !missed && recovered > 0 ? <T variant="caption" faint>left</T> : null}
             </>
           )}
+          {!used && !missed ? <ConfidenceTag value={confidenceOf(opp)} /> : null}
         </View>
       </Row>
     </Pressable>

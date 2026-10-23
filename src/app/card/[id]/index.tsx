@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { Alert, Linking, Platform, Pressable, View } from 'react-native';
 import { CardArt } from '@/components/CardArt';
 import { CardDetailsForm } from '@/components/CardDetailsForm';
+import { ConfidenceTag } from '@/components/ConfidenceTag';
 import { Disclaimer } from '@/components/Disclaimer';
 import { Badge, Button, ErrorNote, IconBubble, Panel, Row, Screen, Segmented, T } from '@/components/ui';
 import { draftToRow, validateDraft, type CardDraft } from '@/domain/cardDraft';
@@ -48,7 +49,7 @@ function BenefitLine({ b, card }: { b: CardBenefit; card: Card }) {
           {amount ? <Badge label={amount} tone="good" /> : null}
           {b.type === 'credit' && b.period !== 'per_claim' && b.period_anchor === 'cardmember_year' ? <Badge label="Resets on anniversary" /> : null}
           {b.enrollment_required ? <Badge label="Enroll first" icon="alert-circle" tone="warn" /> : null}
-          {b.status === 'active' ? null : <T variant="caption" faint>Unconfirmed</T>}
+          <ConfidenceTag value={b.status === 'active' ? 'confirmed' : 'check'} />
         </Row>
         {b.terms_summary ? <T variant="caption" muted numberOfLines={2}>{b.terms_summary}</T> : null}
       </View>

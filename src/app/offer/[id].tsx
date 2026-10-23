@@ -3,9 +3,11 @@ import * as Clipboard from 'expo-clipboard';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
 import { Linking, Pressable, View } from 'react-native';
+import { ConfidenceTag } from '@/components/ConfidenceTag';
 import { Disclaimer } from '@/components/Disclaimer';
 import { ReadCheck } from '@/components/ReadCheck';
 import { Badge, Button, ErrorNote, Field, IconBubble, Money, Panel, Row, Screen, T } from '@/components/ui';
+import { CONFIDENCE_HELP, confidenceOf } from '@/domain/confidence';
 import { formatMoney, lastDayLabel, relativeDays } from '@/domain/format';
 import { offerIcon, OFFER_TYPE_LABELS } from '@/domain/visuals';
 import { track } from '@/lib/analytics';
@@ -47,6 +49,7 @@ export default function OfferDetail() {
   // Money you get back rather than spend: ask how much came back.
   const comesBack = opp.type === 'refund' || opp.type === 'price_drop';
   const manual = !!opp.dedupe_key?.startsWith('manual:');
+  const confidence = confidenceOf(opp, (b) => data.benefits.find((x) => x.id === b)?.status);
 
   const act = async (key: string, action: 'used' | 'dismiss' | 'reopen', amount: number | null, message: string) => {
     setBusy(key);
@@ -84,6 +87,12 @@ export default function OfferDetail() {
           {opp.status === 'dismissed' ? <Badge label="Dismissed" /> : null}
           {missed ? <Badge label="Expired" tone="bad" /> : null}
         </Row>
+        {opp.status === 'open' && !missed ? (
+          <View style={{ alignItems: 'center', gap: 2 }}>
+            <ConfidenceTag value={confidence} />
+            <T variant="caption" muted center>{CONFIDENCE_HELP[confidence]}</T>
+          </View>
+        ) : null}
       </View>
 
       <Panel style={{ alignItems: 'center', paddingVertical: space.xl, gap: space.md }}>
@@ -122,7 +131,7 @@ export default function OfferDetail() {
             </T>
           </Row>
         ) : (
-          <T variant="caption" muted center>{isProtection ? 'The deadline depends on your card’s terms' : 'No expiry date found in the email'}</T>
+          <T variant="caption" muted center>{isProtection ? 'The deadline depends on your card’s terms' : manual ? 'No deadline set' : opp.dedupe_key?.startsWith('double_charge:') ? 'Your card’s dispute window applies' : 'No expiry date found in the email'}</T>
         )}
       </Panel>
 
@@ -144,7 +153,7 @@ export default function OfferDetail() {
               disabled={!!busy}
               onPress={markUsed}
             />
-            <Button title={isProtection ? 'Not needed' : opp.type === 'settlement' ? 'Not for me' : 'Not interested'} kind="ghost" loading={busy === 'dismiss'} disabled={!!busy} onPress={() => act('dismiss', 'dismiss', null, 'Dismissed')} />
+            <Button title={isProtection ? 'Not needed' : opp.type === 'settlement' ? 'Not for me' : opp.dedupe_key?.startsWith('double_charge:') ? 'It was two purchases' : 'Not interested'} kind="ghost" loading={busy === 'dismiss'} disabled={!!busy} onPress={() => act('dismiss', 'dismiss', null, 'Dismissed')} />
           </>
         ) : (
           <Button title="Undo" kind="secondary" icon="arrow-undo" loading={busy === 'reopen'} disabled={!!busy} onPress={() => act('reopen', 'reopen', null, 'Moved back to active')} />
@@ -194,8 +203,6 @@ export default function OfferDetail() {
             }
           }}
         />
-      ) : opp.source_message_id ? (
-        <T variant="caption" faint center>Found in an email or text you sent to PerkScan. Double-check the details in the original.</T>
       ) : null}
       {opp.source_message_id && opp.type !== 'protection' ? <ReadCheck messageId={opp.source_message_id} opportunityId={opp.id} /> : null}
 

@@ -3,6 +3,7 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
 import { Linking, Pressable, View } from 'react-native';
 import { CardArt } from '@/components/CardArt';
+import { ConfidenceTag } from '@/components/ConfidenceTag';
 import { Disclaimer } from '@/components/Disclaimer';
 import { Badge, Button, Chip, ErrorNote, Field, IconBubble, Money, Panel, ProgressRing, Row, Screen, T } from '@/components/ui';
 import { formatMoney, lastDayLabel, PERIOD_LABELS, relativeDays } from '@/domain/format';
@@ -90,10 +91,9 @@ export default function CreditDetail() {
       <Panel style={{ alignItems: 'center', paddingVertical: space.xl }}>
         {value === null ? (
           <>
-            <T variant="heading">Amount not verified</T>
-            <T variant="caption" muted center>
-              We haven’t confirmed this credit’s amount with the issuer yet, so it counts as $0 in your totals. You can still mark it used.
-            </T>
+            <ConfidenceTag value="check" />
+            <T variant="heading">Amount not confirmed</T>
+            <T variant="caption" muted center>Not counted in your totals until it’s confirmed. You can still mark it used.</T>
           </>
         ) : (
           <ProgressRing value={value ? recovered / value : 0} done={used} size={150} stroke={12} color={soon ? c.warn : c.accent}>
@@ -175,7 +175,7 @@ export default function CreditDetail() {
         <Panel>
           <T variant="heading">Terms</T>
           <T variant="caption" muted>{benefit.terms_summary}</T>
-          <T variant="caption" faint>{benefit.last_verified ? `Last verified ${benefit.last_verified}` : 'Not yet verified against the issuer’s terms.'}</T>
+          <ConfidenceTag value={benefit.status === 'active' ? 'confirmed' : 'check'} />
         </Panel>
       ) : null}
 

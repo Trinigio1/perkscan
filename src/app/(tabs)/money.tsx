@@ -1,5 +1,5 @@
 import { router, useLocalSearchParams } from 'expo-router';
-import { useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { RefreshControl, ScrollView, View } from 'react-native';
 import { OpportunityRow } from '@/components/OfferRow';
 import { Button, Chip, Empty, Panel, Row, Screen, Segmented, T } from '@/components/ui';
@@ -25,14 +25,15 @@ export default function Money() {
   const [kind, setKind] = useState<MoneyKind | 'all'>('all');
   const [refreshing, setRefreshing] = useState(false);
   const home = data.profile?.home_currency?.trim() || getHomeCurrency();
+  const statusOf = useCallback((id: string) => benefitById.get(id)?.status, [benefitById]);
 
   const { now, list } = useMemo(() => {
     const at = new Date();
-    return { now: at, list: moneyList(data.opportunities, view, kind, at, recoveredByOpp) };
-  }, [data.opportunities, view, kind, recoveredByOpp]);
+    return { now: at, list: moneyList(data.opportunities, view, kind, at, recoveredByOpp, statusOf) };
+  }, [data.opportunities, view, kind, recoveredByOpp, statusOf]);
   // A filter that no longer has anything in this view falls back to All.
   const shownKind = kind !== 'all' && !list.kinds.includes(kind) ? 'all' : kind;
-  const shown = shownKind === kind ? list : moneyList(data.opportunities, view, 'all', now, recoveredByOpp);
+  const shown = shownKind === kind ? list : moneyList(data.opportunities, view, 'all', now, recoveredByOpp, statusOf);
 
   const onRefresh = async () => {
     setRefreshing(true);
@@ -86,6 +87,7 @@ export default function Money() {
         shown.sections.map((s) => (
           <View key={s.title || 'all'} style={{ gap: space.sm }}>
             {s.title ? <T variant="overline" color={s.title === 'This week' ? c.warn : c.textMuted}>{s.title}</T> : null}
+            {s.title === 'Worth checking' ? <T variant="caption" faint>Not counted in your totals until confirmed.</T> : null}
             <Panel style={{ paddingVertical: space.xs }}>
               {s.items.map((o, i) => (
                 <View key={o.id} style={i > 0 ? { borderTopWidth: 1, borderTopColor: c.border } : undefined}>

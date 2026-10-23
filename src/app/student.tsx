@@ -2,6 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { useState } from 'react';
 import { Linking, Pressable, View } from 'react-native';
+import { ConfidenceTag } from '@/components/ConfidenceTag';
 import { Hero } from '@/components/Hero';
 import { ListRow } from '@/components/ListRow';
 import { Badge, Button, ErrorNote, IconBubble, Panel, Row, Screen, T } from '@/components/ui';
@@ -16,8 +17,6 @@ import { useToast } from '@/lib/toast';
 import { space, useColors } from '@/theme';
 
 const CATEGORY_ICON = { software: 'apps', design: 'color-palette', productivity: 'document-text', developer: 'code-slash', music: 'musical-notes', shopping: 'bag-handle', travel: 'airplane', other: 'school' } as const;
-
-const checked = (d: string) => new Date(`${d}T12:00:00Z`).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
 
 /** Student mode: curated student offers, and which ones you've claimed. */
 export default function Student() {
@@ -192,7 +191,7 @@ function OfferCard({
           <T variant="caption" muted><T variant="caption" style={{ fontWeight: '600' }}>Who: </T>{o.eligibility}</T>
           <T variant="caption" muted><T variant="caption" style={{ fontWeight: '600' }}>How: </T>{o.how_to_verify}</T>
           <Row gap={6} style={{ flexWrap: 'wrap' }}>
-            {o.status === 'active' && o.last_verified ? <Badge label={`Checked ${checked(o.last_verified)}`} tone="good" icon="checkmark" /> : <Badge label="Not verified" />}
+            <ConfidenceTag value={o.status === 'active' && o.last_verified ? 'confirmed' : 'check'} />
             <Badge label={o.countries.length ? `Only ${o.countries.join(', ')}` : o.university_ids.length ? 'Your school' : 'Worldwide'} icon="globe-outline" />
           </Row>
         </>

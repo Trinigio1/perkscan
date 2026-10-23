@@ -2,6 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { Linking, Pressable, View } from 'react-native';
+import { ConfidenceTag } from '@/components/ConfidenceTag';
 import { Button, ErrorNote, IconBubble, Loading, Panel, Row, Screen, T, type IconName } from '@/components/ui';
 import { countryByCode } from '@/domain/countries';
 import { programSections, type Program, type ProgramKind } from '@/domain/programs';
@@ -94,12 +95,13 @@ function ProgramLine({ p }: { p: Program }) {
       <Row>
         <View style={{ flex: 1 }}>
           <T variant="subheading">{p.name}</T>
-          <T variant="caption" muted>{p.provider}{p.status === 'active' ? '' : ' · unconfirmed'}</T>
+          <T variant="caption" muted>{p.provider}</T>
         </View>
         <Pressable onPress={() => Linking.openURL(p.url)} hitSlop={10} accessibilityLabel={`Open ${p.name}`}>
           <Ionicons name="open-outline" size={18} color={c.accent} />
         </Pressable>
       </Row>
+      <ConfidenceTag value={p.status === 'active' ? 'confirmed' : 'check'} />
       <T variant="caption">{p.summary}</T>
       {open ? (
         <T variant="caption" muted>{p.how_to}</T>

@@ -1,15 +1,20 @@
 import { router } from 'expo-router';
 import { Pressable, View } from 'react-native';
+import { confidenceOf } from '@/domain/confidence';
 import { formatMoney, lastDayLabel, relativeDays } from '@/domain/format';
 import type { CardBenefit, Opportunity } from '@/domain/types';
 import { offerIcon, OFFER_TYPE_LABELS } from '@/domain/visuals';
+import { useLookups } from '@/lib/data';
 import { space, useColors } from '@/theme';
+import { ConfidenceTag } from './ConfidenceTag';
 import { CreditRow } from './CreditRow';
 import { Badge, IconBubble, Row, T } from './ui';
 
 /** A promo, gift card, trial, return window or settlement found in email. */
 export function OfferRow({ opp, now }: { opp: Opportunity; now: Date }) {
   const c = useColors();
+  const { benefitById } = useLookups();
+  const statusOf = (id: string) => benefitById.get(id)?.status;
   const { icon, tone } = offerIcon(opp.type);
   const expires = opp.expires_at ? new Date(opp.expires_at) : null;
   const done = opp.status === 'claimed';
@@ -49,6 +54,7 @@ export function OfferRow({ opp, now }: { opp: Opportunity; now: Date }) {
             </T>
           ) : null}
           {opp.code && !done ? <Badge label={opp.code} /> : null}
+          {opp.status === 'open' && !missed ? <ConfidenceTag value={confidenceOf(opp, statusOf)} /> : null}
         </View>
       </Row>
     </Pressable>

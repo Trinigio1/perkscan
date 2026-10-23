@@ -2,6 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { useMemo } from 'react';
 import { Linking, Pressable, View } from 'react-native';
+import { ConfidenceTag } from '@/components/ConfidenceTag';
 import { Badge, Button, Empty, IconBubble, Panel, Row, Screen, T } from '@/components/ui';
 import { formatMoney } from '@/domain/format';
 import { groupPerks, loungeCards, type PerkGroup } from '@/domain/perks';
@@ -96,13 +97,11 @@ function PerkLineView({ b, cards }: { b: CardBenefit; cards: string[] }) {
       </Row>
       <T variant="caption" muted numberOfLines={1}>{cards.join(' · ')}</T>
       {b.terms_summary ? <T variant="caption" numberOfLines={3}>{b.terms_summary}</T> : null}
-      {limit || b.enrollment_required || b.status !== 'active' ? (
-        <Row gap={6} style={{ flexWrap: 'wrap', marginTop: 2 }}>
-          {limit ? <Badge label={limit} tone="good" /> : null}
-          {b.enrollment_required ? <Badge label="Enroll first" icon="alert-circle" tone="warn" /> : null}
-          {b.status === 'active' ? null : <T variant="caption" faint>Unconfirmed</T>}
-        </Row>
-      ) : null}
+      <Row gap={6} style={{ flexWrap: 'wrap', marginTop: 2, alignItems: 'center' }}>
+        <ConfidenceTag value={b.status === 'active' ? 'confirmed' : 'check'} />
+        {limit ? <Badge label={limit} tone="good" /> : null}
+        {b.enrollment_required ? <Badge label="Enroll first" icon="alert-circle" tone="warn" /> : null}
+      </Row>
     </View>
   );
 }
