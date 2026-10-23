@@ -17,6 +17,7 @@ export default function Finish() {
   const { data, refresh } = useData();
   const [student, setStudent] = useState(false);
   const [interests, setInterests] = useState<string[]>([]);
+  const [share, setShare] = useState(false);
   const [reminders, setReminders] = useState(true);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -30,6 +31,7 @@ export default function Finish() {
       await updateProfile(session.user.id, {
         is_student: student,
         interests,
+        share_deals: share,
         timezone: deviceTimeZone(),
         onboarded_at: new Date().toISOString(),
       });
@@ -67,6 +69,14 @@ export default function Finish() {
           title="I’m a student"
           toggle={student}
           onToggle={setStudent}
+        />
+        <ListRow
+          icon="people"
+          tone="green"
+          title="Help people nearby find deals"
+          subtitle="Swap public promotions with others near you — the deals your own inbox never shows. Never your emails or who you are."
+          toggle={share}
+          onToggle={setShare}
         />
       </Panel>
       <View style={{ gap: space.sm }}>

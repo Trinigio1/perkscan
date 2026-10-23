@@ -1,4 +1,4 @@
-import { dealValue, interestProfile, rankDeals, shopsAt, suggestedInterests, type Deal, type DealsFor } from '../deals';
+import { dealValue, domainStoreKey, interestProfile, matchStore, peopleLikeYou, rankDeals, storeKey, suggestedInterests, type Deal, type DealsFor, type InterestInput } from '../deals';
 
 const TODAY = '2026-10-23';
 const deal = (d: Partial<Deal> & { id: string }): Deal => ({
@@ -6,57 +6,92 @@ const deal = (d: Partial<Deal> & { id: string }): Deal => ({
   currency: null, code: null, min_spend: null, countries: ['TT'], regions: [], starts_on: null, ends_on: null, url: 'https://x.example',
   evidence: 'x', confidence: 'confirmed', seen_by: 0, saves: 0, ...d,
 });
+const opp = (o: Partial<InterestInput['opportunities'][number]>) => ({ merchant: null, code: null, type: 'promo' as const, dedupe_key: null, value_estimate: null, source_message_id: null, ...o });
 
-const profile = interestProfile({
+const input: InterestInput = {
   picked: ['fitness'],
   receipts: [
     { merchant: 'COURTS (TRINIDAD) LTD', purchase_type: 'appliance' },
     { merchant: 'Uber Eats', purchase_type: 'food_delivery' },
     { merchant: 'Uber Eats', purchase_type: 'food_delivery' },
+    { merchant: 'Massy Stores', purchase_type: 'groceries' },
   ],
-  opportunities: [{ merchant: 'PriceSmart' }],
-  senderDomains: ['email.massystores.com', 'mail.example.com'],
-});
+  opportunities: [
+    // Massy emails you its promotions.
+    opp({ merchant: 'Massy Stores', code: 'MASSY10', value_estimate: 10, source_message_id: 'm1' }),
+  ],
+  senderDomains: ['pricesmart.com', 'gmail.com'],
+};
+const profile = interestProfile(input);
 const who = (over: Partial<DealsFor> = {}): DealsFor => ({ country: 'TT', today: TODAY, profile, feedback: [], ...over });
 
+describe('store names', () => {
+  it('reads the same store the same way everywhere', () => {
+    expect(storeKey('COURTS (TRINIDAD) LTD')).toBe('courts');
+    expect(domainStoreKey('email.courts.co.tt')).toBe('courts');
+    expect(domainStoreKey('courts.co.tt')).toBe('courts');
+    expect(domainStoreKey('mail.target.com')).toBe('target');
+    expect(domainStoreKey('my.uwi.edu')).toBeNull();
+  });
+});
+
 describe('interestProfile', () => {
-  it('learns what you spend on and where you shop', () => {
+  it('separates stores you shop at from stores that email you', () => {
+    expect([...profile.shops]).toEqual(['courts', 'ubereats', 'massystores']);
+    expect(profile.follows.has('pricesmart')).toBe(true);
+    expect(profile.follows.has('massystores')).toBe(true);
+    expect(profile.follows.has('courts')).toBe(false);
     expect(profile.inferred.get('delivery')).toBe(2);
-    expect(profile.inferred.get('home')).toBe(1);
-    expect(profile.stores.has('pricesmart')).toBe(true);
-    expect(profile.stores.has('massystores')).toBe(true);
-    expect(profile.stores.has('mail')).toBe(false);
-    expect(suggestedInterests(profile)).toEqual(['delivery', 'home']);
+    expect(suggestedInterests(profile)).toEqual(['delivery', 'home', 'groceries']);
   });
 });
 
-describe('shopsAt', () => {
+describe('matchStore', () => {
   it('matches a store however its name is written', () => {
-    expect(shopsAt({ merchant: 'Courts', merchant_keys: ['courts'] }, profile.stores)).toBe(true);
-    expect(shopsAt({ merchant: 'Massy Stores', merchant_keys: ['massy', 'massystores'] }, profile.stores)).toBe(true);
-    expect(shopsAt({ merchant: 'Nike', merchant_keys: ['nike'] }, profile.stores)).toBe(false);
+    expect(matchStore({ merchant: 'Courts', merchant_keys: ['courts'] }, profile.shops)).toBe('courts');
+    expect(matchStore({ merchant: 'Nike', merchant_keys: ['nike'] }, profile.shops)).toBeNull();
   });
 });
 
-describe('rankDeals', () => {
+describe('rankDeals: what your inbox won’t show you', () => {
   const deals = [
     deal({ id: 'courts', merchant: 'Courts', merchant_keys: ['courts'], category: 'home', amount: 300 }),
     deal({ id: 'gym', category: 'fitness', percent_off: 20 }),
-    deal({ id: 'pizza', category: 'delivery', amount: 25 }),
+    deal({ id: 'pizza', merchant: 'Pizza Boys', category: 'delivery', amount: 25 }),
+    deal({ id: 'pricesmart', merchant: 'PriceSmart', merchant_keys: ['pricesmart'], category: 'electronics', percent_off: 15 }),
+    deal({ id: 'massy_same', merchant: 'Massy Stores', merchant_keys: ['massystores'], category: 'groceries', code: 'MASSY10', amount: 10 }),
     deal({ id: 'nike', category: 'fashion', percent_off: 40 }),
     deal({ id: 'us_only', countries: ['US'], category: 'home' }),
     deal({ id: 'ended', category: 'home', ends_on: '2026-10-20' }),
-    deal({ id: 'florida', countries: ['TT'], regions: ['FL'], category: 'home' }),
+    deal({ id: 'florida', regions: ['FL'], category: 'home' }),
   ];
 
-  it('puts stores you use first, then what you picked, then what you spend on', () => {
+  it('raises stores you shop at that don’t email you, then interests, then spending', () => {
     const r = rankDeals(deals, who());
-    expect(r.forYou.map((x) => x.deal.id)).toEqual(['courts', 'gym', 'pizza']);
-    expect(r.forYou.map((x) => x.why)).toEqual(['You shop at Courts', 'You picked Fitness', 'You spend on food delivery']);
+    expect(r.forYou.map((x) => [x.deal.id, x.why])).toEqual([
+      ['courts', 'You shop at Courts'],
+      ['gym', 'Matches Fitness'],
+      ['pizza', 'You spend on food delivery'],
+    ]);
   });
 
-  it('keeps the rest as popular near you, without a reason', () => {
+  it('never repeats a deal already in your Money, and leaves out stores that email you', () => {
+    const ids = [...rankDeals(deals, who()).forYou, ...rankDeals(deals, who()).popular].map((x) => x.deal.id);
+    expect(ids).not.toContain('massy_same');
+    expect(ids).not.toContain('pricesmart');
     expect(rankDeals(deals, who()).popular.map((x) => [x.deal.id, x.why])).toEqual([['nike', null]]);
+  });
+
+  it('still shows an emailing store’s deal when it matches you strongly', () => {
+    const r = rankDeals([deal({ id: 'ps_fit', merchant: 'PriceSmart', merchant_keys: ['pricesmart'], category: 'fitness' })], who());
+    expect(r.forYou.map((x) => x.deal.id)).toEqual(['ps_fit']);
+    expect(r.forYou[0]!.score).toBeLessThan(rankDeals([deal({ id: 'other_fit', category: 'fitness' })], who()).forYou[0]!.score);
+  });
+
+  it('keeps deals you saved, shown as saved', () => {
+    const p = interestProfile({ ...input, opportunities: [...input.opportunities, opp({ merchant: 'Courts', code: 'COOL300', value_estimate: 300, dedupe_key: 'deal:confirmed:courts' })] });
+    const r = rankDeals([deal({ id: 'courts', merchant: 'Courts', merchant_keys: ['courts'], category: 'home', amount: 300, code: 'COOL300' })], who({ profile: p }));
+    expect(r.forYou.map((x) => x.deal.id)).toEqual(['courts']);
   });
 
   it('only shows deals where you live, that haven’t ended', () => {
@@ -73,7 +108,6 @@ describe('rankDeals', () => {
     const ids = r.forYou.map((x) => x.deal.id);
     expect(ids).not.toContain('courts');
     expect(ids).not.toContain('gym');
-    expect(ids.indexOf('courts2')).toBeGreaterThan(-1);
     expect(r.forYou.find((x) => x.deal.id === 'courts2')!.score).toBeLessThan(rankDeals(more, who()).forYou.find((x) => x.deal.id === 'courts2')!.score);
   });
 
@@ -90,11 +124,41 @@ describe('rankDeals', () => {
   });
 });
 
+describe('people like you', () => {
+  const likeYou = peopleLikeYou(
+    profile,
+    [{ store_key: 'ubereats', people: 20 }, { store_key: 'courts', people: 10 }],
+    [
+      { store_a: 'ubereats', store_b: 'foodrop', people: 12 },
+      { store_a: 'courts', store_b: 'foodrop', people: 3 },
+      { store_a: 'ubereats', store_b: 'tinyshop', people: 2 },
+      { store_a: 'ubereats', store_b: 'courts', people: 9 },
+    ],
+  );
+
+  it('finds stores popular with people who shop where you do, but not ones you use', () => {
+    expect(likeYou.get('foodrop')).toEqual({ via: 'Uber Eats', share: 0.6 });
+    expect(likeYou.has('courts')).toBe(false);
+  });
+
+  it('raises their deals, and says why', () => {
+    const r = rankDeals([deal({ id: 'foodrop', merchant: 'FooDrop', merchant_keys: ['foodrop'], category: 'shopping' })], who({ likeYou }));
+    expect(r.forYou.map((x) => x.why)).toEqual(['Popular with people who use Uber Eats']);
+  });
+
+  it('ignores weak links', () => {
+    const r = rankDeals([deal({ id: 'tinyshop', merchant: 'Tiny Shop', merchant_keys: ['tinyshop'], category: 'shopping' })], who({ likeYou }));
+    expect(r.forYou).toEqual([]);
+    expect(r.popular.map((x) => x.deal.id)).toEqual(['tinyshop']);
+  });
+});
+
 describe('dealValue', () => {
   it('shows only stated numbers', () => {
     const fmt = (n: number) => `TT$${n}`;
     expect(dealValue({ amount: 300, percent_off: null }, fmt)).toBe('TT$300 off');
     expect(dealValue({ amount: null, percent_off: 20 }, fmt)).toBe('20% off');
     expect(dealValue({ amount: null, percent_off: null }, fmt)).toBeNull();
+    expect(dealValue({ amount: 0, percent_off: null }, fmt)).toBeNull();
   });
 });

@@ -57,6 +57,9 @@ describe('helpers', () => {
   it('fromDomain keeps only the registrable domain', () => {
     expect(fromDomain('Acme <orders@mail.shop.acme.com>')).toBe('acme.com');
     expect(fromDomain('no address')).toBeNull();
+    expect(fromDomain('Courts <news@email.courts.co.tt>')).toBe('courts.co.tt');
+    expect(fromDomain('Shop <hi@mail.shop.com.jm>')).toBe('shop.com.jm');
+    expect(fromDomain('UWI <a@my.uwi.edu>')).toBe('uwi.edu');
   });
 });
 

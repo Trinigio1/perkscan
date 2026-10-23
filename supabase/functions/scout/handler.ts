@@ -1,11 +1,12 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { json } from '../_shared/http.ts';
 import type { ModelCall } from '../_shared/inbox/parse.ts';
+import { discoverStores, type DiscoverReport } from '../_shared/scout/discover.ts';
 import { runScout, type ScoutOptions } from '../_shared/scout/run.ts';
 
 // POST /functions/v1/scout   (called hourly by pg_cron, see _invoke_scout)
 // Authorization: Bearer <SCOUT_SECRET>
-// {}                         -> the sources due for a check
+// {}                         -> look up a couple of new stores, then read the sources due for a check
 // { "only": ["courts_tt"] }  -> just these sources, now
 
 export interface ScoutDeps {
@@ -39,8 +40,17 @@ export function scoutHandler(deps: ScoutDeps) {
     } catch {
       // empty body: the sources due
     }
+    // Finding new stores costs no AI; a failure there never stops the regular reading.
+    let discovered: DiscoverReport[] = [];
+    if (!only) {
+      try {
+        discovered = await discoverStores(deps.db, { fetch: deps.options.fetch });
+      } catch (e) {
+        console.error('store discovery failed', e);
+      }
+    }
     try {
-      return json({ sources: await runScout(deps.db, deps.model, { ...deps.options, only }) });
+      return json({ discovered, sources: await runScout(deps.db, deps.model, { ...deps.options, only }) });
     } catch (e) {
       console.error('scout failed', e);
       return json({ error: 'Scout run failed' }, 500);

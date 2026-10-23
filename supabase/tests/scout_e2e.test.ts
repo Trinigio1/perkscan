@@ -6,6 +6,7 @@
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 import type { ModelCall } from '../functions/_shared/inbox/parse.ts';
 import type { Fetch } from '../functions/_shared/scout/page.ts';
+import { discoverStores } from '../functions/_shared/scout/discover.ts';
 import { runScout } from '../functions/_shared/scout/run.ts';
 import { scoutHandler } from '../functions/scout/handler.ts';
 
@@ -90,4 +91,37 @@ Deno.test('scout endpoint needs the secret', async () => {
   assert(ok.status === 200, `right secret: ${ok.status}`);
   const unset = scoutHandler({ db: admin, secret: null, model: fakeModel, options: opts });
   assert((await unset(new Request('http://x/scout', { method: 'POST' }))).status === 503, 'refuses to run without a secret configured');
+});
+
+Deno.test('stores that email several people get their promotions page added to the list', async () => {
+  const ids: string[] = [];
+  try {
+    for (let i = 0; i < 3; i++) {
+      const { data, error } = await admin.auth.admin.createUser({ email: `disc-${Date.now()}-${i}@example.com`, email_confirm: true });
+      assert(!error && data.user, `user: ${error?.message}`);
+      ids.push(data.user.id);
+    }
+    await admin.from('profiles').update({ country: 'TT' }).in('id', ids);
+    const { error } = await admin.from('inbound_messages').insert(ids.map((id) => ({ user_id: id, source: 'email', from_domain: 'e2eshop.co.tt', parse_status: 'parsed' })));
+    assert(!error, `messages: ${error?.message}`);
+
+    const promo = '<html><body><h1>Specials</h1><p>Save 25% off school bags. Special offer: free delivery on sale items this week only.</p></body></html>';
+    const shop: Fetch = async (url) => {
+      const pages: Record<string, string> = { 'https://www.e2eshop.co.tt/robots.txt': 'User-agent: *\nAllow: /', 'https://www.e2eshop.co.tt/specials': promo };
+      const r = new Response(pages[url] ?? 'nope', { status: pages[url] ? 200 : 404, headers: { 'content-type': url.endsWith('.txt') ? 'text/plain' : 'text/html' } });
+      Object.defineProperty(r, 'url', { value: url });
+      return r;
+    };
+    const reports = await discoverStores(admin, { fetch: shop, perRun: 20 });
+    assert(reports.some((r) => r.domain === 'e2eshop.co.tt' && r.result === 'added (common path)'), `found: ${JSON.stringify(reports)}`);
+    const { data: src } = await admin.from('deal_sources').select('*').eq('id', 'auto_tt_e2eshop_co_tt').single();
+    assert(src?.url === 'https://www.e2eshop.co.tt/specials' && src.origin === 'discovered' && src.merchants[0] === 'e2eshop' && src.countries[0] === 'TT', 'added as a discovered store page');
+
+    const again = await discoverStores(admin, { fetch: shop, perRun: 20 });
+    assert(!again.some((r) => r.domain === 'e2eshop.co.tt'), 'not looked up twice');
+  } finally {
+    await admin.from('deal_sources').delete().eq('id', 'auto_tt_e2eshop_co_tt');
+    await admin.from('store_domain_checks').delete().eq('domain', 'e2eshop.co.tt');
+    for (const id of ids) await admin.auth.admin.deleteUser(id);
+  }
 });

@@ -133,8 +133,8 @@ export default function Settings() {
         <ListRow
           icon="people"
           tone="gray"
-          title="Share public codes"
-          subtitle="Promo codes many people get help others nearby. Only the store, offer and code — never your email."
+          title="Help people nearby find deals"
+          subtitle="Public promotions many people get are shown to others, and which stores go together is counted. Never your emails, amounts or who you are."
           toggle={!!data.profile?.share_deals}
           onToggle={toggleShare}
         />

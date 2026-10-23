@@ -103,12 +103,16 @@ export function cleanEmailText(input: string): string {
   return out.join('\n').replace(/\n{3,}/g, '\n\n').trim();
 }
 
+const SECOND_LEVEL = new Set(['co', 'com', 'net', 'org', 'gov', 'edu', 'ac']);
+
 /** "Acme <orders@shop.acme.com>" -> "acme.com". Only the domain is ever stored. */
 export function fromDomain(from: string | null | undefined): string | null {
   const m = /@([a-z0-9.-]+\.[a-z]{2,})/i.exec(from ?? '');
   if (!m) return null;
   const parts = m[1]!.toLowerCase().split('.');
-  return parts.slice(-2).join('.');
+  // Country domains like "courts.co.tt" or "store.com.jm" keep three labels, or every store would be "co.tt".
+  const keep = parts.length >= 3 && parts[parts.length - 1]!.length === 2 && SECOND_LEVEL.has(parts[parts.length - 2]!) ? 3 : 2;
+  return parts.slice(-keep).join('.');
 }
 
 /** The exact text sent to the model. The sender is reduced to a domain. */

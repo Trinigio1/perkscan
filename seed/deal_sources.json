@@ -4,7 +4,8 @@
     "Only official pages on the company's own domain. The scout respects robots.txt, never leaves the domain, and publishes only what it can quote from the page.",
     "Store items become Deals for you; bank and government items become Coming up near you events for the right cardholders.",
     "issuers must match seed/card_benefits.json. card_keywords limits a promotion to cards whose name contains the word (e.g. mastercard).",
-    "Pages that fail are retried weekly and show their last error in deal_sources.last_status — fix or deactivate them. Run `npm run seed:build -- --migration` after editing."
+    "Pages that fail are retried weekly and show their last error in deal_sources.last_status — fix or deactivate them. Run `npm run seed:build -- --migration` after editing.",
+    "PerkScan also adds store pages by itself (origin \"discovered\" in the database) from the stores that email several users in a country. Those aren't listed here."
   ],
   "sources": [
     {
@@ -50,8 +51,8 @@
       ],
       "issuers": [],
       "card_keywords": [],
-      "active": true,
-      "found_via": "Web search restricted to the official domain, 2026-10-23"
+      "active": false,
+      "found_via": "Web search restricted to the official domain, 2026-10-23. Switched off 2026-10-23: robots.txt disallows automated reading."
     },
     {
       "id": "scotiabank_tt_promos",
@@ -86,8 +87,8 @@
         "First Citizens (Trinidad & Tobago)"
       ],
       "card_keywords": [],
-      "active": true,
-      "found_via": "Web search restricted to the official domain, 2026-10-23"
+      "active": false,
+      "found_via": "Web search restricted to the official domain, 2026-10-23. Switched off 2026-10-23: the site answers HTTP 403 to automated reading."
     },
     {
       "id": "first_citizens_tt_partners",

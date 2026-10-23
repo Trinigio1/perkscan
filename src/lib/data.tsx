@@ -1,7 +1,7 @@
 import { createContext, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { AppState } from 'react-native';
 import { setHomeCurrency, shortCardName } from '@/domain/format';
-import type { Deal, DealFeedback } from '@/domain/deals';
+import { domainStoreKey, storeKey, type Deal, type DealFeedback, type StorePair, type StoreStat } from '@/domain/deals';
 import { relevantEvents, type LocalEvent } from '@/domain/events';
 import type { Program } from '@/domain/programs';
 import { domainsWithParents } from '@/domain/suggestions';
@@ -45,6 +45,9 @@ export interface AppData {
   dealFeedback: DealFeedback[];
   /** How many official pages PerkScan checks for the user's country, and when it last did. */
   scout: { sources: number; lastChecked: string | null };
+  /** "People like you": how many people (5+, opted in) use the stores you use, and what else they use. */
+  storeStats: StoreStat[];
+  storePairs: StorePair[];
 }
 
 export interface RefreshResult {
@@ -60,7 +63,7 @@ interface DataState {
   refresh: () => Promise<RefreshResult>;
 }
 
-const empty: AppData = { profile: null, cards: [], benefits: [], userCards: [], opportunities: [], recovered: [], usage: [], receipts: [], studentOffers: [], studentClaims: [], school: null, myPerks: [], programs: [], senderDomains: [], schoolHints: [], events: [], deals: [], dealFeedback: [], scout: { sources: 0, lastChecked: null } };
+const empty: AppData = { profile: null, cards: [], benefits: [], userCards: [], opportunities: [], recovered: [], usage: [], receipts: [], studentOffers: [], studentClaims: [], school: null, myPerks: [], programs: [], senderDomains: [], schoolHints: [], events: [], deals: [], dealFeedback: [], scout: { sources: 0, lastChecked: null }, storeStats: [], storePairs: [] };
 const DataContext = createContext<DataState>({ data: empty, loading: true, error: null, refresh: async () => ({ data: null, error: null }) });
 
 function must<T>(what: string, res: { data: T | null; error: { message: string; code?: string } | null }): T {
@@ -141,6 +144,20 @@ async function load(userId: string): Promise<AppData> {
         supabase.from('deal_sources').select('last_checked').contains('countries', [prof.country]).eq('active', true),
       ])
     : [{ data: [] }, { data: [] }];
+  // Store statistics only for the stores this user deals with (they're counts, never people).
+  const myStores = [
+    ...new Set([
+      ...((receipts.data ?? []) as { merchant: string }[]).map((r) => storeKey(r.merchant)),
+      ...senderDomains.map(domainStoreKey),
+      ...((opportunities.data ?? []) as { merchant: string | null }[]).map((o) => (o.merchant ? storeKey(o.merchant) : null)),
+    ]),
+  ].filter((k): k is string => !!k && k.length >= 3).slice(0, 150);
+  const [storeStats, storePairs] = prof.country && myStores.length
+    ? await Promise.all([
+        supabase.from('store_stats').select('store_key, people').eq('country', prof.country).in('store_key', myStores),
+        supabase.from('store_pairs').select('store_a, store_b, people').eq('country', prof.country).in('store_a', myStores).limit(1000),
+      ])
+    : [{ data: [] }, { data: [] }];
   const checked = ((sources.data ?? []) as { last_checked: string | null }[]).map((x) => x.last_checked).filter((x): x is string => !!x).sort();
   setHomeCurrency(prof.home_currency?.trim() || 'USD');
   return {
@@ -168,6 +185,9 @@ async function load(userId: string): Promise<AppData> {
     deals: ((deals.data ?? []) as Deal[]).map((d) => ({ ...d, amount: num(d.amount), percent_off: num(d.percent_off), min_spend: num(d.min_spend) })),
     dealFeedback: (dealFeedback.data ?? []) as DealFeedback[],
     scout: { sources: (sources.data ?? []).length, lastChecked: checked[checked.length - 1] ?? null },
+    // Optional: a database without these yet just means no "people like you".
+    storeStats: (storeStats.data ?? []) as StoreStat[],
+    storePairs: (storePairs.data ?? []) as StorePair[],
   };
 }
 

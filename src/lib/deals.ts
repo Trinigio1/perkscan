@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { interestProfile, rankDeals, suggestedInterests, type DealFeedback, type Interest, type InterestProfile, type RankedDeal } from '@/domain/deals';
+import { interestProfile, peopleLikeYou, rankDeals, suggestedInterests, type DealFeedback, type Interest, type InterestProfile, type RankedDeal } from '@/domain/deals';
 import { track } from './analytics';
 import { useData } from './data';
 import { supabase } from './supabase';
@@ -24,6 +24,7 @@ export function useDeals(): { forYou: RankedDeal[]; popular: RankedDeal[]; profi
       today: new Date().toISOString().slice(0, 10),
       profile,
       feedback: data.dealFeedback,
+      likeYou: peopleLikeYou(profile, data.storeStats, data.storePairs),
     });
     return { ...ranked, profile, suggested: suggestedInterests(profile), picked };
   }, [data]);

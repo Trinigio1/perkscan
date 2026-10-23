@@ -57,7 +57,7 @@ export function DealRow({ item }: { item: RankedDeal }) {
               <T variant="caption" color={c.accentStrong}>{item.why}</T>
             </Row>
           ) : null}
-          {d.source === 'shared' ? <T variant="caption" faint>Code {d.seen_by} PerkScan users near you received</T> : null}
+          {d.source === 'shared' ? <T variant="caption" faint>{d.seen_by} PerkScan users near you got this</T> : null}
 
           <Row gap={6} style={{ flexWrap: 'wrap', marginTop: 4, alignItems: 'center' }}>
             {value ? <Badge label={value} tone="good" /> : null}

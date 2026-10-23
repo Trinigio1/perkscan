@@ -101,11 +101,11 @@ export async function processMessages(db: SupabaseClient, ids: string[], call: M
       else if (error.code !== '23505') throw new Error(`opportunities: ${error.message}`); // 23505 = already have this offer
     }
 
-    // Opted in: public codes from this email may help others nearby (only store, offer, code, dates).
+    // Opted in: public promotions from this email may help others nearby (only store, offer, code, dates).
     if (profile?.share_deals) {
       const seen = sightingsFrom(parsed.data, (profile.country as string | null) ?? null, today);
       if (seen.length) {
-        const { error } = await db.from('deal_sightings').upsert(seen.map((x) => ({ ...x, user_id: claimed.user_id, seen_at: new Date().toISOString() })), { onConflict: 'user_id,merchant_key,code' });
+        const { error } = await db.from('deal_sightings').upsert(seen.map((x) => ({ ...x, user_id: claimed.user_id, seen_at: new Date().toISOString() })), { onConflict: 'user_id,merchant_key,offer_key' });
         if (error) console.warn('deal_sightings', error.message);
       }
     }

@@ -44,14 +44,18 @@ const GONE_AFTER_DAYS = 2;
 
 const CURRENCY: Record<string, string> = { US: 'USD', TT: 'TTD', JM: 'JMD', BB: 'BBD', BS: 'BSD', GY: 'GYD' };
 
-const SOURCE_COLUMNS = 'id, name, kind, url, countries, regions, categories, merchants, issuers, card_keywords, last_checked, failures';
+const SOURCE_COLUMNS = 'id, name, kind, url, countries, regions, categories, merchants, issuers, card_keywords, last_checked, failures, origin, discovered_users';
+
+/** Pages PerkScan found by itself are dropped after this many failures in a row; hand-picked ones only slow down. */
+const DROP_DISCOVERED_AFTER = 5;
 
 /** Which sources to read now: never read, or not for a while; ones that keep failing only weekly. */
-export function dueSources<T extends { last_checked: string | null; failures: number }>(rows: T[], now: Date, max: number): T[] {
+export function dueSources<T extends { last_checked: string | null; failures: number; discovered_users?: number | null }>(rows: T[], now: Date, max: number): T[] {
   const hoursSince = (t: string | null) => (t ? (now.getTime() - new Date(t).getTime()) / 3_600_000 : Infinity);
   return rows
     .filter((s) => hoursSince(s.last_checked) >= (s.failures >= 5 ? 24 * 7 : RECHECK_HOURS))
-    .sort((a, b) => (a.last_checked ?? '').localeCompare(b.last_checked ?? ''))
+    // Oldest check first; among equals, stores more people use first, so the AI budget goes where it helps most.
+    .sort((a, b) => (a.last_checked ?? '').localeCompare(b.last_checked ?? '') || (b.discovered_users ?? 0) - (a.discovered_users ?? 0))
     .slice(0, max);
 }
 
@@ -128,13 +132,15 @@ export async function runScout(db: SupabaseClient, call: ModelCall, opts: ScoutO
   if (opts.only?.length) q = q.in('id', opts.only);
   const { data, error } = await q;
   if (error) throw new Error(`deal_sources: ${error.message}`);
-  type Row = SourceIn & { last_checked: string | null; failures: number };
+  type Row = SourceIn & { last_checked: string | null; failures: number; origin: 'seed' | 'discovered'; discovered_users: number | null };
   const rows = (data ?? []) as Row[];
   const due = opts.only?.length ? rows : dueSources(rows, now, opts.maxSources ?? 4);
 
   const reports: SourceReport[] = [];
   for (const s of due) {
     const mark = (patch: Record<string, unknown>) => db.from('deal_sources').update({ last_checked: new Date().toISOString(), ...patch }).eq('id', s.id);
+    const failed = (status: string) =>
+      mark({ last_status: status, failures: s.failures + 1, ...(s.origin === 'discovered' && s.failures + 1 >= DROP_DISCOVERED_AFTER ? { active: false } : {}) });
 
     if ((await scoutSpendUsd(db)) >= opts.monthlyBudgetUsd) {
       reports.push({ id: s.id, status: 'budget' });
@@ -143,7 +149,7 @@ export async function runScout(db: SupabaseClient, call: ModelCall, opts: ScoutO
 
     const page = await readPage(s.url, opts.fetch);
     if (!page.ok) {
-      await mark({ last_status: page.error, failures: s.failures + 1 });
+      await failed(page.error);
       reports.push({ id: s.id, status: page.error });
       continue;
     }
@@ -162,7 +168,7 @@ export async function runScout(db: SupabaseClient, call: ModelCall, opts: ScoutO
       found = parseFound(res.text);
     }
     if (found === null) {
-      await mark({ last_status: 'could not read the promotions', failures: s.failures + 1 });
+      await failed('could not read the promotions');
       reports.push({ id: s.id, status: 'extract failed' });
       continue;
     }

@@ -1,15 +1,39 @@
 # Deals for you
 
-Store deals near you, matched to what you're into, kept up to date automatically with no human approval step.
+Deals your own inbox doesn't show you: from store pages PerkScan reads, and public promotions other people near you received. Matched to what you're into, kept up to date automatically with no human approval step. No paid services: the only running cost is the AI reading store pages, under its own monthly cap.
+
+## What's shown, and what isn't
+
+- **Hidden:** anything already in your Money (same code, or same store and amount). Stores that already email you are lowered, and dropped from "More near you", because their deals reach you anyway.
+- **Raised, in order:**
+  1. a store you shop at (receipts, card alerts) that *doesn't* email you, e.g. "You shop at Courts"
+  2. an interest you picked, e.g. "Matches Fitness"
+  3. a store popular with people who shop where you do, e.g. "Popular with people who use Uber Eats". Built from counts shared by 5+ opted-in people (`store_stats`, `store_pairs`, refreshed daily); never individuals.
+  4. what your receipts show you spend on
+- **Ties:** value, ending soon, confidence, saves.
+
+## How the store list grows by itself
+
+Each scout run (`_shared/scout/discover.ts`) does this before reading pages:
+
+1. Takes up to 2 store domains that email 3+ PerkScan users in a country and aren't on the list yet (`_store_candidates`). Mail providers, social networks, banks, schools and government are skipped.
+2. Looks on the store's own site for a promotions page, at no AI cost:
+   - first in the sitemap its robots.txt lists
+   - then at common addresses: `/promotions`, `/deals`, `/offers`, `/specials`, `/sale`…
+   - robots.txt is respected throughout, and the page must actually read like promotions
+3. Adds the page found as a `discovered` source. Each domain is checked at most once every 30 days. There are at most 40 discovered pages per country, read in order of how many people use the store.
+4. A discovered page is switched off by itself after 5 failures in a row.
+
+Courts and First Citizens' promotions page are switched off in `seed/deal_sources.json`: Courts disallows bots in robots.txt, and First Citizens answers 403.
 
 ## Where deals come from
 
 1. **Official pages (the scout).** `seed/deal_sources.json` lists official pages: store promotion pages, bank and card-network promotion pages, and government pages. The `scout` Edge Function reads a few of them every hour, so each page is re-read about once a day.
    - Store items become **deals**.
    - Bank and government items become **Coming up near you** events, shown only to people holding that bank's cards (or any card of that network, e.g. Mastercard).
-2. **Public codes from email (opt-in).**
-   - With **Settings → Share public codes** on, the email reader records the store, offer, code, dates and country of promo codes.
-   - Every hour, a code that at least **3 different opted-in people** received is published as a **Likely** deal, without saying who received it.
+2. **Public promotions from email (opt-in: "Help people nearby find deals").**
+   - With the setting on (onboarding step 4, or Settings), the email reader records the store, offer, code, dates and country of public promotions: codes, and dated offers with a stated amount or percentage. Without a code, a promotion is recognised by its store, number and end date.
+   - Every hour, a promotion that at least **3 different opted-in people** received is published as a **Likely** deal, without saying who received it.
    - Codes meant for one person never qualify: birthday, referral and gift-card codes are skipped up front, and the threshold catches the rest.
    - Turning sharing off deletes that person's records within the hour.
 3. **Affiliate feeds**: `deals.source` already allows `affiliate`. Once a network (CJ, Rakuten, Impact, Awin) approves PerkScan, add an adapter that upserts into `deals`. US law (FTC) requires disclosing affiliate links, and ranking must stay "best for the user", never "best commission".
@@ -47,7 +71,7 @@ The page reader also obeys robots.txt, reads https only, refuses redirects to ot
 
 ## Setup on the live project
 
-1. `npx supabase db push`. This creates the tables and jobs and loads the 13 sources.
+1. `npx supabase db push`. This creates the tables and jobs and loads the sources.
 2. Deploy the scout and the updated email reader:
    ```
    npx supabase functions deploy scout --no-verify-jwt

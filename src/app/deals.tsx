@@ -88,7 +88,7 @@ export default function Deals() {
       ) : null}
 
       <T variant="caption" faint center>
-        Read from each store’s own page, or codes many PerkScan users received. Check the terms before you buy.
+        Deals your own inbox doesn’t show: read from stores’ own pages, or promotions many PerkScan users near you got. Check the terms before you buy.
       </T>
     </Screen>
   );

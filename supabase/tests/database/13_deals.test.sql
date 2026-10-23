@@ -41,7 +41,7 @@ select pg_temp.act_as('dddddddd-0000-0000-0000-000000000001');
 select ok((select count(*) from public.deals where dedupe_key = 'official:test_courts:1') = 1, 'signed-in users can read deals');
 select throws_ok($$update public.deals set title = 'Mine'$$, '42501', null, 'but can''t change them');
 select throws_ok($$insert into public.deal_feedback (deal_id, action) values ('dddddddd-1111-0000-0000-000000000001', 'saved')$$, '42501', null, 'feedback only through the function');
-select throws_ok($$insert into public.deal_sightings (user_id, country, merchant, merchant_key, code, title) values (auth.uid(), 'TT', 'X', 'x1', 'ABC', 'X')$$, '42501', null, 'sightings are only written by the email reader');
+select throws_ok($$insert into public.deal_sightings (user_id, country, merchant, merchant_key, code, offer_key, title) values (auth.uid(), 'TT', 'X', 'x1', 'ABC', 'ABC', 'X')$$, '42501', null, 'sightings are only written by the email reader');
 select throws_ok($$select public._promote_shared_deals()$$, '42501', null, 'or run the internal jobs');
 
 -- Profile: interests from the fixed list.
@@ -67,16 +67,16 @@ select ok((select count(*) from public.deals where dedupe_key = 'official:test_c
 -- Shared codes: published at three opted-in people, never from one.
 select pg_temp.as_admin();
 update public.profiles set share_deals = true where id in ('dddddddd-0000-0000-0000-000000000001', 'dddddddd-0000-0000-0000-000000000002', 'dddddddd-0000-0000-0000-000000000003');
-insert into public.deal_sightings (user_id, country, merchant, merchant_key, code, title, amount, currency, ends_on) values
-  ('dddddddd-0000-0000-0000-000000000001', 'TT', 'Courts', 'courts', 'SAVE50', 'TT$50 off', 50, 'TTD', current_date + 10),
-  ('dddddddd-0000-0000-0000-000000000002', 'TT', 'Courts', 'courts', 'SAVE50', 'TT$50 off', 50, 'TTD', current_date + 10),
-  ('dddddddd-0000-0000-0000-000000000001', 'TT', 'Courts', 'courts', 'BDAY-ANNA', 'Birthday gift', 25, 'TTD', current_date + 10),
+insert into public.deal_sightings (user_id, country, merchant, merchant_key, code, offer_key, title, amount, currency, ends_on) values
+  ('dddddddd-0000-0000-0000-000000000001', 'TT', 'Courts', 'courts', 'SAVE50', 'SAVE50', 'TT$50 off', 50, 'TTD', current_date + 10),
+  ('dddddddd-0000-0000-0000-000000000002', 'TT', 'Courts', 'courts', 'SAVE50', 'SAVE50', 'TT$50 off', 50, 'TTD', current_date + 10),
+  ('dddddddd-0000-0000-0000-000000000001', 'TT', 'Courts', 'courts', 'BDAY-ANNA', 'BDAY-ANNA', 'Birthday gift', 25, 'TTD', current_date + 10),
   -- Not sharing: doesn't count.
-  ('dddddddd-0000-0000-0000-000000000004', 'TT', 'Courts', 'courts', 'SAVE50', 'TT$50 off', 50, 'TTD', current_date + 10);
+  ('dddddddd-0000-0000-0000-000000000004', 'TT', 'Courts', 'courts', 'SAVE50', 'SAVE50', 'TT$50 off', 50, 'TTD', current_date + 10);
 select public._promote_shared_deals();
 select is((select count(*)::int from public.deals where source = 'shared'), 0, 'two sharing people: not public yet');
-insert into public.deal_sightings (user_id, country, merchant, merchant_key, code, title, amount, currency, ends_on) values
-  ('dddddddd-0000-0000-0000-000000000003', 'TT', 'Courts', 'courts', 'SAVE50', 'TT$50 off', 50, 'TTD', current_date + 10);
+insert into public.deal_sightings (user_id, country, merchant, merchant_key, code, offer_key, title, amount, currency, ends_on) values
+  ('dddddddd-0000-0000-0000-000000000003', 'TT', 'Courts', 'courts', 'SAVE50', 'SAVE50', 'TT$50 off', 50, 'TTD', current_date + 10);
 select public._promote_shared_deals();
 select is((select code from public.deals where source = 'shared'), 'SAVE50', 'three sharing people: published, with the category from the store');
 select is((select count(*)::int from public.deals where code = 'BDAY-ANNA'), 0, 'a code one person got stays private');
