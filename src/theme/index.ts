@@ -1,4 +1,6 @@
-import { Platform, useColorScheme, type ViewStyle } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { createContext, createElement, useCallback, useContext, useEffect, useState, type ReactNode } from 'react';
+import { Appearance, Platform, useColorScheme, type ViewStyle } from 'react-native';
 
 const light = {
   bg: '#F4F6F3',
@@ -30,7 +32,7 @@ const dark: typeof light = {
   surface: '#111814',
   surfaceAlt: '#18211C',
   surfaceSunken: '#0C120F',
-  border: '#212C26',
+  border: '#2A3630',
   text: '#EEF4F0',
   textMuted: '#9AA8A0',
   textFaint: '#66736B',
@@ -64,12 +66,57 @@ export const font = {
   heavy: 'Inter_800ExtraBold',
 } as const;
 
-export function useColors(): Colors {
-  return useColorScheme() === 'dark' ? dark : light;
+// ---------------------------------------------------------------------------
+// Appearance: dark by default; Light, or following the phone, in Settings.
+// ---------------------------------------------------------------------------
+export type AppearancePref = 'dark' | 'light' | 'system';
+const APPEARANCE_KEY = 'perkscan.appearance';
+const DEFAULT_APPEARANCE: AppearancePref = 'dark';
+
+const AppearanceContext = createContext<{ pref: AppearancePref; setPref: (p: AppearancePref) => void }>({
+  pref: DEFAULT_APPEARANCE,
+  setPref: () => {},
+});
+
+/** Keeps native parts (keyboard, alerts, date pickers) in step with the app's choice. Web has no such API. */
+function applyNative(p: AppearancePref) {
+  if (Platform.OS === 'web') return;
+  try {
+    Appearance.setColorScheme(p === 'system' ? 'unspecified' : p);
+  } catch {
+    // Older runtimes without the override just follow the phone for native parts.
+  }
 }
 
+export function AppearanceProvider({ children }: { children: ReactNode }) {
+  const [pref, setPrefState] = useState<AppearancePref>(DEFAULT_APPEARANCE);
+  useEffect(() => {
+    AsyncStorage.getItem(APPEARANCE_KEY)
+      .then((v) => {
+        const p = v === 'light' || v === 'system' || v === 'dark' ? v : DEFAULT_APPEARANCE;
+        setPrefState(p);
+        applyNative(p);
+      })
+      .catch(() => applyNative(DEFAULT_APPEARANCE));
+  }, []);
+  const setPref = useCallback((p: AppearancePref) => {
+    setPrefState(p);
+    applyNative(p);
+    AsyncStorage.setItem(APPEARANCE_KEY, p).catch(() => {});
+  }, []);
+  return createElement(AppearanceContext.Provider, { value: { pref, setPref } }, children);
+}
+
+export const useAppearance = () => useContext(AppearanceContext);
+
 export function useIsDark(): boolean {
-  return useColorScheme() === 'dark';
+  const { pref } = useContext(AppearanceContext);
+  const system = useColorScheme();
+  return pref === 'system' ? system === 'dark' : pref === 'dark';
+}
+
+export function useColors(): Colors {
+  return useIsDark() ? dark : light;
 }
 
 /** Soft elevation that works on iOS, Android and web. */

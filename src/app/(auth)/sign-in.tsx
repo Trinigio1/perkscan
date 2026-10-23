@@ -2,12 +2,12 @@ import { Ionicons } from '@expo/vector-icons';
 import * as AppleAuthentication from 'expo-apple-authentication';
 import { router } from 'expo-router';
 import { useState } from 'react';
-import { KeyboardAvoidingView, Platform, useColorScheme, View } from 'react-native';
+import { KeyboardAvoidingView, Platform, View } from 'react-native';
 import { Hero, LogoMark } from '@/components/Hero';
 import { Button, ErrorNote, Field, Row, Screen, T } from '@/components/ui';
 import { sendEmailCode, signInWithApple, signInWithGoogle } from '@/lib/auth';
 import { APPLE_SIGN_IN_ENABLED } from '@/lib/env';
-import { space, useColors } from '@/theme';
+import { space, useColors, useIsDark } from '@/theme';
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -19,7 +19,7 @@ const POINTS: { icon: 'card' | 'notifications' | 'ticket'; text: string }[] = [
 
 export default function SignIn() {
   const c = useColors();
-  const scheme = useColorScheme();
+  const dark = useIsDark();
   const [email, setEmail] = useState('');
   const [busy, setBusy] = useState<'email' | 'google' | 'apple' | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -90,7 +90,7 @@ export default function SignIn() {
           {APPLE_SIGN_IN_ENABLED && Platform.OS === 'ios' ? (
             <AppleAuthentication.AppleAuthenticationButton
               buttonType={AppleAuthentication.AppleAuthenticationButtonType.CONTINUE}
-              buttonStyle={scheme === 'dark' ? AppleAuthentication.AppleAuthenticationButtonStyle.WHITE : AppleAuthentication.AppleAuthenticationButtonStyle.BLACK}
+              buttonStyle={dark ? AppleAuthentication.AppleAuthenticationButtonStyle.WHITE : AppleAuthentication.AppleAuthenticationButtonStyle.BLACK}
               cornerRadius={999}
               style={{ height: 52 }}
               onPress={() => run('apple', signInWithApple)}

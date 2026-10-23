@@ -40,7 +40,7 @@ export function ListRow({
       {right}
       {value ? <T variant="label" muted>{value}</T> : null}
       {onToggle ? (
-        <Switch value={!!toggle} onValueChange={onToggle} trackColor={{ true: c.accent, false: c.surfaceSunken }} thumbColor="#FFFFFF" />
+        <Switch value={!!toggle} onValueChange={onToggle} trackColor={{ true: c.accent, false: c.border }} thumbColor="#FFFFFF" ios_backgroundColor={c.border} />
       ) : onPress ? (
         <Ionicons name="chevron-forward" size={18} color={c.textFaint} />
       ) : null}

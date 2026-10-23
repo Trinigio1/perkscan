@@ -3,7 +3,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { Alert, Linking, Platform, View } from 'react-native';
 import { DISCLAIMER_FULL } from '@/components/Disclaimer';
 import { ListRow } from '@/components/ListRow';
-import { ErrorNote, Panel, Screen, T } from '@/components/ui';
+import { Chip, ErrorNote, Panel, Row, Screen, T } from '@/components/ui';
 import { signOut, useAuth } from '@/lib/auth';
 import { accuracyPercent, type Accuracy } from '@/domain/accuracy';
 import { countryByCode } from '@/domain/countries';
@@ -14,7 +14,7 @@ import { getAccuracy } from '@/lib/feedback';
 import { myEvents, useData } from '@/lib/data';
 import { remindersAvailable, remindersEnabled, requestReminderPermission, setRemindersEnabled, syncReminders } from '@/lib/notifications';
 import { useToast } from '@/lib/toast';
-import { space } from '@/theme';
+import { space, useAppearance, type AppearancePref } from '@/theme';
 
 function Group({ title, children }: { title: string; children: React.ReactNode }) {
   return (
@@ -29,6 +29,7 @@ export default function Settings() {
   const toast = useToast();
   const { session } = useAuth();
   const { data, refresh } = useData();
+  const { pref: appearance, setPref: setAppearance } = useAppearance();
   const [reminders, setReminders] = useState(true);
   const [showLegal, setShowLegal] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -120,6 +121,18 @@ export default function Settings() {
           title="Interests"
           value={data.profile?.interests?.length ? data.profile.interests.map(interestLabel).slice(0, 2).join(', ') + (data.profile.interests.length > 2 ? '…' : '') : 'Not set'}
           onPress={() => router.push('/interests')}
+        />
+        <ListRow
+          icon="contrast"
+          tone="gray"
+          title="Theme"
+          right={
+            <Row gap={6}>
+              {(['dark', 'light', 'system'] as AppearancePref[]).map((p) => (
+                <Chip key={p} label={p === 'system' ? 'Auto' : p === 'dark' ? 'Dark' : 'Light'} selected={appearance === p} onPress={() => setAppearance(p)} />
+              ))}
+            </Row>
+          }
         />
         <ListRow icon="notifications" tone="orange" title="Reminders" toggle={reminders && Platform.OS !== 'web'} onToggle={toggleReminders} />
         <ListRow icon="school" tone="purple" title="I’m a student" toggle={!!data.profile?.is_student} onToggle={toggleStudent} />

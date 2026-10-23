@@ -1,7 +1,7 @@
 import { LinearGradient } from 'expo-linear-gradient';
 import { Text, View, type StyleProp, type ViewStyle } from 'react-native';
 import { cardArt } from '@/domain/visuals';
-import { font, radius, shadow, useColors } from '@/theme';
+import { font, radius, shadow, useColors, useIsDark } from '@/theme';
 
 /**
  * A stylised card face: gradient, issuer, product and last four. Colors only
@@ -23,6 +23,8 @@ export function CardArt({
   style?: StyleProp<ViewStyle>;
 }) {
   const c = useColors();
+  // Dark cards (navy, black) need a faint light edge to stand out on a dark screen.
+  const edge = useIsDark() ? 'rgba(255,255,255,0.18)' : 'rgba(0,0,0,0.12)';
   const art = cardArt(cardId);
   const dims = size === 'lg' ? { pad: 20, issuer: 12, name: 18, four: 15 } : size === 'md' ? { pad: 14, issuer: 10, name: 14, four: 12 } : { pad: 0, issuer: 0, name: 0, four: 0 };
 
@@ -32,7 +34,7 @@ export function CardArt({
         colors={art.colors}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
-        style={[{ width: 44, height: 28, borderRadius: 5, borderWidth: 0.5, borderColor: 'rgba(0,0,0,0.12)' }, style]}
+        style={[{ width: 44, height: 28, borderRadius: 5, borderWidth: 0.5, borderColor: edge }, style]}
       />
     );
   }
@@ -50,7 +52,7 @@ export function CardArt({
           justifyContent: 'space-between',
           overflow: 'hidden',
           borderWidth: 0.5,
-          borderColor: 'rgba(0,0,0,0.08)',
+          borderColor: edge,
         },
         shadow(c, 2),
         style,

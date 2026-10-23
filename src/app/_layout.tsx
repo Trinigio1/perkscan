@@ -7,7 +7,6 @@ import { useFonts } from 'expo-font';
 import { DarkTheme, DefaultTheme, router, Stack, ThemeProvider } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useCallback, useEffect } from 'react';
-import { useColorScheme } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { Loading, Screen, T } from '@/components/ui';
 import { AuthProvider, useAuth } from '@/lib/auth';
@@ -16,7 +15,7 @@ import { isConfigured } from '@/lib/env';
 import { onReminderTap } from '@/lib/notifications';
 import { useSharedText } from '@/lib/shareIntent';
 import { ToastProvider } from '@/lib/toast';
-import { font, useColors } from '@/theme';
+import { AppearanceProvider, font, useColors, useIsDark } from '@/theme';
 
 function NotConfigured() {
   return (
@@ -100,15 +99,24 @@ function RootNavigator() {
 }
 
 export default function RootLayout() {
-  const scheme = useColorScheme();
+  return (
+    <AppearanceProvider>
+      <Themed />
+    </AppearanceProvider>
+  );
+}
+
+function Themed() {
+  const dark = useIsDark();
+  const c = useColors();
   const [fontsLoaded, fontError] = useFonts({ Inter_400Regular, Inter_500Medium, Inter_600SemiBold, Inter_700Bold, Inter_800ExtraBold });
   // If fonts fail to load we still render with the system font rather than blocking the app.
   if (!fontsLoaded && !fontError) return null;
 
   return (
     <SafeAreaProvider>
-      <ThemeProvider value={scheme === 'dark' ? DarkTheme : DefaultTheme}>
-        <StatusBar style="auto" />
+      <ThemeProvider value={dark ? { ...DarkTheme, colors: { ...DarkTheme.colors, background: c.bg, card: c.bg } } : { ...DefaultTheme, colors: { ...DefaultTheme.colors, background: c.bg, card: c.bg } }}>
+        <StatusBar style={dark ? 'light' : 'dark'} />
         <ToastProvider>
           {isConfigured ? (
             <AuthProvider>
