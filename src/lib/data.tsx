@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { AppState } from 'react-native';
 import { setHomeCurrency, shortCardName } from '@/domain/format';
+import { relevantEvents, type LocalEvent } from '@/domain/events';
 import type { Program } from '@/domain/programs';
 import { domainsWithParents } from '@/domain/suggestions';
 import { singleFlight } from '@/domain/singleFlight';
@@ -35,6 +36,8 @@ export interface AppData {
   senderDomains: string[];
   /** Schools whose email domains appear among those senders, for "Studying at …?". */
   schoolHints: University[];
+  /** Upcoming and current events from the "Coming up near you" catalog (not yet filtered to the user). */
+  events: LocalEvent[];
 }
 
 export interface RefreshResult {
@@ -50,7 +53,7 @@ interface DataState {
   refresh: () => Promise<RefreshResult>;
 }
 
-const empty: AppData = { profile: null, cards: [], benefits: [], userCards: [], opportunities: [], recovered: [], usage: [], receipts: [], studentOffers: [], studentClaims: [], school: null, myPerks: [], programs: [], senderDomains: [], schoolHints: [] };
+const empty: AppData = { profile: null, cards: [], benefits: [], userCards: [], opportunities: [], recovered: [], usage: [], receipts: [], studentOffers: [], studentClaims: [], school: null, myPerks: [], programs: [], senderDomains: [], schoolHints: [], events: [] };
 const DataContext = createContext<DataState>({ data: empty, loading: true, error: null, refresh: async () => ({ data: null, error: null }) });
 
 function must<T>(what: string, res: { data: T | null; error: { message: string; code?: string } | null }): T {
@@ -73,7 +76,8 @@ async function load(userId: string): Promise<AppData> {
   const yearStart = new Date(new Date().getFullYear(), 0, 1).toISOString();
   const since = new Date(Date.now() - 180 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
   const yearAgo = new Date(Date.now() - 365 * 24 * 60 * 60 * 1000).toISOString();
-  const [profile, cards, benefits, userCards, opportunities, recovered, usage, receipts, studentOffers, studentClaims, myPerks, programs, senders] = await Promise.all([
+  const today = new Date().toISOString().slice(0, 10);
+  const [profile, cards, benefits, userCards, opportunities, recovered, usage, receipts, studentOffers, studentClaims, myPerks, programs, senders, events] = await Promise.all([
     supabase
       .from('profiles')
       .select('*')
@@ -96,6 +100,11 @@ async function load(userId: string): Promise<AppData> {
     supabase.from('user_perks').select('id, university_id, title, details, url, suggest, created_at').order('created_at'),
     supabase.from('perk_programs').select('id, kind, name, provider, countries, summary, how_to, url, merchants, window_days, status, last_verified, sort_order').order('sort_order'),
     supabase.from('inbound_messages').select('from_domain').not('from_domain', 'is', null).gte('received_at', yearAgo).limit(1000),
+    supabase
+      .from('local_events')
+      .select('id, title, summary, category, countries, regions, issuers, card_keywords, starts_on, ends_on, url, status, based_on, last_verified')
+      .gte('ends_on', today)
+      .order('starts_on'),
   ]);
 
   // numeric columns arrive as numbers from PostgREST; normalize defensively.
@@ -132,6 +141,8 @@ async function load(userId: string): Promise<AppData> {
     programs: (programs.data ?? []) as Program[],
     senderDomains,
     schoolHints,
+    // Optional: a database without the events table yet just means nothing coming up.
+    events: (events.data ?? []) as LocalEvent[],
   };
 }
 
@@ -158,7 +169,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
         if (currentUser.current !== forUser) return { data: null, error: null }; // user changed while loading
         setData(next);
         setError(null);
-        if (forUser) syncReminders(next.opportunities, next.recovered).catch(() => {});
+        if (forUser) syncReminders(next.opportunities, next.recovered, myEvents(next)).catch(() => {});
         return { data: next, error: null };
       } catch (e) {
         const message = e instanceof Error ? e.message : String(e);
@@ -204,4 +215,10 @@ export function useLookups() {
     };
     return { cardById, benefitById, userCardById, recoveredByOpp, userCardLabel };
   }, [data]);
+}
+
+/** The events that apply to this user: their country, and promotions for banks whose cards they hold. */
+export function myEvents(d: AppData): LocalEvent[] {
+  const cards = d.userCards.map((uc) => d.cards.find((c) => c.id === uc.card_id)).filter((c): c is Card => !!c);
+  return relevantEvents(d.events, { country: d.profile?.country ?? null, cards, today: new Date().toISOString().slice(0, 10) });
 }

@@ -1,0 +1,152 @@
+{
+  "_readme": [
+    "Coming up near you: dated, money-related events by country (and US state). Official sources only.",
+    "status \"confirmed\": announced by the official source for these dates. status \"expected\": a recurring event that hasn't been announced yet — dates are from last time (say so in based_on) and the app shows it as Check.",
+    "issuers: card issuers (as in seed/card_benefits.json) whose cardholders it's for; empty = everyone in the country. regions: US state codes; empty = the whole country.",
+    "card_keywords: words a held card's product name must contain (e.g. \"mastercard\"), for promotions on one card type; empty = any card from those issuers.",
+    "Keep this list current: add new announcements and roll \"expected\" events forward when the source confirms them. Run `npm run seed:build -- --migration` after editing."
+  ],
+  "events": [
+    {
+      "id": "us_nps_free_2026_10_27",
+      "title": "Free entry to national parks",
+      "summary": "Entrance fees waived for US citizens and residents on Theodore Roosevelt's birthday. Camping and reservation fees still apply.",
+      "category": "free_day",
+      "countries": [
+        "US"
+      ],
+      "regions": [],
+      "issuers": [],
+      "card_keywords": [],
+      "starts_on": "2026-10-27",
+      "ends_on": "2026-10-27",
+      "url": "https://www.nps.gov/planyourvisit/passes.htm",
+      "status": "confirmed",
+      "based_on": null,
+      "source_url": "https://www.nps.gov/planyourvisit/passes.htm",
+      "last_verified": "2026-10-23"
+    },
+    {
+      "id": "us_nps_free_2026_11_11",
+      "title": "Free entry to national parks (Veterans Day)",
+      "summary": "Entrance fees waived for US citizens and residents. Camping and reservation fees still apply.",
+      "category": "free_day",
+      "countries": [
+        "US"
+      ],
+      "regions": [],
+      "issuers": [],
+      "card_keywords": [],
+      "starts_on": "2026-11-11",
+      "ends_on": "2026-11-11",
+      "url": "https://www.nps.gov/planyourvisit/passes.htm",
+      "status": "confirmed",
+      "based_on": null,
+      "source_url": "https://www.nps.gov/planyourvisit/passes.htm",
+      "last_verified": "2026-10-23"
+    },
+    {
+      "id": "us_medicare_open_enrollment_2026",
+      "title": "Medicare Open Enrollment",
+      "summary": "Change your Medicare Advantage or drug plan for 2027, or switch between Original Medicare and Medicare Advantage. Plans must get your form by December 7.",
+      "category": "enrollment",
+      "countries": [
+        "US"
+      ],
+      "regions": [],
+      "issuers": [],
+      "card_keywords": [],
+      "starts_on": "2026-10-15",
+      "ends_on": "2026-12-07",
+      "url": "https://www.medicare.gov/health-drug-plans/open-enrollment",
+      "status": "confirmed",
+      "based_on": null,
+      "source_url": "https://www.medicare.gov/health-drug-plans/open-enrollment",
+      "last_verified": "2026-10-23"
+    },
+    {
+      "id": "us_marketplace_open_enrollment_2027",
+      "title": "Health Insurance Marketplace enrollment",
+      "summary": "Enroll by December 15 for coverage from January 1, or by January 15 for February 1. Oregon uses its own site from this year.",
+      "category": "enrollment",
+      "countries": [
+        "US"
+      ],
+      "regions": [],
+      "issuers": [],
+      "card_keywords": [],
+      "starts_on": "2026-11-01",
+      "ends_on": "2027-01-15",
+      "url": "https://www.healthcare.gov/quick-guide/one-page-guide-to-the-marketplace/",
+      "status": "confirmed",
+      "based_on": null,
+      "source_url": "https://www.healthcare.gov/keep-or-change-plan/",
+      "last_verified": "2026-10-23"
+    },
+    {
+      "id": "us_fsa_year_end_2026",
+      "title": "Spend your FSA before the year ends",
+      "summary": "If your health FSA runs on the calendar year, money left after December 31 is lost — unless your plan has a grace period or carryover.",
+      "category": "deadline",
+      "countries": [
+        "US"
+      ],
+      "regions": [],
+      "issuers": [],
+      "card_keywords": [],
+      "starts_on": "2026-11-15",
+      "ends_on": "2026-12-31",
+      "url": "https://www.irs.gov/publications/p969",
+      "status": "expected",
+      "based_on": "The deadline depends on your plan year; most plans follow the calendar year.",
+      "source_url": "https://www.irs.gov/publications/p969",
+      "last_verified": "2026-10-23"
+    },
+    {
+      "id": "tt_scotia_mastercard_divali_cashback_2026",
+      "title": "Scotiabank Mastercard Divali cash back",
+      "summary": "Last year: 5% cash back on Scotiabank Mastercard purchases, capped at TT$200–250 depending on the card. Check whether it's running this year.",
+      "category": "bank_promo",
+      "countries": [
+        "TT"
+      ],
+      "regions": [],
+      "issuers": [
+        "Scotiabank Trinidad & Tobago"
+      ],
+      "card_keywords": [
+        "mastercard"
+      ],
+      "starts_on": "2026-10-16",
+      "ends_on": "2026-10-31",
+      "url": "https://tt.scotiabank.com/personal/credit-cards/credit-card-promotions.html",
+      "status": "expected",
+      "based_on": "Ran October 16–31, 2025.",
+      "source_url": "https://tt.scotiabank.com/personal/credit-cards/credit-card-promotions/mastercard-divali-cash-back.html",
+      "last_verified": "2026-10-23"
+    },
+    {
+      "id": "tt_scotia_visa_christmas_cashback_2026",
+      "title": "Scotiabank Visa Christmas cash back",
+      "summary": "Last year: cash back for reaching a personal spending goal on local Visa purchases, sent by email. Open those emails — it was a condition.",
+      "category": "bank_promo",
+      "countries": [
+        "TT"
+      ],
+      "regions": [],
+      "issuers": [
+        "Scotiabank Trinidad & Tobago"
+      ],
+      "card_keywords": [
+        "visa"
+      ],
+      "starts_on": "2026-12-15",
+      "ends_on": "2027-01-15",
+      "url": "https://tt.scotiabank.com/personal/credit-cards/credit-card-promotions.html",
+      "status": "expected",
+      "based_on": "Ran December 15, 2025 – January 15, 2026.",
+      "source_url": "https://tt.scotiabank.com/personal/credit-cards/credit-card-promotions/2025-visa-cash-back.html",
+      "last_verified": "2026-10-23"
+    }
+  ]
+}

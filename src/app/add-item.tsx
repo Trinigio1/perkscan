@@ -15,6 +15,7 @@ const NAME_HINT: Record<AddType, string> = {
   store_credit: 'e.g. Courts store credit',
   benefit: 'e.g. FSA balance, phone allowance',
   refund: 'e.g. Refund for cancelled flight',
+  promo: 'e.g. Cash-back promotion',
 };
 
 const iso = (d: Date) => d.toISOString().slice(0, 10);

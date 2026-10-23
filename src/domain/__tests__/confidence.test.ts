@@ -7,6 +7,7 @@ const days = (n: number) => new Date(NOW.getTime() + n * 86_400_000).toISOString
 describe('confidenceOf', () => {
   it.each([
     ['anything you added', opp({ type: 'gift_card', value_estimate: null, dedupe_key: 'manual:abc' }), 'confirmed'],
+    ['a reminder for an event not announced yet', opp({ type: 'promo', value_estimate: null, dedupe_key: 'manual:unconfirmed:abc' }), 'check'],
     ['a verified card credit (it has an amount)', opp({ type: 'card_credit', value_estimate: 15 }), 'confirmed'],
     ['an unverified card credit', opp({ type: 'card_credit', value_estimate: null }), 'check'],
     ['a store price-adjustment window', opp({ type: 'price_drop', value_estimate: null }), 'confirmed'],

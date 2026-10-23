@@ -22,6 +22,8 @@ export async function addItem(input: {
   expiresOn?: string | null;
   programId?: string | null;
   note?: string | null;
+  /** For reminders about events that haven't been announced yet. */
+  unconfirmed?: boolean;
 }): Promise<string> {
   const { data, error } = await supabase.rpc('add_my_item', {
     p_type: input.type,
@@ -32,6 +34,7 @@ export async function addItem(input: {
     p_expires_on: input.expiresOn ?? null,
     p_program_id: input.programId ?? null,
     p_note: input.note ?? null,
+    p_unconfirmed: input.unconfirmed ?? false,
   });
   if (error) throw new Error(error.message);
   track('item_added', { type: input.type });

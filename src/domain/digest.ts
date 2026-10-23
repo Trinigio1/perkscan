@@ -1,6 +1,7 @@
 // Weekly "money at risk" notification and the monthly recap. Pure: notifications.ts
 // schedules the digest; the recap screen shows the recap.
 
+import type { LocalEvent } from './events';
 import { addToBag, formatBag, type MoneyBag } from './format';
 import { isMissed, remainingValue } from './score';
 import type { Opportunity, Recovered } from './types';
@@ -32,10 +33,16 @@ const recoveredMap = (recovered: Recovered[]) => {
 };
 
 /**
- * What's at risk in the 7 days after the digest fires. Null when nothing expires then,
- * so nobody gets an empty "nothing to do" nudge.
+ * What's at risk in the 7 days after the digest fires, plus what's coming up near you that week.
+ * Null when there's neither, so nobody gets an empty "nothing to do" nudge.
  */
-export function planWeeklyDigest(opportunities: Opportunity[], recovered: Recovered[], now: Date, home: string): Digest | null {
+export function planWeeklyDigest(
+  opportunities: Opportunity[],
+  recovered: Recovered[],
+  now: Date,
+  home: string,
+  events: Pick<LocalEvent, 'title' | 'starts_on' | 'ends_on'>[] = [],
+): Digest | null {
   const fireAt = nextDigestDate(now);
   const end = fireAt.getTime() + 7 * DAY_MS;
   const byOpp = recoveredMap(recovered);
@@ -46,18 +53,27 @@ export function planWeeklyDigest(opportunities: Opportunity[], recovered: Recove
       return t > fireAt.getTime() && t <= end && (o.value_estimate === null || remainingValue(o, byOpp) > 0);
     })
     .sort((a, b) => new Date(a.expires_at!).getTime() - new Date(b.expires_at!).getTime());
-  if (!items.length) return null;
+  // Events that start, or end, in the digest's week.
+  const day = (t: number) => new Date(t).toISOString().slice(0, 10);
+  const [from, to] = [day(fireAt.getTime()), day(end)];
+  const week = events.filter((e) => (e.starts_on > from && e.starts_on <= to) || (e.ends_on > from && e.ends_on <= to));
+  const eventLine = week.length ? `Coming up: ${week.slice(0, 2).map((e) => e.title).join(', ')}${week.length > 2 ? ` and ${week.length - 2} more` : ''}.` : null;
+
+  if (!items.length) {
+    return eventLine ? { id: DIGEST_ID, fireAt, title: 'This week near you', body: eventLine } : null;
+  }
 
   const bag: MoneyBag = {};
   for (const o of items) addToBag(bag, o.currency, remainingValue(o, byOpp));
   const money = Object.values(bag).some((v) => v > 0);
   const names = items.slice(0, 2).map((o) => o.title);
   const more = items.length - names.length;
+  const yours = `${names.join(', ')}${more > 0 ? ` and ${more} more` : ''} — use ${items.length === 1 ? 'it' : 'them'} before ${items.length === 1 ? 'it expires' : 'they expire'}.`;
   return {
     id: DIGEST_ID,
     fireAt,
     title: money ? `${formatBag(bag, home)} at risk this week` : items.length === 1 ? '1 thing expires this week' : `${items.length} things expire this week`,
-    body: `${names.join(', ')}${more > 0 ? ` and ${more} more` : ''} — use ${items.length === 1 ? 'it' : 'them'} before ${items.length === 1 ? 'it expires' : 'they expire'}.`,
+    body: eventLine ? `${yours} ${eventLine}` : yours,
   };
 }
 

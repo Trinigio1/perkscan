@@ -35,6 +35,22 @@ describe('planWeeklyDigest', () => {
     expect(planWeeklyDigest([opp({ title: 'Trial', value_estimate: null, expires_at: inDays(1) })], [], NOW, 'USD')?.title).toBe('1 thing expires this week');
     expect(planWeeklyDigest([opp({ expires_at: inDays(20) })], [], NOW, 'USD')).toBeNull();
   });
+
+  it('mentions what’s coming up near you that week, even when nothing of yours expires', () => {
+    const fire = nextDigestDate(NOW);
+    const day = (n: number) => new Date(fire.getTime() + n * 86_400_000).toISOString().slice(0, 10);
+    const events = [
+      { title: 'Free entry to national parks', starts_on: day(2), ends_on: day(2) },
+      { title: 'Medicare Open Enrollment', starts_on: day(-30), ends_on: day(5) },
+      { title: 'Far away', starts_on: day(40), ends_on: day(40) },
+    ];
+    const d = planWeeklyDigest([], [], NOW, 'USD', events)!;
+    expect(d.title).toBe('This week near you');
+    expect(d.body).toBe('Coming up: Free entry to national parks, Medicare Open Enrollment.');
+    const withYours = planWeeklyDigest([opp({ title: 'Uber Cash', value_estimate: 15, expires_at: inDays(3) })], [], NOW, 'USD', events.slice(0, 1))!;
+    expect(withYours.body).toMatch(/Uber Cash .* Coming up: Free entry to national parks\.$/);
+    expect(planWeeklyDigest([], [], NOW, 'USD', events.slice(2))).toBeNull();
+  });
 });
 
 describe('monthlyRecap', () => {

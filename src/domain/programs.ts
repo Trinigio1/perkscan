@@ -37,7 +37,8 @@ export function programSections(programs: Program[], country: string | null) {
   return PROGRAM_SECTIONS.map((s) => ({ ...s, programs: sorted.filter((p) => p.kind === s.kind && here(p)) })).filter((s) => s.programs.length);
 }
 
-export type AddType = 'points' | 'gift_card' | 'store_credit' | 'benefit' | 'refund';
+/** What can be added by hand; promos come from "Remind me" on an event rather than the Add list. */
+export type AddType = 'points' | 'gift_card' | 'store_credit' | 'benefit' | 'refund' | 'promo';
 
 export const ADD_TYPES: { type: AddType; title: string; example: string }[] = [
   { type: 'points', title: 'Points or miles', example: 'Massy Card, AAdvantage, Starbucks Stars' },

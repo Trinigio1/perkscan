@@ -10,7 +10,7 @@ import { countryByCode } from '@/domain/countries';
 import { analyticsConfigured, analyticsOptedOut, setAnalyticsOptOut } from '@/lib/analytics';
 import { updateProfile } from '@/lib/cards';
 import { getAccuracy } from '@/lib/feedback';
-import { useData } from '@/lib/data';
+import { myEvents, useData } from '@/lib/data';
 import { remindersAvailable, remindersEnabled, requestReminderPermission, setRemindersEnabled, syncReminders } from '@/lib/notifications';
 import { useToast } from '@/lib/toast';
 import { space } from '@/theme';
@@ -75,7 +75,7 @@ export default function Settings() {
     }
     setReminders(v);
     await setRemindersEnabled(v);
-    if (v) await syncReminders(data.opportunities, data.recovered);
+    if (v) await syncReminders(data.opportunities, data.recovered, myEvents(data));
   };
 
   const email = session?.user.email ?? 'Signed in';

@@ -166,3 +166,45 @@ export type ProgramFile = z.infer<typeof programFileSchema>;
 export function programsToSql(f: ProgramFile): string[] {
   return f.programs.map((p, i) => upsert('perk_programs', { ...p, sort_order: i }, ['countries', 'merchants']));
 }
+
+export const EVENT_CATEGORIES = ['bank_promo', 'free_day', 'enrollment', 'deadline', 'sale', 'student'] as const;
+
+export const eventSchema = z
+  .object({
+    id: slug,
+    title: z.string().min(1).max(80),
+    summary: z.string().min(1).max(300),
+    category: z.enum(EVENT_CATEGORIES),
+    countries: z.array(country).min(1),
+    /** US state codes etc.; empty = the whole country. */
+    regions: z.array(z.string().regex(/^[A-Z]{2}$/)),
+    /** Card issuers whose cardholders it's for; empty = everyone. */
+    issuers: z.array(z.string().min(1)),
+    /** Words a held card's product name must contain (e.g. "mastercard"); empty = any card from those issuers. */
+    card_keywords: z.array(z.string().regex(/^[a-z0-9 ]+$/, 'Lowercase words')),
+    starts_on: isoDate,
+    ends_on: isoDate,
+    url: https,
+    /** confirmed = announced for these dates; expected = recurring, dates from last time. */
+    status: z.enum(['confirmed', 'expected']),
+    based_on: z.string().min(1).nullable(),
+    source_url: https,
+    last_verified: isoDate,
+  })
+  .superRefine((e, ctx) => {
+    if (e.ends_on < e.starts_on) ctx.addIssue({ code: 'custom', path: ['ends_on'], message: 'Ends before it starts' });
+    if (e.status === 'expected' && !e.based_on) {
+      ctx.addIssue({ code: 'custom', path: ['based_on'], message: 'An expected event must say what it is based on (e.g. "Ran Oct 16–31, 2025.")' });
+    }
+  });
+
+export const eventFileSchema = z.object({
+  _readme: z.array(z.string()).optional(),
+  events: z.array(eventSchema),
+});
+
+export type EventFile = z.infer<typeof eventFileSchema>;
+
+export function eventsToSql(f: EventFile): string[] {
+  return f.events.map((e, i) => upsert('local_events', { ...e, sort_order: i }, ['countries', 'regions', 'issuers', 'card_keywords']));
+}

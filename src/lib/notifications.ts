@@ -4,6 +4,7 @@ import type * as NotificationsModule from 'expo-notifications';
 import * as SecureStore from 'expo-secure-store';
 import { Platform } from 'react-native';
 import { planWeeklyDigest } from '@/domain/digest';
+import type { LocalEvent } from '@/domain/events';
 import { getHomeCurrency } from '@/domain/format';
 import { planCreditReminders } from '@/domain/reminders';
 import type { Opportunity, Recovered } from '@/domain/types';
@@ -73,7 +74,7 @@ async function cancelCreditReminders() {
 }
 
 /** Replaces scheduled reminders (expiring soon + the weekly digest) with the current plan. Local notifications. */
-export async function syncReminders(opportunities: Opportunity[], recovered: Recovered[]) {
+export async function syncReminders(opportunities: Opportunity[], recovered: Recovered[], events: LocalEvent[] = []) {
   if (!(await remindersEnabled())) return;
   const Notifications = notificationsModule();
   const perms = await Notifications.getPermissionsAsync();
@@ -89,7 +90,7 @@ export async function syncReminders(opportunities: Opportunity[], recovered: Rec
     });
   }
   // Sunday-evening "money at risk this week" summary, rebuilt from fresh data every time the app syncs.
-  const digest = planWeeklyDigest(opportunities, recovered, new Date(), getHomeCurrency());
+  const digest = planWeeklyDigest(opportunities, recovered, new Date(), getHomeCurrency(), events);
   if (digest) {
     await Notifications.scheduleNotificationAsync({
       identifier: digest.id,

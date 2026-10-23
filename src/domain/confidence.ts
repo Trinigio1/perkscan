@@ -20,6 +20,8 @@ export type BenefitStatusOf = (benefitId: string) => 'active' | 'TODO_VERIFY' | 
 
 export function confidenceOf(o: Opportunity, statusOf: BenefitStatusOf = () => undefined): Confidence {
   const key = o.dedupe_key ?? '';
+  // Reminders for events that haven't been announced yet stay a "check" until they are.
+  if (key.startsWith('manual:unconfirmed:')) return 'check';
   if (key.startsWith('manual:')) return 'confirmed';
   switch (o.type) {
     case 'card_credit':
