@@ -149,6 +149,11 @@ export default function Home() {
             ))}
           </Panel>
         </>
+      ) : data.profile?.country ? (
+        <>
+          <SectionHeader title="Deals for you" action="Interests" onAction={() => router.push('/deals')} />
+          <T muted>PerkScan checks stores near you every day. New deals show up here.</T>
+        </>
       ) : null}
 
       {comingUp.length ? (
