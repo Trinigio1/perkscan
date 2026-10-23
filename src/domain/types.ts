@@ -60,6 +60,12 @@ export interface Profile {
   home_currency: string;
   university_id: string | null;
   onboarded_at: string | null;
+  /** What they're into, for Deals for you (ids from INTERESTS). */
+  interests?: string[];
+  /** US state code, for state-only deals and events. */
+  region?: string | null;
+  /** Opted in to sharing public promo codes from their email. */
+  share_deals?: boolean;
 }
 
 export interface UserCard {

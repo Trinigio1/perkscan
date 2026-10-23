@@ -48,7 +48,8 @@ export function relevantEvents(events: LocalEvent[], who: EventFor): LocalEvent[
     .filter((e) => !!who.country && e.countries.includes(who.country))
     .filter((e) => !e.regions.length || (!!who.region && e.regions.includes(who.region)))
     // Bank promotions only for holders of that bank's cards — and of the right card type.
-    .filter((e) => !e.issuers.length || who.cards.some((c) => e.issuers.includes(c.issuer) && (!e.card_keywords.length || e.card_keywords.some((k) => c.product_name.toLowerCase().includes(k)))))
+    // Network promotions (e.g. any Mastercard) have keywords but no issuer.
+    .filter((e) => (!e.issuers.length && !e.card_keywords.length) || who.cards.some((c) => (!e.issuers.length || e.issuers.includes(c.issuer)) && (!e.card_keywords.length || e.card_keywords.some((k) => c.product_name.toLowerCase().includes(k)))))
     .filter((e) => e.ends_on >= who.today && e.starts_on <= until)
     .sort((a, b) => {
       const aNow = a.starts_on <= who.today;

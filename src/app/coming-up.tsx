@@ -18,7 +18,7 @@ export default function ComingUp() {
 
   const events = useMemo(() => {
     const cards = data.userCards.map((uc) => data.cards.find((x) => x.id === uc.card_id)).filter((x): x is Card => !!x);
-    return relevantEvents(data.events, { country, cards, today: new Date().toISOString().slice(0, 10), horizonDays: 120 });
+    return relevantEvents(data.events, { country, region: data.profile?.region ?? null, cards, today: new Date().toISOString().slice(0, 10), horizonDays: 120 });
   }, [data, country]);
 
   return (

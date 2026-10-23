@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { AppState } from 'react-native';
 import { setHomeCurrency, shortCardName } from '@/domain/format';
+import type { Deal, DealFeedback } from '@/domain/deals';
 import { relevantEvents, type LocalEvent } from '@/domain/events';
 import type { Program } from '@/domain/programs';
 import { domainsWithParents } from '@/domain/suggestions';
@@ -38,6 +39,12 @@ export interface AppData {
   schoolHints: University[];
   /** Upcoming and current events from the "Coming up near you" catalog (not yet filtered to the user). */
   events: LocalEvent[];
+  /** Deals available in the user's country (ranking happens in the app). */
+  deals: Deal[];
+  /** What the user saved, hid or reported. */
+  dealFeedback: DealFeedback[];
+  /** How many official pages PerkScan checks for the user's country, and when it last did. */
+  scout: { sources: number; lastChecked: string | null };
 }
 
 export interface RefreshResult {
@@ -53,7 +60,7 @@ interface DataState {
   refresh: () => Promise<RefreshResult>;
 }
 
-const empty: AppData = { profile: null, cards: [], benefits: [], userCards: [], opportunities: [], recovered: [], usage: [], receipts: [], studentOffers: [], studentClaims: [], school: null, myPerks: [], programs: [], senderDomains: [], schoolHints: [], events: [] };
+const empty: AppData = { profile: null, cards: [], benefits: [], userCards: [], opportunities: [], recovered: [], usage: [], receipts: [], studentOffers: [], studentClaims: [], school: null, myPerks: [], programs: [], senderDomains: [], schoolHints: [], events: [], deals: [], dealFeedback: [], scout: { sources: 0, lastChecked: null } };
 const DataContext = createContext<DataState>({ data: empty, loading: true, error: null, refresh: async () => ({ data: null, error: null }) });
 
 function must<T>(what: string, res: { data: T | null; error: { message: string; code?: string } | null }): T {
@@ -77,7 +84,7 @@ async function load(userId: string): Promise<AppData> {
   const since = new Date(Date.now() - 180 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
   const yearAgo = new Date(Date.now() - 365 * 24 * 60 * 60 * 1000).toISOString();
   const today = new Date().toISOString().slice(0, 10);
-  const [profile, cards, benefits, userCards, opportunities, recovered, usage, receipts, studentOffers, studentClaims, myPerks, programs, senders, events] = await Promise.all([
+  const [profile, cards, benefits, userCards, opportunities, recovered, usage, receipts, studentOffers, studentClaims, myPerks, programs, senders, events, dealFeedback] = await Promise.all([
     supabase
       .from('profiles')
       .select('*')
@@ -105,6 +112,7 @@ async function load(userId: string): Promise<AppData> {
       .select('id, title, summary, category, countries, regions, issuers, card_keywords, starts_on, ends_on, url, status, based_on, last_verified')
       .gte('ends_on', today)
       .order('starts_on'),
+    supabase.from('deal_feedback').select('deal_id, action'),
   ]);
 
   // numeric columns arrive as numbers from PostgREST; normalize defensively.
@@ -121,6 +129,19 @@ async function load(userId: string): Promise<AppData> {
     !prof.university_id && parents.length
       ? (((await supabase.from('universities').select(SCHOOL_COLUMNS).overlaps('email_domains', parents).limit(3)).data ?? []) as University[])
       : [];
+  // Deals and the pages behind them, for the user's country only.
+  const [deals, sources] = prof.country
+    ? await Promise.all([
+        supabase
+          .from('deals')
+          .select('id, source, merchant, merchant_keys, title, summary, category, amount, percent_off, currency, code, min_spend, countries, regions, starts_on, ends_on, url, evidence, confidence, seen_by, saves')
+          .contains('countries', [prof.country])
+          .or(`ends_on.is.null,ends_on.gte.${today}`)
+          .limit(500),
+        supabase.from('deal_sources').select('last_checked').contains('countries', [prof.country]).eq('active', true),
+      ])
+    : [{ data: [] }, { data: [] }];
+  const checked = ((sources.data ?? []) as { last_checked: string | null }[]).map((x) => x.last_checked).filter((x): x is string => !!x).sort();
   setHomeCurrency(prof.home_currency?.trim() || 'USD');
   return {
     profile: prof,
@@ -143,6 +164,10 @@ async function load(userId: string): Promise<AppData> {
     schoolHints,
     // Optional: a database without the events table yet just means nothing coming up.
     events: (events.data ?? []) as LocalEvent[],
+    // Optional like the rest: a database without deals yet just means none.
+    deals: ((deals.data ?? []) as Deal[]).map((d) => ({ ...d, amount: num(d.amount), percent_off: num(d.percent_off), min_spend: num(d.min_spend) })),
+    dealFeedback: (dealFeedback.data ?? []) as DealFeedback[],
+    scout: { sources: (sources.data ?? []).length, lastChecked: checked[checked.length - 1] ?? null },
   };
 }
 
@@ -220,5 +245,5 @@ export function useLookups() {
 /** The events that apply to this user: their country, and promotions for banks whose cards they hold. */
 export function myEvents(d: AppData): LocalEvent[] {
   const cards = d.userCards.map((uc) => d.cards.find((c) => c.id === uc.card_id)).filter((c): c is Card => !!c);
-  return relevantEvents(d.events, { country: d.profile?.country ?? null, cards, today: new Date().toISOString().slice(0, 10) });
+  return relevantEvents(d.events, { country: d.profile?.country ?? null, region: d.profile?.region ?? null, cards, today: new Date().toISOString().slice(0, 10) });
 }

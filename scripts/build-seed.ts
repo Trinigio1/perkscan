@@ -4,7 +4,7 @@ import { readdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import type { ZodType } from 'zod';
 import {
-  eventFileSchema, eventsToSql, programFileSchema, programsToSql, settlementFileSchema, settlementsToSql, studentFileSchema, studentToSql, universitiesToSql, universityFileSchema, unknownUniversityIds,
+  dealSourceFileSchema, dealSourcesToSql, eventFileSchema, eventsToSql, programFileSchema, programsToSql, settlementFileSchema, settlementsToSql, studentFileSchema, studentToSql, universitiesToSql, universityFileSchema, unknownUniversityIds,
 } from '../src/domain/catalogSchema';
 import { seedFileSchema, seedToSql } from '../src/domain/seedSchema';
 
@@ -26,6 +26,7 @@ const students = load('seed/student_discounts.json', studentFileSchema);
 const settlements = load('seed/settlements.json', settlementFileSchema);
 const programs = load('seed/programs.json', programFileSchema);
 const events = load('seed/events.json', eventFileSchema);
+const dealSources = load('seed/deal_sources.json', dealSourceFileSchema);
 const ttSchools = load('seed/universities.json', universityFileSchema);
 const usSchools = load('seed/universities_us.json', universityFileSchema);
 const universities = { universities: [...ttSchools.universities, ...usSchools.universities] };
@@ -52,6 +53,8 @@ const sql = seedToSql(cards).replace(/commit;\n$/, [
   ...programsToSql(programs),
   '-- Coming up near you (seed/events.json)',
   ...eventsToSql(events),
+  '-- Pages the scout reads for deals and promotions (seed/deal_sources.json)',
+  ...dealSourcesToSql(dealSources),
   'commit;',
   '',
 ].join('\n'));

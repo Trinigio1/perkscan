@@ -1,0 +1,276 @@
+{
+  "_readme": [
+    "Pages the scout reads every day for deals (stores) and dated promotions (banks, card networks, government).",
+    "Only official pages on the company's own domain. The scout respects robots.txt, never leaves the domain, and publishes only what it can quote from the page.",
+    "Store items become Deals for you; bank and government items become Coming up near you events for the right cardholders.",
+    "issuers must match seed/card_benefits.json. card_keywords limits a promotion to cards whose name contains the word (e.g. mastercard).",
+    "Pages that fail are retried weekly and show their last error in deal_sources.last_status — fix or deactivate them. Run `npm run seed:build -- --migration` after editing."
+  ],
+  "sources": [
+    {
+      "id": "pricesmart_tt",
+      "name": "PriceSmart",
+      "kind": "store",
+      "url": "https://www.pricesmart.com/en-tt",
+      "countries": [
+        "TT"
+      ],
+      "regions": [],
+      "categories": [
+        "groceries",
+        "electronics",
+        "home",
+        "shopping"
+      ],
+      "merchants": [
+        "pricesmart"
+      ],
+      "issuers": [],
+      "card_keywords": [],
+      "active": true,
+      "found_via": "Web search restricted to the official domain, 2026-10-23"
+    },
+    {
+      "id": "courts_tt_mega_sale",
+      "name": "Courts",
+      "kind": "store",
+      "url": "https://www.shopcourts.com/trinidadandtobago/tt-mega-sale.html",
+      "countries": [
+        "TT"
+      ],
+      "regions": [],
+      "categories": [
+        "home",
+        "electronics"
+      ],
+      "merchants": [
+        "courts",
+        "shopcourts",
+        "unicomer"
+      ],
+      "issuers": [],
+      "card_keywords": [],
+      "active": true,
+      "found_via": "Web search restricted to the official domain, 2026-10-23"
+    },
+    {
+      "id": "scotiabank_tt_promos",
+      "name": "Scotiabank",
+      "kind": "bank",
+      "url": "https://tt.scotiabank.com/personal/credit-cards/credit-card-promotions.html",
+      "countries": [
+        "TT"
+      ],
+      "regions": [],
+      "categories": [],
+      "merchants": [],
+      "issuers": [
+        "Scotiabank Trinidad & Tobago"
+      ],
+      "card_keywords": [],
+      "active": true,
+      "found_via": "Already used for seed/events.json; promotion pages under it found by web search, 2026-10-23"
+    },
+    {
+      "id": "first_citizens_tt_promos",
+      "name": "First Citizens",
+      "kind": "bank",
+      "url": "https://www.firstcitizensgroup.com/tt/credit-cards/credit-cards-promotion/",
+      "countries": [
+        "TT"
+      ],
+      "regions": [],
+      "categories": [],
+      "merchants": [],
+      "issuers": [
+        "First Citizens (Trinidad & Tobago)"
+      ],
+      "card_keywords": [],
+      "active": true,
+      "found_via": "Web search restricted to the official domain, 2026-10-23"
+    },
+    {
+      "id": "first_citizens_tt_partners",
+      "name": "First Citizens partner offers",
+      "kind": "bank",
+      "url": "https://www.firstcitizensgroup.com/tt/first-citizens-exclusive-partnership-offers/",
+      "countries": [
+        "TT"
+      ],
+      "regions": [],
+      "categories": [],
+      "merchants": [],
+      "issuers": [
+        "First Citizens (Trinidad & Tobago)"
+      ],
+      "card_keywords": [],
+      "active": true,
+      "found_via": "Web search restricted to the official domain, 2026-10-23"
+    },
+    {
+      "id": "republic_tt_card_benefits",
+      "name": "Republic Bank",
+      "kind": "bank",
+      "url": "https://republictt.com/creditcardbenefits",
+      "countries": [
+        "TT"
+      ],
+      "regions": [],
+      "categories": [],
+      "merchants": [],
+      "issuers": [
+        "Republic Bank (Trinidad & Tobago)"
+      ],
+      "card_keywords": [],
+      "active": true,
+      "found_via": "Web search restricted to the official domain, 2026-10-23"
+    },
+    {
+      "id": "mastercard_tt_priceless",
+      "name": "Mastercard",
+      "kind": "bank",
+      "url": "https://caribbean.mastercard.com/content/mastercardcom/en-region-car/en/personal/offers-and-promotions/priceless-specials/trinidad-tobago.html",
+      "countries": [
+        "TT"
+      ],
+      "regions": [],
+      "categories": [],
+      "merchants": [],
+      "issuers": [],
+      "card_keywords": [
+        "mastercard"
+      ],
+      "active": true,
+      "found_via": "Web search restricted to the official domain, 2026-10-23"
+    },
+    {
+      "id": "target_current_promotions",
+      "name": "Target",
+      "kind": "store",
+      "url": "https://www.target.com/help/articles/promotions-coupons/current-promotions",
+      "countries": [
+        "US"
+      ],
+      "regions": [],
+      "categories": [
+        "shopping",
+        "home",
+        "kids",
+        "groceries"
+      ],
+      "merchants": [
+        "target"
+      ],
+      "issuers": [],
+      "card_keywords": [],
+      "active": true,
+      "found_via": "Web search restricted to the official domain, 2026-10-23"
+    },
+    {
+      "id": "macys_deals",
+      "name": "Macy's",
+      "kind": "store",
+      "url": "https://www.macys.com/shop/sale/deals-coupons?id=334356",
+      "countries": [
+        "US"
+      ],
+      "regions": [],
+      "categories": [
+        "fashion",
+        "beauty",
+        "home"
+      ],
+      "merchants": [
+        "macys"
+      ],
+      "issuers": [],
+      "card_keywords": [],
+      "active": true,
+      "found_via": "Web search restricted to the official domain, 2026-10-23"
+    },
+    {
+      "id": "kohls_todays_deals",
+      "name": "Kohl's",
+      "kind": "store",
+      "url": "https://www.kohls.com/sale-event/todays-deals.jsp",
+      "countries": [
+        "US"
+      ],
+      "regions": [],
+      "categories": [
+        "fashion",
+        "home"
+      ],
+      "merchants": [
+        "kohls"
+      ],
+      "issuers": [],
+      "card_keywords": [],
+      "active": true,
+      "found_via": "Web search restricted to the official domain, 2026-10-23"
+    },
+    {
+      "id": "walgreens_offers",
+      "name": "Walgreens",
+      "kind": "store",
+      "url": "https://www.walgreens.com/offers/offers.jsp",
+      "countries": [
+        "US"
+      ],
+      "regions": [],
+      "categories": [
+        "beauty",
+        "shopping"
+      ],
+      "merchants": [
+        "walgreens"
+      ],
+      "issuers": [],
+      "card_keywords": [],
+      "active": true,
+      "found_via": "Web search restricted to the official domain, 2026-10-23"
+    },
+    {
+      "id": "ulta_promotions",
+      "name": "Ulta Beauty",
+      "kind": "store",
+      "url": "https://www.ulta.com/promotion/all",
+      "countries": [
+        "US"
+      ],
+      "regions": [],
+      "categories": [
+        "beauty"
+      ],
+      "merchants": [
+        "ulta",
+        "ultabeauty"
+      ],
+      "issuers": [],
+      "card_keywords": [],
+      "active": true,
+      "found_via": "Web search restricted to the official domain, 2026-10-23"
+    },
+    {
+      "id": "old_navy_coupons",
+      "name": "Old Navy",
+      "kind": "store",
+      "url": "https://oldnavy.gap.com/page/coupons-promo-codes?cid=1114260",
+      "countries": [
+        "US"
+      ],
+      "regions": [],
+      "categories": [
+        "fashion",
+        "kids"
+      ],
+      "merchants": [
+        "oldnavy"
+      ],
+      "issuers": [],
+      "card_keywords": [],
+      "active": true,
+      "found_via": "Web search restricted to the official domain, 2026-10-23"
+    }
+  ]
+}

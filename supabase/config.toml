@@ -428,3 +428,7 @@ enabled = true
 # not a Supabase session, so the gateway's JWT check is turned off for this one function.
 [functions.ingest]
 verify_jwt = false
+
+[functions.scout]
+# Called by pg_cron with SCOUT_SECRET, not a user session.
+verify_jwt = false

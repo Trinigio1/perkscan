@@ -33,6 +33,12 @@ describe('relevantEvents', () => {
     expect(relevantEvents(events, { country: 'TT', cards: [{ issuer: scotia, product_name: 'Scotiabank Gold Mastercard (Cash Back)' }], today: TODAY }).map((e) => e.id)).toEqual(['divali']);
   });
 
+  it('shows card-network promotions to anyone holding that kind of card', () => {
+    const mc = event({ id: 'mc', category: 'bank_promo', countries: ['TT'], card_keywords: ['mastercard'], starts_on: '2026-10-20', ends_on: '2026-11-20' });
+    expect(relevantEvents([mc], { country: 'TT', cards: [{ issuer: 'Republic Bank (Trinidad & Tobago)', product_name: 'Republic Bank Mastercard Gold' }], today: TODAY })).toHaveLength(1);
+    expect(relevantEvents([mc], { country: 'TT', cards: [{ issuer: 'Scotiabank Trinidad & Tobago', product_name: 'Scotiabank No Fee Visa Classic' }], today: TODAY })).toHaveLength(0);
+  });
+
   it('shows nothing without a country', () => {
     expect(relevantEvents(events, { country: null, cards: [], today: TODAY })).toEqual([]);
   });

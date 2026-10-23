@@ -25,7 +25,8 @@ export const PRIVACY: LegalDoc = {
         'Account: your email address (for sign-in), country, home currency, time zone, and — if you choose — that you’re a student and your school.',
         'Cards: the card product (e.g. “Scotiabank Visa Classic”) and its last 4 digits, plus an optional open date and nickname. Never a full card number, expiry date or security code.',
         'Emails and texts you send PerkScan (only ones you label, forward, share or paste): card numbers are masked before anything is stored, messages containing sign-in or verification codes are discarded on arrival, and the remaining text is deleted as soon as it has been read — within 24 hours at most. We keep only what was extracted: store, amounts and currency, dates, codes, a short summary, the card’s last 4 digits, and the sender’s domain (not the address).',
-        'Things you do in the app: credits and offers you mark as used, reviews of what PerkScan read, perks you add, and student offers you mark as claimed.',
+        'Things you do in the app: credits and offers you mark as used, reviews of what PerkScan read, perks you add, student offers you mark as claimed, the interests you pick, and deals you save, hide or report.',
+        'Shared public codes (off unless you turn it on): when a promo email you send PerkScan contains a code, we record the store, the offer, the code, its dates and your country. A code is shown to other users only after at least 3 different people received the same one, without saying who. Codes meant for one person never qualify. Turning this off deletes your records within the hour.',
         'Usage statistics (only if enabled in this version): which features are used, sent with a random install id — never your account, emails, stores, cards or amounts. You can turn this off in Settings.',
       ],
     },
@@ -41,6 +42,7 @@ export const PRIVACY: LegalDoc = {
       body: [
         'Settings → Export or delete my data: download everything we keep about you, or permanently delete your account and all of it at once.',
         'Settings → Connected sources: revoke any Gmail or texts connection instantly.',
+        'Settings → Share public codes: on or off at any time.',
       ],
     },
     {

@@ -5,6 +5,7 @@ import { findDuplicate, mergeFields, MERGE_WINDOW_DAYS, type ExistingReceipt } f
 import { toRows, type ReceiptRow } from './opportunities.ts';
 import { costUsd, parseEmail, type ModelCall } from './parse.ts';
 import { PROMPT_VERSION } from './prompt.ts';
+import { sightingsFrom } from './sightings.ts';
 
 export interface PipelineOptions {
   /** Hard monthly cap across all users, in USD. */
@@ -84,7 +85,7 @@ export async function processMessages(db: SupabaseClient, ids: string[], call: M
       continue;
     }
 
-    const { data: profile } = await db.from('profiles').select('home_currency, country').eq('id', claimed.user_id).maybeSingle();
+    const { data: profile } = await db.from('profiles').select('home_currency, country, share_deals').eq('id', claimed.user_id).maybeSingle();
     const rows = toRows(parsed.data, today, (profile?.home_currency as string | undefined) ?? 'USD');
     const receiptId = rows.receipt ? await saveReceipt(db, claimed.user_id as string, id, rows.receipt) : null;
 
@@ -98,6 +99,15 @@ export async function processMessages(db: SupabaseClient, ids: string[], call: M
       });
       if (!error) created += 1;
       else if (error.code !== '23505') throw new Error(`opportunities: ${error.message}`); // 23505 = already have this offer
+    }
+
+    // Opted in: public codes from this email may help others nearby (only store, offer, code, dates).
+    if (profile?.share_deals) {
+      const seen = sightingsFrom(parsed.data, (profile.country as string | null) ?? null, today);
+      if (seen.length) {
+        const { error } = await db.from('deal_sightings').upsert(seen.map((x) => ({ ...x, user_id: claimed.user_id, seen_at: new Date().toISOString() })), { onConflict: 'user_id,merchant_key,code' });
+        if (error) console.warn('deal_sightings', error.message);
+      }
     }
 
     // Money from the purchase itself: price adjustments, a stated warranty, a possible double charge.

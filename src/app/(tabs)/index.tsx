@@ -3,6 +3,7 @@ import { router, type Href } from 'expo-router';
 import { useMemo, useState } from 'react';
 import { Pressable, RefreshControl, View } from 'react-native';
 import { EventRow, SuggestionRow } from '@/components/ComingUp';
+import { DealRow } from '@/components/DealRow';
 import { Hero } from '@/components/Hero';
 import { OpportunityRow } from '@/components/OfferRow';
 import { ErrorNote, IconBubble, Money, Panel, Row, Screen, SectionHeader, T, type IconName } from '@/components/ui';
@@ -11,6 +12,7 @@ import { nextToUse, setupSteps } from '@/domain/money';
 import { scoreByCurrency } from '@/domain/score';
 import { greeting, type IconTone } from '@/domain/visuals';
 import { myEvents, useData, useLookups } from '@/lib/data';
+import { useDeals } from '@/lib/deals';
 import { useSuggestions } from '@/lib/suggestions';
 import { space, useColors } from '@/theme';
 
@@ -27,6 +29,9 @@ export default function Home() {
   const { benefitById, recoveredByOpp, userCardLabel } = useLookups();
   const [refreshing, setRefreshing] = useState(false);
   const { list: forYou, hide } = useSuggestions();
+  const deals = useDeals();
+  // Matched deals first; a couple of popular ones if nothing matches yet.
+  const topDeals = (deals.forYou.length ? deals.forYou : deals.popular).slice(0, 3);
 
   const { now, home, totals, soon } = useMemo(() => {
     const at = new Date();
@@ -132,6 +137,19 @@ export default function Home() {
       ) : (
         <T muted>{settingUp ? 'Credits and offers will show up here.' : 'Nothing expiring soon.'}</T>
       )}
+
+      {topDeals.length ? (
+        <>
+          <SectionHeader title={deals.forYou.length ? 'Deals for you' : 'Deals near you'} action="See all" onAction={() => router.push('/deals')} />
+          <Panel style={{ paddingVertical: space.xs }}>
+            {topDeals.map((x, i) => (
+              <View key={x.deal.id} style={i > 0 ? { borderTopWidth: 1, borderTopColor: c.border } : undefined}>
+                <DealRow item={x} />
+              </View>
+            ))}
+          </Panel>
+        </>
+      ) : null}
 
       {comingUp.length ? (
         <>

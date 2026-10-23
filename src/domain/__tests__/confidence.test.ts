@@ -8,6 +8,8 @@ describe('confidenceOf', () => {
   it.each([
     ['anything you added', opp({ type: 'gift_card', value_estimate: null, dedupe_key: 'manual:abc' }), 'confirmed'],
     ['a reminder for an event not announced yet', opp({ type: 'promo', value_estimate: null, dedupe_key: 'manual:unconfirmed:abc' }), 'check'],
+    ['a deal many people received, saved', opp({ type: 'promo', value_estimate: 50, dedupe_key: 'deal:likely:abc' }), 'likely'],
+    ['a store deal from its own page, saved', opp({ type: 'promo', value_estimate: null, dedupe_key: 'deal:confirmed:abc' }), 'confirmed'],
     ['a verified card credit (it has an amount)', opp({ type: 'card_credit', value_estimate: 15 }), 'confirmed'],
     ['an unverified card credit', opp({ type: 'card_credit', value_estimate: null }), 'check'],
     ['a store price-adjustment window', opp({ type: 'price_drop', value_estimate: null }), 'confirmed'],

@@ -208,3 +208,43 @@ export type EventFile = z.infer<typeof eventFileSchema>;
 export function eventsToSql(f: EventFile): string[] {
   return f.events.map((e, i) => upsert('local_events', { ...e, sort_order: i }, ['countries', 'regions', 'issuers', 'card_keywords']));
 }
+
+export const DEAL_SOURCE_CATEGORIES = [
+  'groceries', 'dining', 'delivery', 'electronics', 'fashion', 'home', 'travel', 'beauty',
+  'fitness', 'entertainment', 'fuel', 'kids', 'pets', 'education', 'shopping',
+] as const;
+
+/** One official page the scout reads every day. */
+export const dealSourceSchema = z
+  .object({
+    id: slug,
+    name: z.string().min(1).max(80),
+    kind: z.enum(['store', 'bank', 'government']),
+    url: https,
+    countries: z.array(country).min(1),
+    regions: z.array(z.string().regex(/^[A-Z]{2}$/)),
+    categories: z.array(z.enum(DEAL_SOURCE_CATEGORIES)),
+    /** Squashed store names to recognise it in receipts and sender domains ("pricesmart"). */
+    merchants: z.array(z.string().regex(/^[a-z0-9]{3,60}$/, 'Lowercase letters and digits only')),
+    issuers: z.array(z.string().min(1)),
+    card_keywords: z.array(z.string().regex(/^[a-z0-9 ]+$/, 'Lowercase words')),
+    active: z.boolean(),
+    /** Where the address came from, for whoever maintains the list. */
+    found_via: z.string().min(1),
+  })
+  .superRefine((s, ctx) => {
+    if (s.kind === 'store' && !s.categories.length) ctx.addIssue({ code: 'custom', path: ['categories'], message: 'A store needs at least one category' });
+    if (s.kind === 'store' && !s.merchants.length) ctx.addIssue({ code: 'custom', path: ['merchants'], message: 'A store needs at least one name to match' });
+  });
+
+export const dealSourceFileSchema = z.object({
+  _readme: z.array(z.string()).optional(),
+  sources: z.array(dealSourceSchema),
+});
+
+export type DealSourceFile = z.infer<typeof dealSourceFileSchema>;
+
+/** Upserts the registry without touching the scout's bookkeeping columns. */
+export function dealSourcesToSql(f: DealSourceFile): string[] {
+  return f.sources.map(({ found_via: _, ...s }, i) => upsert('deal_sources', { ...s, sort_order: i }, ['countries', 'regions', 'categories', 'merchants', 'issuers', 'card_keywords']));
+}
