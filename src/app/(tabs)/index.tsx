@@ -83,8 +83,9 @@ export default function Home() {
       <T variant="title">{greeting(now)}{name ? `, ${name}` : ''}</T>
       {error ? <ErrorNote message={error} /> : null}
 
-      <Pressable onPress={() => router.push('/money')} accessibilityRole="button" style={({ pressed }) => ({ opacity: pressed ? 0.85 : 1 })}>
-        <Hero>
+      <Hero>
+        {/* The headline opens Money; the three small numbers below are their own buttons (never nested). */}
+        <Pressable onPress={() => router.push('/money')} accessibilityRole="button" style={({ pressed }) => ({ gap: space.xs, opacity: pressed ? 0.8 : 1 })}>
           {checkFirst ? (
             <>
               <T variant="label" color={c.heroMuted}>Perks to check</T>
@@ -99,16 +100,16 @@ export default function Home() {
               {toCheck > 0 ? <T variant="caption" color={c.heroMuted}>+ {toCheck} more to check</T> : null}
             </>
           )}
-          {/* The three small numbers only once there's something in them. */}
-          {quiet ? null : (
-            <Row gap={0} style={{ marginTop: space.lg, borderTopWidth: 1, borderTopColor: c.heroTrack, paddingTop: space.md }}>
-              <Stat label="This week" value={totals.week} home={big} onPress={() => router.push('/at-risk')} />
-              <Stat label="Used" value={totals.used} home={big} onPress={() => router.push({ pathname: '/money', params: { view: 'used' } })} />
-              <Stat label="Missed" value={totals.missed} home={big} onPress={() => router.push({ pathname: '/money', params: { view: 'missed' } })} />
-            </Row>
-          )}
-        </Hero>
-      </Pressable>
+        </Pressable>
+        {/* The three small numbers only once there's something in them. */}
+        {quiet ? null : (
+          <Row gap={0} style={{ marginTop: space.lg, borderTopWidth: 1, borderTopColor: c.heroTrack, paddingTop: space.md }}>
+            <Stat label="This week" value={totals.week} home={big} onPress={() => router.push('/at-risk')} />
+            <Stat label="Used" value={totals.used} home={big} onPress={() => router.push({ pathname: '/money', params: { view: 'used' } })} />
+            <Stat label="Missed" value={totals.missed} home={big} onPress={() => router.push({ pathname: '/money', params: { view: 'missed' } })} />
+          </Row>
+        )}
+      </Hero>
 
       {dismissedLoaded && !dismissed.has('tour') ? <Tour onDone={() => dismiss('tour')} /> : null}
       {step ? <NextStep step={step} /> : null}
