@@ -59,6 +59,11 @@ function RootNavigator() {
       <Stack.Protected guard={!signedIn} redirectTo={onboarded ? '/' : '/welcome'}>
         <Stack.Screen name="(auth)" />
       </Stack.Protected>
+      {/* Connecting email or texts is offered during onboarding as well as afterwards. */}
+      <Stack.Protected guard={signedIn} redirectTo="/sign-in">
+        <Stack.Screen name="connect-gmail" options={{ ...header, title: '' }} />
+        <Stack.Screen name="connect-texts" options={{ ...header, title: '' }} />
+      </Stack.Protected>
       <Stack.Protected guard={signedIn && !onboarded} redirectTo={signedIn ? '/' : '/sign-in'}>
         <Stack.Screen name="(onboarding)" />
       </Stack.Protected>
@@ -70,9 +75,7 @@ function RootNavigator() {
         <Stack.Screen name="add-card" options={{ ...modal, title: 'Add cards' }} />
         <Stack.Screen name="offer/[id]" options={{ ...modal, title: '' }} />
         <Stack.Screen name="inbox" options={{ ...header, title: 'Inbox' }} />
-        <Stack.Screen name="connect-gmail" options={{ ...header, title: '' }} />
         <Stack.Screen name="country" options={{ ...modal, title: 'Country & currency' }} />
-        <Stack.Screen name="connect-texts" options={{ ...header, title: '' }} />
         <Stack.Screen name="add-text" options={{ ...modal, title: 'Add a text' }} />
         <Stack.Screen name="review" options={{ ...header, title: 'Reading accuracy' }} />
         <Stack.Screen name="report" options={{ ...modal, title: 'Something’s wrong' }} />
@@ -85,7 +88,7 @@ function RootNavigator() {
         <Stack.Screen name="perks" options={{ ...header, title: 'Your card perks' }} />
         <Stack.Screen name="hidden-money" options={{ ...header, title: 'Hidden money' }} />
         <Stack.Screen name="coming-up" options={{ ...header, title: 'Coming up' }} />
-        <Stack.Screen name="deals" options={{ ...header, title: 'Deals for you' }} />
+        <Stack.Screen name="cards" options={{ ...header, title: 'Your cards' }} />
         <Stack.Screen name="interests" options={{ ...modal, title: 'Your interests' }} />
         <Stack.Screen name="add" options={{ ...modal, title: 'Add' }} />
         <Stack.Screen name="add-item" options={{ ...modal, title: '' }} />

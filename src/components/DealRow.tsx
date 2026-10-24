@@ -10,7 +10,7 @@ import { sendDealFeedback } from '@/lib/deals';
 import { useToast } from '@/lib/toast';
 import { space, useColors } from '@/theme';
 import { ConfidenceTag } from './ConfidenceTag';
-import { Badge, IconBubble, Row, T } from './ui';
+import { Badge, Button, IconBubble, Row, T, type IconName } from './ui';
 
 const today = () => new Date().toISOString().slice(0, 10);
 
@@ -20,6 +20,7 @@ export function DealRow({ item }: { item: RankedDeal }) {
   const toast = useToast();
   const { data, refresh } = useData();
   const [busy, setBusy] = useState(false);
+  const [menu, setMenu] = useState(false);
   const d = item.deal;
   const interest = INTERESTS.find((i) => i.id === d.category) ?? INTERESTS[INTERESTS.length - 1]!;
   const saved = data.dealFeedback.some((f) => f.deal_id === d.id && f.action === 'saved');
@@ -30,6 +31,7 @@ export function DealRow({ item }: { item: RankedDeal }) {
 
   const act = async (action: 'saved' | 'dismissed' | 'didnt_work') => {
     setBusy(true);
+    setMenu(false);
     try {
       await sendDealFeedback(d.id, action);
       await refresh();
@@ -80,37 +82,50 @@ export function DealRow({ item }: { item: RankedDeal }) {
             <ConfidenceTag value={d.confidence} />
           </Row>
 
-          <Row gap={space.lg} style={{ marginTop: 6 }}>
+          {/* One clear action; the rest behind "⋯". */}
+          <Row gap={space.sm} style={{ marginTop: 8 }}>
             {saved ? (
-              <Row gap={4}>
-                <Ionicons name="checkmark-circle" size={14} color={c.accentStrong} />
-                <T variant="caption" color={c.accentStrong}>Saved</T>
+              <Row gap={4} style={{ flex: 1 }}>
+                <Ionicons name="checkmark-circle" size={16} color={c.accentStrong} />
+                <T variant="label" color={c.accentStrong}>Saved to Money</T>
               </Row>
             ) : (
-              <Pressable onPress={() => act('saved')} disabled={busy} hitSlop={8} accessibilityRole="button">
-                <T variant="label" color={c.accent}>Save</T>
-              </Pressable>
+              <View style={{ flex: 1, alignItems: 'flex-start' }}>
+                <Button title="Save" icon="bookmark-outline" size="sm" onPress={() => act('saved')} loading={busy} />
+              </View>
             )}
-            {saved ? (
-              <Pressable onPress={() => act('didnt_work')} disabled={busy} hitSlop={8} accessibilityRole="button">
-                <T variant="label" color={c.textMuted}>Didn’t work?</T>
-              </Pressable>
-            ) : (
-              <Pressable onPress={() => act('dismissed')} disabled={busy} hitSlop={8} accessibilityRole="button">
-                <T variant="label" color={c.textMuted}>Not for me</T>
-              </Pressable>
-            )}
-            {d.url ? (
-              <Pressable onPress={() => Linking.openURL(d.url!)} hitSlop={8} accessibilityRole="link" accessibilityLabel={`Open ${d.merchant}’s page`}>
-                <Row gap={4}>
-                  <T variant="label" color={c.accent}>Details</T>
-                  <Ionicons name="open-outline" size={13} color={c.accent} />
-                </Row>
-              </Pressable>
-            ) : null}
+            <Pressable
+              onPress={() => setMenu(!menu)}
+              hitSlop={10}
+              accessibilityRole="button"
+              accessibilityLabel={`More for ${d.title}`}
+              style={({ pressed }) => ({ padding: 6, borderRadius: 999, backgroundColor: menu || pressed ? c.surfaceAlt : 'transparent' })}
+            >
+              <Ionicons name="ellipsis-horizontal" size={18} color={c.textMuted} />
+            </Pressable>
           </Row>
+          {menu ? (
+            <View style={{ marginTop: 4, borderRadius: 12, backgroundColor: c.surfaceAlt, overflow: 'hidden' }}>
+              {d.url ? <MenuItem icon="open-outline" label={`Open ${d.merchant}’s page`} onPress={() => Linking.openURL(d.url!)} /> : null}
+              {saved ? (
+                <MenuItem icon="alert-circle-outline" label="It didn’t work" onPress={() => act('didnt_work')} />
+              ) : (
+                <MenuItem icon="eye-off-outline" label="Not for me" onPress={() => act('dismissed')} />
+              )}
+            </View>
+          ) : null}
         </View>
       </Row>
     </View>
+  );
+}
+
+function MenuItem({ icon, label, onPress }: { icon: IconName; label: string; onPress: () => void }) {
+  const c = useColors();
+  return (
+    <Pressable onPress={onPress} accessibilityRole="button" style={({ pressed }) => ({ flexDirection: 'row', alignItems: 'center', gap: space.sm, paddingHorizontal: space.md, paddingVertical: 10, opacity: pressed ? 0.6 : 1 })}>
+      <Ionicons name={icon} size={16} color={c.textMuted} />
+      <T variant="label">{label}</T>
+    </Pressable>
   );
 }

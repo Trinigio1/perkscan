@@ -43,7 +43,7 @@ export function OfferRow({ opp, now }: { opp: Opportunity; now: Date }) {
       <Row gap={space.md}>
         <IconBubble icon={icon} tone={tone} />
         <View style={{ flex: 1, gap: 2 }}>
-          <T variant="subheading" numberOfLines={1}>{opp.title}</T>
+          <T variant="subheading" numberOfLines={2}>{opp.title}</T>
           {opp.merchant ? <T variant="caption" muted numberOfLines={1}>{opp.merchant}</T> : null}
           <T variant="caption" color={statusColor} numberOfLines={1}>{status}</T>
         </View>

@@ -79,3 +79,23 @@ Each list is sorted in this order:
 - **In the browser:** a KFC code showed as Likely under This week, and a TT$300 allowance as Confirmed under Later. Unconfirmed Amex credits and "Charged twice?" showed as Check under Worth checking. The total was TT$310: the guesses weren't counted. There were no errors.
 
 No database changes. Just `git pull` and reload.
+
+## Walkthrough cleanup (October 24, 2026)
+
+- **Home:** four things only: the total, one "Next step" card, Use soon, Deals for you. Then a small Explore row (Hidden money, Card perks, Your cards, Before you pay, Add).
+  - With nothing confirmed yet, the hero shows "Perks to check: 8" instead of "$0".
+  - The This week / Used / Missed row appears once one of them has something in it.
+- **First run:**
+  - a 3-tip tour (dismissible)
+  - "PerkScan found N things in your email" once, after the first scan
+  - both remembered on the device (`useDismissed`)
+- **Onboarding:** 6 short steps instead of 4 crowded ones.
+  - Where you live → cards → card details → **Find money in your email** (Gmail or bank texts; set up now or later) → **What do you spend on?** (8 common interests, more on tap) → reminders and student.
+  - Connecting email or texts is now allowed during onboarding (its own route guard).
+  - "Help people nearby find deals" is asked on the Deals tab once there are deals on screen, not during onboarding.
+- **Money:** unconfirmed items fold into one "N to check" line with a single explanation. Unconfirmed amounts show nothing rather than "—". Recap and Share moved under Used.
+- **Rows:** titles wrap to two lines instead of being cut off.
+- **Deals:** one Save button per deal; "Open the store's page", "Not for me" and "It didn't work" sit behind "⋯".
+- **Tabs:** Home, Money, Deals, Settings. Cards moved to Settings → Your cards (and Home's Explore row).
+  - Each card shows its next credit to reset and its best perk.
+  - The Deals tab also carries "Coming up near you".

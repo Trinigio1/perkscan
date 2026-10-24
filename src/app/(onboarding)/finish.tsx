@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { View } from 'react-native';
 import { Disclaimer } from '@/components/Disclaimer';
-import { InterestPicker } from '@/components/InterestPicker';
 import { ListRow } from '@/components/ListRow';
 import { Steps } from '@/components/Steps';
 import { Button, ErrorNote, Panel, Screen, T } from '@/components/ui';
@@ -16,8 +15,6 @@ export default function Finish() {
   const { session } = useAuth();
   const { data, refresh } = useData();
   const [student, setStudent] = useState(false);
-  const [interests, setInterests] = useState<string[]>([]);
-  const [share, setShare] = useState(false);
   const [reminders, setReminders] = useState(true);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -30,8 +27,6 @@ export default function Finish() {
       if (reminders) await requestReminderPermission();
       await updateProfile(session.user.id, {
         is_student: student,
-        interests,
-        share_deals: share,
         timezone: deviceTimeZone(),
         onboarded_at: new Date().toISOString(),
       });
@@ -50,7 +45,7 @@ export default function Finish() {
 
   return (
     <Screen>
-      <Steps step={4} total={4} />
+      <Steps step={6} total={6} />
       <View style={{ gap: space.xs }}>
         <T variant="display">Last thing</T>
         <T muted>You can change these in Settings.</T>
@@ -70,20 +65,7 @@ export default function Finish() {
           toggle={student}
           onToggle={setStudent}
         />
-        <ListRow
-          icon="people"
-          tone="green"
-          title="Help people nearby find deals"
-          subtitle="Swap public promotions with others near you — the deals your own inbox never shows. Never your emails or who you are."
-          toggle={share}
-          onToggle={setShare}
-        />
       </Panel>
-      <View style={{ gap: space.sm }}>
-        <T variant="subheading">What do you spend on?</T>
-        <T variant="caption" muted>Optional. Deals for these come first.</T>
-        <InterestPicker value={interests} onChange={setInterests} />
-      </View>
       <Disclaimer />
       {error ? <ErrorNote message={error} /> : null}
       <Button title="Show me my money" icon="sparkles" onPress={done} loading={busy} />

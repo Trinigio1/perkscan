@@ -114,6 +114,7 @@ export default function Settings() {
       </Group>
 
       <Group title="You">
+        <ListRow icon="card" tone="green" title="Your cards" value={data.userCards.length ? String(data.userCards.length) : 'None yet'} onPress={() => router.push('/cards')} />
         <ListRow icon="globe-outline" tone="blue" title="Country" value={region ? `${region.name} · ${data.profile?.home_currency}` : 'Not set'} onPress={() => router.push('/country')} />
         <ListRow
           icon="pricetags"

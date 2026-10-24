@@ -28,7 +28,7 @@ export default function CardDetails() {
     setError(null);
     try {
       await addUserCards(drafts);
-      router.push('/finish');
+      router.push('/find-money');
     } catch (e) {
       setError((e as Error).message);
     } finally {
@@ -38,7 +38,7 @@ export default function CardDetails() {
 
   return (
     <Screen>
-      <Steps step={3} total={4} />
+      <Steps step={3} total={6} />
       <View style={{ gap: space.xs }}>
         <T variant="display">A few details</T>
         <T muted>Just the last 4 digits — that’s all we ever store.</T>

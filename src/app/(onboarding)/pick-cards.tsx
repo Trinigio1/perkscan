@@ -14,7 +14,7 @@ export default function PickCards() {
 
   return (
     <Screen>
-      <Steps step={2} total={4} />
+      <Steps step={2} total={6} />
       <View style={{ gap: space.xs }}>
         <T variant="display">Which cards do you carry?</T>
         <T muted>Pick all that apply. You can add more later.</T>
@@ -26,7 +26,7 @@ export default function PickCards() {
         disabled={!selected.length}
         onPress={() => router.push('/details')}
       />
-      <Button title="Skip for now" kind="ghost" onPress={() => router.push('/finish')} />
+      <Button title="Skip for now" kind="ghost" onPress={() => router.push('/find-money')} />
     </Screen>
   );
 }

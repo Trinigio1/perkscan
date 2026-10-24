@@ -64,7 +64,7 @@ export function CreditRow({
         </View>
         <View style={{ flex: 1, gap: 2 }}>
           <Row gap={6}>
-            <T variant="subheading" numberOfLines={1} style={{ flexShrink: 1 }}>{opp.title}</T>
+            <T variant="subheading" numberOfLines={2} style={{ flexShrink: 1 }}>{opp.title}</T>
             {benefit?.enrollment_required && !used ? <Ionicons name="alert-circle" size={14} color={c.warn} /> : null}
           </Row>
           {subtitle ? <T variant="caption" muted numberOfLines={1}>{subtitle}</T> : null}
@@ -76,10 +76,7 @@ export function CreditRow({
           ) : null}
         </View>
         <View style={{ alignItems: 'flex-end', minWidth: 56, gap: 4 }}>
-          {value === null ? (
-            // Amount not confirmed from the issuer yet: say nothing rather than guess.
-            <T variant="subheading" faint>—</T>
-          ) : (
+          {value === null ? null /* Amount not confirmed from the issuer yet: say nothing rather than guess. */ : (
             <>
               <T
                 variant="subheading"

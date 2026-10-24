@@ -1,6 +1,7 @@
 import { router, useLocalSearchParams } from 'expo-router';
 import { useCallback, useMemo, useState } from 'react';
-import { RefreshControl, ScrollView, View } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import { Pressable, RefreshControl, ScrollView, View } from 'react-native';
 import { OpportunityRow } from '@/components/OfferRow';
 import { Button, Chip, Empty, Panel, Row, Screen, Segmented, T } from '@/components/ui';
 import { formatBag, getHomeCurrency } from '@/domain/format';
@@ -24,6 +25,7 @@ export default function Money() {
   const [view, setView] = useState<MoneyView>(params.view === 'used' || params.view === 'missed' ? params.view : 'open');
   const [kind, setKind] = useState<MoneyKind | 'all'>('all');
   const [refreshing, setRefreshing] = useState(false);
+  const [showCheck, setShowCheck] = useState(false);
   const home = data.profile?.home_currency?.trim() || getHomeCurrency();
   const statusOf = useCallback((id: string) => benefitById.get(id)?.status, [benefitById]);
 
@@ -84,26 +86,56 @@ export default function Money() {
           action={view === 'open' && !data.userCards.length ? <Button title="Add cards" icon="add" onPress={() => router.push('/add-card')} /> : undefined}
         />
       ) : (
-        shown.sections.map((s) => (
-          <View key={s.title || 'all'} style={{ gap: space.sm }}>
-            {s.title ? <T variant="overline" color={s.title === 'This week' ? c.warn : c.textMuted}>{s.title}</T> : null}
-            {s.title === 'Worth checking' ? <T variant="caption" faint>Not counted in your totals until confirmed.</T> : null}
-            <Panel style={{ paddingVertical: space.xs }}>
-              {s.items.map((o, i) => (
-                <View key={o.id} style={i > 0 ? { borderTopWidth: 1, borderTopColor: c.border } : undefined}>
-                  <OpportunityRow
-                    opp={o}
-                    benefit={o.benefit_id ? benefitById.get(o.benefit_id) : undefined}
-                    recovered={recoveredByOpp.get(o.id) ?? 0}
-                    subtitle={userCardLabel(o.user_card_id) || undefined}
-                    now={now}
-                  />
-                </View>
-              ))}
-            </Panel>
-          </View>
-        ))
+        shown.sections.map((s) => {
+          const isCheck = s.title === 'Worth checking';
+          // Unconfirmed items fold into one line, so confirmed money stands out. Open when they're all there is.
+          const open = !isCheck || showCheck || shown.sections.length === 1;
+          return (
+            <View key={s.title || 'all'} style={{ gap: space.sm }}>
+              {isCheck ? (
+                <Pressable onPress={() => setShowCheck(!showCheck)} disabled={shown.sections.length === 1} accessibilityRole="button" style={({ pressed }) => ({ opacity: pressed ? 0.7 : 1 })}>
+                  <Panel style={{ gap: 2 }}>
+                    <Row gap={space.sm}>
+                      <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: c.warn }} />
+                      <T variant="subheading" style={{ flex: 1 }}>{s.items.length} to check</T>
+                      {shown.sections.length > 1 ? <Ionicons name={open ? 'chevron-up' : 'chevron-down'} size={18} color={c.textFaint} /> : null}
+                    </Row>
+                    <T variant="caption" muted>Amounts or terms aren’t confirmed yet, so they’re not in your totals. Tap one to see how to check it.</T>
+                  </Panel>
+                </Pressable>
+              ) : s.title ? (
+                <T variant="overline" color={s.title === 'This week' ? c.warn : c.textMuted}>{s.title}</T>
+              ) : null}
+              {open ? (
+                <Panel style={{ paddingVertical: space.xs }}>
+                  {s.items.map((o, i) => (
+                    <View key={o.id} style={i > 0 ? { borderTopWidth: 1, borderTopColor: c.border } : undefined}>
+                      <OpportunityRow
+                        opp={o}
+                        benefit={o.benefit_id ? benefitById.get(o.benefit_id) : undefined}
+                        recovered={recoveredByOpp.get(o.id) ?? 0}
+                        subtitle={userCardLabel(o.user_card_id) || undefined}
+                        now={now}
+                      />
+                    </View>
+                  ))}
+                </Panel>
+              ) : null}
+            </View>
+          );
+        })
       )}
+
+      {view === 'used' ? (
+        <Row gap={space.lg} style={{ justifyContent: 'center' }}>
+          <Pressable onPress={() => router.push('/recap')} hitSlop={8}>
+            <T variant="label" color={c.accent}>{now.toLocaleDateString('en-US', { month: 'long' })} recap</T>
+          </Pressable>
+          <Pressable onPress={() => router.push('/share')} hitSlop={8}>
+            <T variant="label" color={c.accent}>Share my total</T>
+          </Pressable>
+        </Row>
+      ) : null}
     </Screen>
   );
 }

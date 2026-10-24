@@ -13,7 +13,7 @@ export default function Where() {
   const { data, refresh } = useData();
   return (
     <Screen>
-      <Steps step={1} total={4} />
+      <Steps step={1} total={6} />
       <View style={{ gap: space.xs }}>
         <T variant="display">Where do you live?</T>
         <T muted>Sets your currency and which cards we show first.</T>

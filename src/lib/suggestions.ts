@@ -6,12 +6,15 @@ import { useData } from './data';
 // Suggestions the user dismissed, remembered on this device.
 const KEY = 'perkscan.dismissedSuggestions';
 
-export function useDismissed(): [Set<string>, (id: string) => void] {
+/** What the user hid on this device, a way to hide more, and whether the list has loaded yet. */
+export function useDismissed(): [Set<string>, (id: string) => void, boolean] {
   const [dismissed, setDismissed] = useState<Set<string>>(new Set());
+  const [loaded, setLoaded] = useState(false);
   useEffect(() => {
     AsyncStorage.getItem(KEY)
       .then((v) => setDismissed(new Set(v ? (JSON.parse(v) as string[]) : [])))
-      .catch(() => {});
+      .catch(() => {})
+      .finally(() => setLoaded(true));
   }, []);
   const dismiss = useCallback((id: string) => {
     setDismissed((prev) => {
@@ -20,7 +23,7 @@ export function useDismissed(): [Set<string>, (id: string) => void] {
       return next;
     });
   }, []);
-  return [dismissed, dismiss];
+  return [dismissed, dismiss, loaded];
 }
 
 /** "For you" suggestions for the signed-in user, minus the ones they hid. */
