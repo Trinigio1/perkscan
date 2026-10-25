@@ -19,6 +19,7 @@ const SECTION_ICON: Record<ProgramKind, { icon: IconName; tone: IconTone }> = {
   price_adjust: { icon: 'trending-down', tone: 'teal' },
   refund_rule: { icon: 'cash', tone: 'blue' },
   library: { icon: 'library', tone: 'pink' },
+  free_perk: { icon: 'gift', tone: 'green' },
 };
 
 /** Other places money hides: unclaimed balances, expiring points, price drops, refunds, library perks. */
@@ -92,6 +93,7 @@ const CLAIM_LABEL: Record<Program['kind'], string> = {
   library: 'Get a card',
   refund_rule: 'Claim',
   deadline_rule: 'Claim',
+  free_perk: 'Get it',
 };
 
 function ProgramLine({ p }: { p: Program }) {

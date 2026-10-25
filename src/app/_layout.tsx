@@ -87,6 +87,7 @@ function RootNavigator() {
         <Stack.Screen name="recap" options={{ ...header, title: 'Monthly recap' }} />
         <Stack.Screen name="at-risk" options={{ ...header, title: 'At risk this week' }} />
         <Stack.Screen name="perks" options={{ ...header, title: 'Your card perks' }} />
+        <Stack.Screen name="for-you" options={{ ...header, title: 'Perks for you' }} />
         <Stack.Screen name="hidden-money" options={{ ...header, title: 'Hidden money' }} />
         <Stack.Screen name="coming-up" options={{ ...header, title: 'Coming up' }} />
         <Stack.Screen name="cards" options={{ ...header, title: 'Your cards' }} />
