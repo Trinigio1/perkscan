@@ -1,0 +1,15 @@
+{
+  "origin": "synthetic",
+  "source": "email",
+  "input": {
+    "subject": "Earn 60,000 bonus points with the Harbor Rewards Card",
+    "date": "2026-10-10T08:00:00-04:00",
+    "text": "Apply today for the Harbor Rewards Visa and earn 60,000 bonus points after you spend $3,000 in 3 months. Terms apply.",
+    "from": "Harbor Hotels <offers@harborhotels.example>"
+  },
+  "expected": {
+    "kind": "promo",
+    "offers": [],
+    "card": null
+  }
+}

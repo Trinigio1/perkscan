@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useRef } from 'react';
 import { View } from 'react-native';
 import { Hero } from '@/components/Hero';
 import { OpportunityRow } from '@/components/OfferRow';
+import { SpottedCardPanel, useSpottedCards } from '@/components/SpottedCards';
 import { Button, Panel, Row, Screen, T } from '@/components/ui';
 import { activationBucket, foundMoney } from '@/domain/firstRun';
 import { formatBag, getHomeCurrency, type MoneyBag } from '@/domain/format';
@@ -30,6 +31,7 @@ export default function Found() {
   const now = useMemo(() => new Date(), []);
   const f = useMemo(() => foundMoney(data.opportunities, data.recovered, now, statusOf), [data, now, statusOf]);
   const hasMoney = nonZero(f.total);
+  const spotted = useSpottedCards();
 
   const sent = useRef(false);
   useEffect(() => {
@@ -95,6 +97,16 @@ export default function Found() {
           ) : null}
         </View>
       ))}
+
+      {spotted.length ? (
+        <View style={{ gap: space.sm }}>
+          <T variant="heading" style={{ marginTop: space.sm }}>Cards in your email</T>
+          <T variant="caption" muted>Your email shows {spotted.length === 1 ? 'a card' : `${spotted.length} cards`} you haven’t added. Each one can come with credits and protections.</T>
+          {spotted.slice(0, 3).map((s) => (
+            <SpottedCardPanel key={s.key} spotted={s} />
+          ))}
+        </View>
+      ) : null}
 
       {f.protectedCount > 0 || nonZero(f.missed) ? (
         <Panel style={{ gap: space.sm }}>

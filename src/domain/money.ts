@@ -6,12 +6,13 @@ import type { Opportunity } from './types';
 // One list for everything you can use: card credits, codes, gift cards, trials, protections.
 
 export type MoneyView = 'open' | 'used' | 'missed';
-export type MoneyKind = 'credits' | 'codes' | 'gift_cards' | 'points' | 'refunds' | 'benefits' | 'returns' | 'protections' | 'other';
+export type MoneyKind = 'credits' | 'codes' | 'gift_cards' | 'travel' | 'points' | 'refunds' | 'benefits' | 'returns' | 'protections' | 'other';
 
 export const KIND_LABELS: Record<MoneyKind, string> = {
   credits: 'Card credits',
   codes: 'Codes',
   gift_cards: 'Gift cards',
+  travel: 'Travel credits',
   points: 'Points & miles',
   refunds: 'Refunds',
   benefits: 'Benefits',
@@ -19,7 +20,7 @@ export const KIND_LABELS: Record<MoneyKind, string> = {
   protections: 'Protections',
   other: 'Settlements',
 };
-const KIND_ORDER: MoneyKind[] = ['credits', 'codes', 'gift_cards', 'points', 'refunds', 'benefits', 'returns', 'protections', 'other'];
+const KIND_ORDER: MoneyKind[] = ['credits', 'codes', 'gift_cards', 'travel', 'points', 'refunds', 'benefits', 'returns', 'protections', 'other'];
 
 export function kindOf(o: Pick<Opportunity, 'type'>): MoneyKind {
   switch (o.type) {
@@ -32,6 +33,9 @@ export function kindOf(o: Pick<Opportunity, 'type'>): MoneyKind {
     case 'gift_card':
     case 'store_credit':
       return 'gift_cards';
+    case 'travel_credit':
+    case 'certificate':
+      return 'travel';
     case 'points':
       return 'points';
     case 'refund':

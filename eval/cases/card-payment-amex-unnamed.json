@@ -1,0 +1,15 @@
+{
+  "origin": "synthetic",
+  "source": "email",
+  "input": {
+    "subject": "We received your payment",
+    "date": "2026-10-18T12:00:00-04:00",
+    "text": "Thank you. We received your payment of $250.00 for your Card Account ending in 1007 on October 18, 2026.\n\nAmerican Express",
+    "from": "American Express <AmericanExpress@welcome.americanexpress.com>"
+  },
+  "expected": {
+    "kind": "other",
+    "offers": [],
+    "card": { "issuer": "American Express", "product": null, "last_four": "1007" }
+  }
+}

@@ -32,3 +32,9 @@ export async function updateProfile(userId: string, patch: { is_student?: boolea
   if (error) throw new Error(friendlyDbError('profile', error));
   if (!data?.length) throw new Error(friendlyDbError('profile', { message: 'No profile row', code: 'PGRST116' }));
 }
+
+/** "Not mine": stop suggesting a card PerkScan spotted in your email. */
+export async function dismissCardSighting(id: string) {
+  const { error } = await supabase.rpc('dismiss_card_sighting', { p_id: id });
+  if (error) throw new Error(error.message);
+}

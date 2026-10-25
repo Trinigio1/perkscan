@@ -43,6 +43,7 @@ export function confidenceOf(o: Opportunity, statusOf: BenefitStatusOf = () => u
       return /^settlement:[^:]+$/.test(key) ? 'check' : 'likely';
     case 'free_trial':
     case 'return_window':
+    case 'certificate':
       return o.expires_at ? 'likely' : 'check';
     default:
       // Promos, gift cards, store credit, points: something concrete to act on.

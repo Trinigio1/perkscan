@@ -1,4 +1,5 @@
 import { costUsd, parseEmail, type ModelCall } from '../parse.ts';
+import { normalizeParsed } from '../schema.ts';
 
 const valid = {
   kind: 'promo',
@@ -91,5 +92,15 @@ describe('costUsd', () => {
   it('uses Haiku 5.5 prices', () => {
     expect(costUsd({ inputTokens: 1_000_000, outputTokens: 0 })).toBeCloseTo(0.1);
     expect(costUsd({ inputTokens: 3000, outputTokens: 500 })).toBeCloseTo(0.00055);
+  });
+});
+
+describe('cards read from email', () => {
+  it('keeps only issuer, name and last 4 digits, and drops a card with neither', () => {
+    const base = { kind: 'other' as const, merchant: null, summary: '', receipt: null, offers: [] };
+    expect(normalizeParsed({ ...base, card: { issuer: ' Chase ', product: 'Freedom Unlimited®', last_four: '1234' } }).card).toEqual({ issuer: 'Chase', product: 'Freedom Unlimited', last_four: '1234' });
+    expect(normalizeParsed({ ...base, card: { issuer: 'Chase', product: null, last_four: '4111111111111111' } }).card).toBeNull();
+    expect(normalizeParsed({ ...base, card: { issuer: null, product: 'Platinum Card', last_four: '1001' } }).card).toBeNull();
+    expect(normalizeParsed(base).card).toBeNull();
   });
 });

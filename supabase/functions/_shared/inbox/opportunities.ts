@@ -21,7 +21,7 @@ export interface ReceiptRow {
 }
 
 export interface OpportunityRow {
-  type: 'promo' | 'gift_card' | 'store_credit' | 'points' | 'free_trial' | 'settlement' | 'return_window' | 'refund';
+  type: 'promo' | 'gift_card' | 'store_credit' | 'points' | 'free_trial' | 'settlement' | 'return_window' | 'refund' | 'travel_credit' | 'certificate';
   title: string;
   description: string | null;
   merchant: string | null;
@@ -58,7 +58,13 @@ export function fmtMoney(n: number, currency: string): string {
   return p ? `${p}${num}` : `${num} ${currency}`;
 }
 
-function offerRow(o: Offer, merchant: string | null, currency: string): OpportunityRow {
+/** An official refund rule to point to, e.g. the US DOT rule for cancelled flights. */
+export interface RefundRule {
+  how_to: string;
+  url: string;
+}
+
+function offerRow(o: Offer, merchant: string | null, currency: string, flightRefundRule: RefundRule | null): OpportunityRow {
   const who = merchant ?? 'this store';
   const fmt = (n: number) => fmtMoney(n, currency);
   const steps: OpportunityRow['action_steps'] = [];
@@ -92,6 +98,21 @@ function offerRow(o: Offer, merchant: string | null, currency: string): Opportun
       steps.push({ step: `Ask ${who} for it as the email describes — don't accept a voucher if you'd rather have the money back.` });
       if (o.claim_url) steps.push({ step: 'Where to claim', url: o.claim_url });
       break;
+    case 'travel_credit':
+      // Already yours: it counts, like store credit.
+      steps.push({ step: `Use it when you book with ${who}: it shows up at checkout or in your ${who} account.` });
+      if (o.code) steps.push({ step: `Credit or voucher number: ${o.code}.` });
+      if (o.after_cancellation && flightRefundRule) {
+        steps.push({
+          step: `${who} cancelled or changed your flight. If you didn't choose this credit, US rules say you may be owed a cash refund instead. ${flightRefundRule.how_to}`,
+          url: flightRefundRule.url,
+        });
+      }
+      break;
+    case 'certificate':
+      // A free night or companion fare has no dollar value unless one is stated.
+      steps.push({ step: `Book with ${who} before it expires. Look for it under rewards or certificates in your ${who} account.` });
+      break;
     case 'settlement':
       type = 'settlement';
       steps.push({ step: 'Check eligibility and file on the official settlement site. PerkScan never files on your behalf.' });
@@ -122,8 +143,9 @@ function isActionable(o: Offer): boolean {
 
 /**
  * @param defaultCurrency used when the email doesn't say (the user's home currency).
+ * @param flightRefundRule the US DOT refund rule, for travel credits issued after a cancellation (US users).
  */
-export function toRows(p: ParsedEmail, today: string, defaultCurrency = 'USD'): Rows {
+export function toRows(p: ParsedEmail, today: string, defaultCurrency = 'USD', flightRefundRule: RefundRule | null = null): Rows {
   const merchant = p.merchant;
   const emailCurrency = p.receipt?.currency ?? defaultCurrency;
   const opportunities: OpportunityRow[] = [];
@@ -131,7 +153,7 @@ export function toRows(p: ParsedEmail, today: string, defaultCurrency = 'USD'): 
   for (const o of p.offers) {
     if (!isActionable(o)) continue;
     if (o.expires_on && o.expires_on < today) continue; // already expired when it arrived
-    opportunities.push(offerRow(o, merchant, o.currency ?? emailCurrency));
+    opportunities.push(offerRow(o, merchant, o.currency ?? emailCurrency, flightRefundRule));
   }
 
   let receipt: ReceiptRow | null = null;

@@ -2,7 +2,8 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import { matchAndApply } from '../matching/apply.ts';
 import { doubleChargeRow, isDoubleCharge, priceAdjustment, statedWarranty, type ExtraRow, type PriceProgramIn, type PurchaseIn } from '../matching/programs.ts';
 import { findDuplicate, mergeFields, MERGE_WINDOW_DAYS, type ExistingReceipt } from './merge.ts';
-import { toRows, type ReceiptRow } from './opportunities.ts';
+import { cardSighting } from './cards.ts';
+import { toRows, type ReceiptRow, type RefundRule } from './opportunities.ts';
 import { costUsd, parseEmail, type ModelCall } from './parse.ts';
 import { PROMPT_VERSION } from './prompt.ts';
 import { sightingsFrom } from './sightings.ts';
@@ -57,7 +58,7 @@ export async function processMessages(db: SupabaseClient, ids: string[], call: M
       .eq('id', id)
       .in('parse_status', ['pending', 'failed'])
       .not('raw_body', 'is', null)
-      .select('id, user_id, raw_body, attempts')
+      .select('id, user_id, raw_body, attempts, from_domain')
       .maybeSingle();
     if (!claimed) {
       results.push({ id, status: 'skipped' });
@@ -86,7 +87,10 @@ export async function processMessages(db: SupabaseClient, ids: string[], call: M
     }
 
     const { data: profile } = await db.from('profiles').select('home_currency, country, share_deals').eq('id', claimed.user_id).maybeSingle();
-    const rows = toRows(parsed.data, today, (profile?.home_currency as string | undefined) ?? 'USD');
+    const home = (profile?.home_currency as string | undefined) ?? 'USD';
+    // US users get pointed to the DOT refund rule when an airline cancels and hands out a credit.
+    const flightRule = parsed.data.offers.some((o) => o.after_cancellation) && (home === 'USD' || profile?.country === 'US') ? await refundRule(db, 'us_dot_flight_refunds') : null;
+    const rows = toRows(parsed.data, today, home, flightRule);
     const receiptId = rows.receipt ? await saveReceipt(db, claimed.user_id as string, id, rows.receipt) : null;
 
     let created = 0;
@@ -99,6 +103,19 @@ export async function processMessages(db: SupabaseClient, ids: string[], call: M
       });
       if (!error) created += 1;
       else if (error.code !== '23505') throw new Error(`opportunities: ${error.message}`); // 23505 = already have this offer
+    }
+
+    // A card the user holds, as the email shows it (issuer, name, last 4): suggested if not added yet.
+    const card = cardSighting(parsed.data, (claimed.from_domain as string | null) ?? null);
+    if (card) {
+      const { error } = await db.rpc('_record_card_sighting', {
+        p_user: claimed.user_id,
+        p_issuer: card.issuer,
+        p_product: card.product,
+        p_last_four: card.last_four,
+        p_message: id,
+      });
+      if (error) console.warn('card sighting', error.message);
     }
 
     // Opted in: public promotions from this email may help others nearby (only store, offer, code, dates).
@@ -132,7 +149,7 @@ export async function processMessages(db: SupabaseClient, ids: string[], call: M
     await db
       .from('inbound_messages')
       .update({
-        parse_status: parsed.data.kind === 'other' && created === 0 && !rows.receipt ? 'ignored' : 'parsed',
+        parse_status: parsed.data.kind === 'other' && created === 0 && !rows.receipt && !card ? 'ignored' : 'parsed',
         kind: parsed.data.kind,
         summary: parsed.data.summary || null,
         parse_error: null,
@@ -145,6 +162,12 @@ export async function processMessages(db: SupabaseClient, ids: string[], call: M
     results.push({ id, status: 'parsed', kind: parsed.data.kind, summary: parsed.data.summary, opportunities: created });
   }
   return results;
+}
+
+/** An active refund rule from the programs catalog, or null. */
+async function refundRule(db: SupabaseClient, id: string): Promise<RefundRule | null> {
+  const { data } = await db.from('perk_programs').select('how_to, url').eq('id', id).eq('status', 'active').maybeSingle();
+  return data?.how_to && data?.url ? { how_to: data.how_to as string, url: data.url as string } : null;
 }
 
 const shiftDay = (d: string, days: number) => {

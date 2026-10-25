@@ -48,6 +48,10 @@ const fakeModel: ModelCall = async (input) => {
     out = { ...base, kind: 'card_alert', merchant: 'KFC', summary: 'KFC, TT$85', receipt: { total: 85, currency: 'TTD', purchase_type: 'restaurant', travel_date: null, purchase_date: new Date().toISOString().slice(0, 10), card_last_four: '7777', order_number: null, return_by: null, return_window_days: null, items: [], alert_status: 'approved' } };
   } else if (input.includes('FLIGHT CANCELLED')) {
     out = { ...base, kind: 'other', merchant: 'Islandhopper Air', summary: 'Flight cancelled, refund available', offers: [{ type: 'refund', currency: 'USD', title: 'Refund for cancelled flight', amount: 412.8, percent_off: null, code: null, expires_on: '2099-11-20', min_spend: null, points: null, claim_url: 'https://islandhopper.example/refund', details: null }] };
+  } else if (input.includes('STATEMENT READY')) {
+    out = { ...base, kind: 'other', merchant: 'Chase', summary: 'Card statement available', card: { issuer: 'JPMorgan Chase', product: 'Freedom Unlimited®', last_four: '4821' } };
+  } else if (input.includes('ECREDIT ISSUED')) {
+    out = { ...base, kind: 'other', merchant: 'SkyHopper Airlines', summary: 'Flight credit after cancellation', offers: [{ type: 'travel_credit', currency: 'USD', title: 'eCredit', amount: 212.4, percent_off: null, code: 'EC-7734-0062', expires_on: '2099-03-03', min_spend: null, points: null, claim_url: null, details: null, after_cancellation: true }] };
   } else {
     out = { ...base, kind: 'other', merchant: null, summary: 'Newsletter' };
   }
@@ -137,17 +141,18 @@ Deno.test('inbox pipeline end to end', async () => {
     const claim = await alice.client.from('opportunities').select('type, value_estimate, action_steps').eq('dedupe_key', `settlement:${settlementId}`);
     assert(claim.data?.length === 1 && claim.data[0]!.value_estimate === null, `settlement matched on arrival: ${JSON.stringify(claim.data)}`);
 
-    // An Uber receipt on the same card counts toward the Uber Cash credit, automatically
+    // An Uber receipt on the same card counts toward the Uber Cash credit, automatically,
+    // up to the credit itself ($10 a month, now verified): a $23.50 order uses all $10, not more.
     await post(ingest, { messages: [{ id: 'g-uber', subject: 'Your Uber receipt', text: 'Uber receipt — thanks for ordering' }] }, token);
     const creditUsage = await alice.client.from('benefit_usage').select('benefit_id, amount_used, marked_by').eq('benefit_id', 'amex_gold__uber_cash');
-    assert(creditUsage.data?.[0]?.marked_by === 'auto' && Number(creditUsage.data[0].amount_used) === 23.5, `auto credit use: ${JSON.stringify(creditUsage.data)}`);
+    assert(creditUsage.data?.[0]?.marked_by === 'auto' && Number(creditUsage.data[0].amount_used) === 10, `auto credit use: ${JSON.stringify(creditUsage.data)}`);
 
     // Re-checking receipts is safe: no duplicate protections, no double-counted credit
     const procR = processHandler({ db: admin, userFromRequest: async () => alice.id, model: fakeModel, pipeline });
     const re = await (await post(procR, { action: 'rematch' })).json();
     assert(re.summary?.receipts >= 2 && re.summary.protections === 0 && re.summary.creditsUsed === 0, `rematch is idempotent: ${JSON.stringify(re)}`);
     const usage2 = await alice.client.from('benefit_usage').select('amount_used').eq('benefit_id', 'amex_gold__uber_cash');
-    assert(Number(usage2.data?.[0]?.amount_used) === 23.5, 'credit not counted twice');
+    assert(Number(usage2.data?.[0]?.amount_used) === 10, 'credit not counted twice');
 
     // A bank alert by text (the iPhone Shortcut's shape), then the store's own receipt by email: one purchase
     const smsUrl = 'http://local/ingest/sms';
@@ -262,6 +267,49 @@ Deno.test('hidden money: price adjustments, warranties, double charges, refunds,
     assert((await cara.client.from('opportunities').select('id').eq('id', added.data)).data?.length === 0, 'removed');
   } finally {
     await admin.auth.admin.deleteUser(cara.id);
+  }
+});
+
+Deno.test('finds cards you hold and travel credits', async () => {
+  const dan = await makeUser('dan');
+  try {
+    const tok = await dan.client.rpc('create_ingest_token', { p_label: 'Gmail' });
+    const token = tok.data as string;
+    const res = await (
+      await post(ingest, {
+        source: 'email',
+        messages: [
+          { id: 'k-1', from: 'Chase <no.reply.alerts@chase.com>', subject: 'Statement', date: '2026-10-05', text: 'STATEMENT READY for your card ending in 4821.' },
+          { id: 'k-2', from: 'SkyHopper <noreply@skyhopper.example>', subject: 'Your eCredit', date: '2026-10-12', text: 'ECREDIT ISSUED after your flight was cancelled.' },
+        ],
+      }, token)
+    ).json();
+    assert(res.accepted === 2, `ingest: ${JSON.stringify(res)}`);
+
+    // The card, as Dan sees it through RLS: issuer written one way, name without ®, last 4 only.
+    const cards = await dan.client.from('card_sightings').select('issuer, product, last_four, times_seen');
+    assert(cards.data?.length === 1, `one card spotted: ${JSON.stringify(cards.data)}`);
+    assert(cards.data[0]!.issuer === 'Chase' && cards.data[0]!.product === 'Freedom Unlimited' && cards.data[0]!.last_four === '4821', `card: ${JSON.stringify(cards.data)}`);
+    const msgs = await dan.client.from('inbound_messages').select('parse_status').eq('external_id', 'k-1');
+    assert(msgs.data?.[0]?.parse_status === 'parsed', 'a statement that names a card counts as read, not ignored');
+
+    // The travel credit counts as money, and points US users to the cash-refund rule.
+    const credit = await dan.client.from('opportunities').select('type, category, value_estimate, code, action_steps').eq('type', 'travel_credit').single();
+    assert(!credit.error, `travel credit: ${credit.error?.message}`);
+    assert(Number(credit.data.value_estimate) === 212.4 && credit.data.code === 'EC-7734-0062' && credit.data.category === 'store_credit_gift_cards', `credit: ${JSON.stringify(credit.data)}`);
+    const steps = credit.data.action_steps as { step: string; url?: string }[];
+    assert(steps.some((x) => /cash refund/.test(x.step) && x.url?.startsWith('https://www.transportation.gov/')), `DOT note: ${JSON.stringify(steps)}`);
+
+    // Nobody else sees Dan's cards.
+    const other = await makeUser('erin');
+    try {
+      const peek = await other.client.from('card_sightings').select('id');
+      assert(peek.data?.length === 0, 'cards are private');
+    } finally {
+      await admin.auth.admin.deleteUser(other.id);
+    }
+  } finally {
+    await admin.auth.admin.deleteUser(dan.id);
   }
 });
 

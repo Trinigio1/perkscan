@@ -46,3 +46,14 @@ belongs to someone else, ask them first, and filter so only your bank's alerts a
 - To stop: run **uninstallPerkScanTrigger**, and revoke the token in the app.
 - New emails from the last 2 weeks are checked every run; older ones only with **scanPastYear**.
 - Reading costs about US$0.0006 per email on PerkScan's side, under a monthly cap; a year of a busy inbox is usually under a dollar.
+
+## Updating the script
+When PerkScan learns to find something new, the script's search list grows too:
+1. Open your script at script.google.com, select everything, and paste the new `PerkScan.gs`.
+2. Put your `PERKSCAN_URL` and `PERKSCAN_TOKEN` back in (they're in the app: Settings → Gmail).
+3. Save, then run **scanPastYear** once so emails from the last 12 months that match the new searches get read too.
+   Emails already sent are skipped (they carry the `PerkScan-sent` label).
+
+**2026-10-25 update:** it now also finds airline and travel credits, free-night and companion certificates, and
+statements and payment notices from card issuers, so PerkScan can spot cards you have but haven't added.
+Only the issuer, the card's name and its last 4 digits are kept.

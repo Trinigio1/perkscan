@@ -3,6 +3,7 @@ import { router } from 'expo-router';
 import { useMemo } from 'react';
 import { View } from 'react-native';
 import { CardArt } from '@/components/CardArt';
+import { SpottedCardList } from '@/components/SpottedCards';
 import { Button, Empty, IconBubble, Panel, Row, Screen, T } from '@/components/ui';
 import { addToBag, formatBag, formatMoney, relativeDays, shortCardName, type MoneyBag } from '@/domain/format';
 import { PERK_GROUPS, perkGroup } from '@/domain/perks';
@@ -45,6 +46,7 @@ export default function Cards() {
   if (!rows.length) {
     return (
       <Screen edges={[]}>
+        <SpottedCardList />
         <Empty icon="card" title="No cards yet" body="Add the cards you carry to see their credits and perks." action={<Button title="Add cards" icon="add" onPress={() => router.push('/add-card')} />} />
       </Screen>
     );
@@ -52,6 +54,7 @@ export default function Cards() {
 
   return (
     <Screen edges={[]}>
+      <SpottedCardList />
       {rows.map(({ uc, card, available, benefits, next, topPerk }) =>
         card ? (
           <Panel key={uc.id} onPress={() => router.push({ pathname: '/card/[id]', params: { id: uc.id } })} style={{ gap: space.md }}>

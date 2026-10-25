@@ -187,6 +187,6 @@ export function checkoutStack(merchant: string, category: SpendCategory, d: Chec
     cards: picks,
     best,
     promos: d.opportunities.filter((o) => o.type === 'promo' && atStore(o)),
-    storeCredit: d.opportunities.filter((o) => (o.type === 'gift_card' || o.type === 'store_credit') && atStore(o)),
+    storeCredit: d.opportunities.filter((o) => (o.type === 'gift_card' || o.type === 'store_credit' || o.type === 'travel_credit') && atStore(o)),
   };
 }

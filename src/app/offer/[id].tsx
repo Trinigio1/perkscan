@@ -47,7 +47,7 @@ export default function OfferDetail() {
   const soon = opp.status === 'open' && !missed && !!expires && expires.getTime() - now.getTime() <= 7 * 86_400_000;
   // Only real money (promos, gift cards, credit) is "recovered" when used.
   // A protection only becomes money once a claim pays out, so we ask how much.
-  const countsAsMoney = ['promo', 'gift_card', 'store_credit', 'settlement', 'points', 'protection', 'refund', 'benefit', 'price_drop'].includes(opp.type);
+  const countsAsMoney = ['promo', 'gift_card', 'store_credit', 'travel_credit', 'settlement', 'points', 'protection', 'refund', 'benefit', 'price_drop'].includes(opp.type);
   const isProtection = opp.type === 'protection';
   // Money you get back rather than spend: ask how much came back.
   const comesBack = opp.type === 'refund' || opp.type === 'price_drop';

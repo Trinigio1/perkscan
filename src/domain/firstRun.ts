@@ -104,7 +104,7 @@ export function foundMoney(opportunities: Opportunity[], recovered: Recovered[],
 }
 
 const SINGULAR: Partial<Record<MoneyKind, string>> = {
-  credits: 'card credit', codes: 'code', gift_cards: 'gift card', refunds: 'refund', benefits: 'benefit', points: 'points balance',
+  credits: 'card credit', codes: 'code', gift_cards: 'gift card', travel: 'travel credit', refunds: 'refund', benefits: 'benefit', points: 'points balance',
 };
 
 /** "4 card credits", "1 gift card", "2 points & miles". */

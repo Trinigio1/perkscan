@@ -4,7 +4,7 @@ import { z } from 'zod';
 // structured-output JSON schema doesn't support numeric/string limits, so ranges
 // and formats are enforced afterwards in normalizeParsed().
 
-export const OFFER_TYPES = ['promo', 'gift_card', 'store_credit', 'points', 'free_trial', 'settlement', 'refund'] as const;
+export const OFFER_TYPES = ['promo', 'gift_card', 'store_credit', 'points', 'free_trial', 'settlement', 'refund', 'travel_credit', 'certificate'] as const;
 
 export const PURCHASE_TYPES = [
   'electronics', 'appliance', 'phone', 'clothing', 'other_goods',
@@ -27,6 +27,18 @@ export const OfferSchema = z.object({
   points: z.number().nullable().describe('Points/miles quantity for loyalty offers'),
   claim_url: z.string().nullable().describe('Official claim site for settlements, or the refund request page, only if present in the email'),
   details: z.string().nullable().describe('One short sentence of important conditions'),
+  after_cancellation: z
+    .boolean()
+    .nullable()
+    .optional() // replies stored before travel credits were read leave it out
+    .describe('travel_credit only: true if the email says the credit was issued because the airline cancelled or significantly changed the flight'),
+});
+
+/** A payment card the email shows the reader holds: a statement, payment notice, card alert or benefits email. */
+export const CardSeenSchema = z.object({
+  issuer: z.string().nullable().describe('The bank or card company, e.g. "Chase", "American Express", "Capital One"'),
+  product: z.string().nullable().describe('The card\'s name exactly as written, e.g. "Freedom Unlimited", "Platinum Card", "Venture X". Null if not named'),
+  last_four: z.string().nullable().describe('Only the last 4 digits shown, e.g. "ending in 1234" -> "1234"'),
 });
 
 export const ALERT_STATUSES = ['approved', 'pending', 'declined', 'reversed'] as const;
@@ -62,10 +74,14 @@ export const ParsedEmailSchema = z.object({
   summary: z.string().describe('Under 100 characters, no personal details'),
   receipt: ReceiptSchema.nullable().describe('For purchase receipts, order confirmations and bank card purchase alerts'),
   offers: z.array(OfferSchema).describe('Every distinct offer, credit, code, trial or settlement in the email; empty if none'),
+  card: CardSeenSchema.nullable()
+    .optional() // replies stored before cards were read leave it out
+    .describe('Only when the email is from a bank or card issuer about the reader\'s own credit or charge card'),
 });
 
 export type ParsedEmail = z.infer<typeof ParsedEmailSchema>;
 export type Offer = z.infer<typeof OfferSchema>;
+export type CardSeen = z.infer<typeof CardSeenSchema>;
 
 const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
 
@@ -137,6 +153,18 @@ export function normalizeParsed(p: ParsedEmail): ParsedEmail {
       points: o.points !== null && o.points > 0 && o.points < 100_000_000 ? Math.round(o.points) : null,
       claim_url: o.claim_url && /^https:\/\/[^\s]+$/i.test(o.claim_url) ? o.claim_url.slice(0, 300) : null,
       details: text(o.details, 200),
+      after_cancellation: o.type === 'travel_credit' ? o.after_cancellation ?? null : null,
     })),
+    card: normalizeCard(p.card ?? null),
   };
+}
+
+/** A card worth remembering needs an issuer and either a name or its last 4 digits. Never more. */
+function normalizeCard(c: CardSeen | null): CardSeen | null {
+  if (!c) return null;
+  const issuer = text(c.issuer, 60);
+  const product = text(c.product?.replace(/[®™℠]/g, '') ?? null, 80);
+  const lastFour = c.last_four && /^\d{4}$/.test(c.last_four.trim()) ? c.last_four.trim() : null;
+  if (!issuer || (!product && !lastFour)) return null;
+  return { issuer, product, last_four: lastFour };
 }

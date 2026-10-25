@@ -1,0 +1,15 @@
+{
+  "origin": "synthetic",
+  "source": "email",
+  "input": {
+    "subject": "Your Chase Freedom Unlimited statement is available",
+    "date": "2026-10-05T07:30:00-04:00",
+    "text": "Your statement for your Chase Freedom Unlimited card ending in 4821 is now available.\n\nStatement balance: $612.18\nMinimum payment due: $35.00\nPayment due date: 11/01/2026\n\nSign in to chase.com to view your statement.",
+    "from": "Chase <no.reply.alerts@chase.com>"
+  },
+  "expected": {
+    "kind": "other",
+    "offers": [],
+    "card": { "issuer": "Chase", "product": "Freedom Unlimited", "last_four": "4821" }
+  }
+}

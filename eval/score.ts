@@ -25,6 +25,8 @@ export interface Expected {
     warranty_months?: number | null;
   } | null;
   offers?: ExpectedOffer[];
+  /** The payment card the email shows the reader holds; null = none. */
+  card?: { issuer?: string; product?: string | null; last_four?: string | null } | null;
 }
 
 export interface EvalCase {
@@ -70,6 +72,19 @@ export function scoreCase(expected: Expected, actual: ParsedEmail): Check[] {
       if (e.purchase_type !== undefined) check('receipt.purchase_type', e.purchase_type === a.purchase_type, e.purchase_type, a.purchase_type);
       if (e.purchase_date !== undefined) check('receipt.date', e.purchase_date === a.purchase_date, e.purchase_date, a.purchase_date);
       if (e.warranty_months !== undefined) check('receipt.warranty', e.warranty_months === (a.warranty_months ?? null), e.warranty_months, a.warranty_months ?? null);
+    }
+  }
+
+  if (expected.card !== undefined) {
+    const e = expected.card;
+    const a = actual.card ?? null;
+    if (e === null) check('card', a === null, null, a ? `${a.issuer} ${a.product ?? ''} ${a.last_four ?? ''}`.trim() : null);
+    else if (!a) check('card', false, 'a card', null);
+    else {
+      if (e.issuer !== undefined) check('card.issuer', sameText(a.issuer, e.issuer) || (!!a.issuer && a.issuer.toLowerCase().includes(e.issuer.toLowerCase())), e.issuer, a.issuer);
+      // The card's name may be written with or without the issuer in front.
+      if (e.product !== undefined) check('card.product', e.product === null ? a.product === null : !!a.product && a.product.toLowerCase().includes(e.product.toLowerCase()), e.product, a.product);
+      if (e.last_four !== undefined) check('card.last_four', e.last_four === a.last_four, e.last_four, a.last_four);
     }
   }
 

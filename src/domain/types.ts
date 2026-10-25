@@ -7,7 +7,8 @@ export type VerificationStatus = 'active' | 'TODO_VERIFY';
 
 export type OpportunityType =
   | 'card_credit' | 'protection' | 'promo' | 'gift_card' | 'store_credit' | 'points'
-  | 'return_window' | 'price_drop' | 'free_trial' | 'settlement' | 'student' | 'refund' | 'benefit';
+  | 'return_window' | 'price_drop' | 'free_trial' | 'settlement' | 'student' | 'refund' | 'benefit'
+  | 'travel_credit' | 'certificate';
 export type OpportunityStatus = 'open' | 'claimed' | 'expired' | 'dismissed';
 export type OpportunityCategory =
   | 'card_credits' | 'card_protections' | 'store_credit_gift_cards' | 'promos'

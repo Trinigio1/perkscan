@@ -87,3 +87,35 @@ describe('toRows', () => {
     });
   });
 });
+
+describe('travel credits and certificates', () => {
+  const dot = { how_to: 'Decline the rebooking or credit if you want the money back.', url: 'https://www.transportation.gov/individuals/aviation-consumer-protection/refunds' };
+
+  it('counts a travel credit as money you have, with its number and use-by date', () => {
+    const { opportunities } = toRows(
+      email({ kind: 'other', merchant: 'Delta', offers: [offer({ type: 'travel_credit', title: 'eCredit', amount: 212.4, currency: 'USD', code: 'EC-0062', expires_on: '2027-03-03' })] }),
+      TODAY,
+    );
+    expect(opportunities[0]).toMatchObject({ type: 'travel_credit', value_estimate: 212.4, code: 'EC-0062', expires_at: '2027-03-03T23:59:59Z' });
+    expect(opportunities[0]!.action_steps.map((s) => s.step).join(' ')).toContain('EC-0062');
+  });
+
+  it('points US travellers to the cash-refund rule when the airline cancelled', () => {
+    const e = email({ kind: 'other', merchant: 'Delta', offers: [offer({ type: 'travel_credit', title: 'Flight credit', amount: 300, expires_on: '2027-01-01', after_cancellation: true })] });
+    const withRule = toRows(e, TODAY, 'USD', dot).opportunities[0]!;
+    expect(withRule.action_steps.some((s) => s.url === dot.url && /cash refund/.test(s.step))).toBe(true);
+    // No rule passed (not a US user): no claim about US rules.
+    expect(toRows(e, TODAY).opportunities[0]!.action_steps.some((s) => /cash refund/.test(s.step))).toBe(false);
+    // Not after a cancellation: no refund note.
+    const plain = email({ kind: 'other', merchant: 'Delta', offers: [offer({ type: 'travel_credit', title: 'Flight credit', amount: 300, expires_on: '2027-01-01', after_cancellation: false })] });
+    expect(toRows(plain, TODAY, 'USD', dot).opportunities[0]!.action_steps.some((s) => /cash refund/.test(s.step))).toBe(false);
+  });
+
+  it('keeps a certificate without inventing a dollar value', () => {
+    const { opportunities } = toRows(
+      email({ kind: 'loyalty', merchant: 'Marriott Bonvoy', offers: [offer({ type: 'certificate', title: 'Free night award (up to 35,000 points)', expires_on: '2027-06-30' })] }),
+      TODAY,
+    );
+    expect(opportunities[0]).toMatchObject({ type: 'certificate', value_estimate: null, expires_at: '2027-06-30T23:59:59Z' });
+  });
+});

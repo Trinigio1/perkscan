@@ -68,7 +68,7 @@ export function benefitIcon(name: string, type?: 'credit' | 'protection' | 'perk
   return { icon: 'pricetag', tone: 'green' };
 }
 
-export type OfferIconName = 'ticket' | 'gift' | 'wallet' | 'star' | 'hourglass' | 'return-down-back' | 'document-text' | 'trending-down' | 'school' | 'shield-checkmark' | 'pricetags' | 'cash' | 'briefcase';
+export type OfferIconName = 'ticket' | 'gift' | 'wallet' | 'star' | 'airplane' | 'bed' | 'hourglass' | 'return-down-back' | 'document-text' | 'trending-down' | 'school' | 'shield-checkmark' | 'pricetags' | 'cash' | 'briefcase';
 
 /** Icon for a non-credit opportunity type. */
 export function offerIcon(type: string): { icon: OfferIconName; tone: IconTone } {
@@ -85,6 +85,8 @@ export function offerIcon(type: string): { icon: OfferIconName; tone: IconTone }
     case 'protection': return { icon: 'shield-checkmark', tone: 'blue' };
     case 'refund': return { icon: 'cash', tone: 'green' };
     case 'benefit': return { icon: 'briefcase', tone: 'purple' };
+    case 'travel_credit': return { icon: 'airplane', tone: 'blue' };
+    case 'certificate': return { icon: 'bed', tone: 'teal' };
     default: return { icon: 'pricetags', tone: 'green' };
   }
 }
@@ -102,6 +104,8 @@ export const OFFER_TYPE_LABELS: Record<string, string> = {
   protection: 'Protection',
   refund: 'Refund',
   benefit: 'Benefit',
+  travel_credit: 'Travel credit',
+  certificate: 'Certificate',
 };
 
 /** "Good morning" etc. for the home greeting. */

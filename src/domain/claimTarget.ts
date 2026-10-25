@@ -108,6 +108,8 @@ export function claimTarget({ opp, benefit }: ClaimTargetInput): ClaimTarget | n
     case 'promo':
     case 'gift_card':
     case 'store_credit':
+    case 'travel_credit':
+    case 'certificate':
     case 'points':
     case 'free_trial':
     case 'benefit': {

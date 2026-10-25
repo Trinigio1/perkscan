@@ -1,0 +1,16 @@
+{
+  "origin": "synthetic",
+  "source": "email",
+  "input": {
+    "subject": "Your eCredit is ready to use",
+    "date": "2026-10-12T10:00:00-04:00",
+    "text": "Hello,\n\nBecause your flight SW 2290 on October 9 was cancelled, we've issued an eCredit to your SkyHopper account.\n\neCredit number: EC-7734-0062\nAmount: $212.40\nValid for travel booked by March 3, 2027.\n\nApply it at checkout when you book your next trip.",
+    "from": "SkyHopper Airlines <noreply@skyhopper.example>"
+  },
+  "expected": {
+    "kind": "other",
+    "merchant": "SkyHopper Airlines",
+    "offers": [{ "type": "travel_credit", "amount": 212.4, "currency": "USD", "code": "EC-7734-0062", "expires_on": "2027-03-03" }],
+    "card": null
+  }
+}

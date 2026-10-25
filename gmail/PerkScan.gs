@@ -1,6 +1,6 @@
 /**
- * PerkScan for Gmail — finds receipts, bank alerts, codes, gift cards, expiring points, refunds and trials
- * in your Gmail and sends them to your PerkScan account.
+ * PerkScan for Gmail — finds receipts, bank alerts, codes, gift cards, travel credits, expiring points,
+ * free-night certificates, refunds, trials and card statements in your Gmail and sends them to your PerkScan account.
  *
  * Setup (about 5 minutes, on a computer):
  *   1. Open https://script.google.com, click "New project", delete the sample code, paste this file.
@@ -41,6 +41,12 @@ const WANTED = [
   '((authorization OR "card ending" OR transaction OR purchase) (alert OR notification OR approved OR pending))',
   '((settlement OR "class action") claim)',
   '(cancelled OR canceled OR delayed) (flight OR order) refund',
+  // Credits and certificates people forget: airline eCredits, travel vouchers, free nights, companion fares.
+  '("travel credit" OR "flight credit" OR ecredit OR "e-credit" OR "trip credit" OR "travel voucher" OR "travel bank" OR "travel funds")',
+  '("free night" OR "companion certificate" OR "companion fare" OR "upgrade certificate") (expire OR expires OR expiring OR "use by" OR "valid until" OR available)',
+  // Which cards you carry (for cards you haven't added yet): statements and payment notices from card issuers.
+  // Only the issuer, the card's name and its last 4 digits are kept.
+  '(from:(chase.com OR americanexpress.com OR aexp.com OR capitalone.com OR citi.com OR citibank.com OR discover.com OR wellsfargo.com OR bankofamerica.com OR usbank.com OR barclaycardus.com OR synchronybank.com) subject:(statement OR "payment due" OR "payment is due" OR "payment received" OR "payment scheduled" OR autopay OR "card benefits" OR "your card"))',
 ];
 // Never send: account security emails, social and forum notifications, spam, bin.
 const SKIP = '-in:spam -in:trash -category:social -category:forums ' +

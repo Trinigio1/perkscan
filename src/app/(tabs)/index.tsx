@@ -5,6 +5,7 @@ import { ArrivalCheck } from '@/components/Claims';
 import { DealRow } from '@/components/DealRow';
 import { Found, NextStep, Tour } from '@/components/FirstRun';
 import { Hero } from '@/components/Hero';
+import { SpottedCardPanel, useSpottedCards } from '@/components/SpottedCards';
 import { OpportunityRow } from '@/components/OfferRow';
 import { Chip, ErrorNote, Money, Panel, Row, Screen, SectionHeader, T, type IconName } from '@/components/ui';
 import { claimsToCheck } from '@/domain/claims';
@@ -41,6 +42,8 @@ export default function Home() {
   const [refreshing, setRefreshing] = useState(false);
   const [dismissed, dismiss, dismissedLoaded] = useDismissed();
   const deals = useDeals();
+  // Cards the inbox shows you hold but you haven't added: each one unlocks more perks.
+  const spotted = useSpottedCards();
   // Matched deals first; a couple of popular ones if nothing matches yet.
   const topDeals = (deals.forYou.length ? deals.forYou : deals.popular).slice(0, 3);
   const statusOf = useCallback((id: string) => benefitById.get(id)?.status, [benefitById]);
@@ -125,6 +128,7 @@ export default function Home() {
       {arrivals[0] ? <ArrivalCheck opp={arrivals[0]} /> : null}
       {dismissedLoaded && !dismissed.has('tour') ? <Tour onDone={() => dismiss('tour')} /> : null}
       {step ? <NextStep step={step} /> : null}
+      {spotted[0] ? <SpottedCardPanel spotted={spotted[0]} more={spotted.length - 1} /> : null}
       {dismissedLoaded && celebrate && !dismissed.has('found') ? <Found found={found} home={home} onDone={() => dismiss('found')} /> : null}
 
       <SectionHeader title="Use soon" action="See all" onAction={() => router.push('/money')} />
