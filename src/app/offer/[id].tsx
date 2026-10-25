@@ -14,7 +14,7 @@ import { CONFIDENCE_HELP, confidenceOf } from '@/domain/confidence';
 import { formatMoney, lastDayLabel, relativeDays } from '@/domain/format';
 import { offerIcon, OFFER_TYPE_LABELS } from '@/domain/visuals';
 import { track } from '@/lib/analytics';
-import { useData } from '@/lib/data';
+import { useData, useLookups } from '@/lib/data';
 import { markOpportunity } from '@/lib/inbox';
 import { removeItem } from '@/lib/programs';
 import { useToast } from '@/lib/toast';
@@ -25,6 +25,7 @@ export default function OfferDetail() {
   const toast = useToast();
   const { id, arrived } = useLocalSearchParams<{ id: string; arrived?: string }>();
   const { data, refresh } = useData();
+  const { why } = useLookups();
   const [saved, setSaved] = useState('');
   const [askSaved, setAskSaved] = useState(arrived === '1');
   const [busy, setBusy] = useState<string | null>(null);
@@ -52,6 +53,7 @@ export default function OfferDetail() {
   // Money you get back rather than spend: ask how much came back.
   const comesBack = opp.type === 'refund' || opp.type === 'price_drop';
   const manual = !!opp.dedupe_key?.startsWith('manual:');
+  const reason = why(opp);
   const confidence = confidenceOf(opp, (b) => data.benefits.find((x) => x.id === b)?.status);
   const receipt = opp.source_receipt_id ? data.receipts.find((r) => r.id === opp.source_receipt_id) : undefined;
   const help = opp.status === 'open' && !missed ? claimHelp({ opp, receipt, name: data.profile?.display_name }) : null;
@@ -99,6 +101,12 @@ export default function OfferDetail() {
             <ConfidenceTag value={confidence} />
             <T variant="caption" muted center>{CONFIDENCE_HELP[confidence]}</T>
           </View>
+        ) : null}
+        {reason ? (
+          <Row gap={6} style={{ alignItems: 'flex-start', paddingHorizontal: space.md }}>
+            <Ionicons name="information-circle-outline" size={14} color={c.textMuted} style={{ marginTop: 2 }} />
+            <T variant="caption" muted style={{ flexShrink: 1 }}>{reason.long}</T>
+          </Row>
         ) : null}
       </View>
 

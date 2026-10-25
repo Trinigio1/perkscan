@@ -98,7 +98,7 @@ export function CountryPicker({
 
       {country === OTHER_COUNTRY ? (
         <View style={{ gap: space.sm }}>
-          <T variant="caption" muted>PerkScan is built for the US for now. Elsewhere, your email and texts still work, but card perks and deals near you won’t show yet.</T>
+          <T variant="caption" muted>PerkScan is built for the US for now. Elsewhere, your email and texts still work, but card perks and store offers won’t show yet.</T>
           <T variant="subheading">Which currency do you mostly spend in?</T>
           <Row gap={space.sm} style={{ flexWrap: 'wrap' }}>
             {CURRENCIES.map((cur) => (

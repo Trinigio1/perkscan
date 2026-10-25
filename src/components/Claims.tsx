@@ -8,7 +8,7 @@ import { mailtoLink, type ClaimHelp } from '@/domain/claims';
 import { formatMoney, relativeDays } from '@/domain/format';
 import type { Opportunity } from '@/domain/types';
 import { track } from '@/lib/analytics';
-import { cancelClaim, snoozeClaimCheck, startClaim } from '@/lib/claims';
+import { cancelClaim, snoozeClaimCheck, startClaim, type ClaimMethod } from '@/lib/claims';
 import { markCredit } from '@/lib/credits';
 import { useData } from '@/lib/data';
 import { markOpportunity } from '@/lib/inbox';
@@ -27,10 +27,10 @@ export function ClaimHelper({ opp, help }: { opp: Opportunity; help: ClaimHelp }
   const [expanded, setExpanded] = useState(false);
 
   // Remember that they started, so PerkScan can ask later whether it arrived.
-  const started = async () => {
+  const started = async (method: ClaimMethod) => {
     if (opp.claim_started_at) return;
     try {
-      await startClaim(opp.id, help.kind);
+      await startClaim(opp.id, help.kind, method);
       await refresh();
       toast('We’ll check in with you in a few days', { tone: 'success' });
     } catch {
@@ -81,7 +81,7 @@ export function ClaimHelper({ opp, help }: { opp: Opportunity; help: ClaimHelp }
             icon="mail"
             onPress={async () => {
               await Linking.openURL(mailtoLink(help.message!));
-              await started();
+              await started('email_draft');
             }}
           />
           <Button
@@ -90,7 +90,7 @@ export function ClaimHelper({ opp, help }: { opp: Opportunity; help: ClaimHelp }
             icon="copy-outline"
             onPress={async () => {
               await copy(`${help.message!.subject}\n\n${help.message!.body}`, 'Message');
-              await started();
+              await started('copy_message');
             }}
           />
         </>
@@ -118,12 +118,12 @@ export function ClaimHelper({ opp, help }: { opp: Opportunity; help: ClaimHelp }
           icon="open-outline"
           onPress={async () => {
             await Linking.openURL(help.url!);
-            await started();
+            await started('form');
           }}
         />
       ) : null}
       {!help.message && !help.url ? (
-        <Button title="I’ve filed it" kind="secondary" icon="checkmark" onPress={started} />
+        <Button title="I’ve filed it" kind="secondary" icon="checkmark" onPress={() => started('details')} />
       ) : null}
     </Panel>
   );
@@ -147,7 +147,7 @@ export function ClaimButton({ opp, target, size = 'md' }: { opp: Opportunity; ta
     }
     if (target.url) await Linking.openURL(target.url);
     if (!opp.claim_started_at) {
-      startClaim(opp.id, 'use')
+      startClaim(opp.id, 'use', target.copy && target.url ? 'copy_and_open' : target.url ? 'open' : 'copy')
         .then(() => refresh())
         .catch(() => {});
     }
@@ -242,8 +242,8 @@ export function ArrivalCheck({ opp }: { opp: Opportunity }) {
             }
           />
         ) : (
-          // Didn't use it after all: stop asking, keep it in Money.
-          <Button title="Didn’t use it" size="sm" kind="ghost" loading={busy === 'no'} disabled={!!busy} onPress={() => run('no', () => cancelClaim(opp.id), 'Kept in Money')} />
+          // Didn't use it after all: stop asking, keep it open.
+          <Button title="Didn’t use it" size="sm" kind="ghost" loading={busy === 'no'} disabled={!!busy} onPress={() => run('no', () => cancelClaim(opp.id), 'Kept for later')} />
         )}
       </Row>
       <T variant="caption" faint style={{ color: c.textFaint }}>Only money you actually got counts toward your total.</T>

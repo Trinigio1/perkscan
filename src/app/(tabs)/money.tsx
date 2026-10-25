@@ -16,7 +16,7 @@ const EMPTY: Record<MoneyView, { title: string; body: string }> = {
 };
 const TOTAL_LABEL: Record<MoneyView, string> = { open: 'to use', used: 'used this year', missed: 'missed this year' };
 
-/** Everything you can use, have used, or missed: card credits, codes, gift cards, trials and protections. */
+/** Activity: everything found that's still open, what you used or got back, and what you missed. */
 export default function Money() {
   const c = useColors();
   const { data, refresh } = useData();
@@ -46,7 +46,7 @@ export default function Money() {
   const hasTotal = Object.values(shown.total).some((v) => v > 0);
 
   return (
-    <Screen title="Money" refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={c.accent} />}>
+    <Screen title="Activity" refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={c.accent} />}>
       <Segmented<MoneyView>
         value={view}
         onChange={(v) => {

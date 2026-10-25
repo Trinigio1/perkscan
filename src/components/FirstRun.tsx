@@ -9,9 +9,9 @@ import { space, useColors } from '@/theme';
 import { Button, IconBubble, Panel, Row, T, type IconName } from './ui';
 
 const TIPS: { icon: IconName; title: string; body: string }[] = [
-  { icon: 'sparkles', title: 'Your total', body: 'The big number is money you can use now. Tap it to see where it comes from.' },
-  { icon: 'wallet', title: 'Money', body: 'Every credit, code and gift card in one list, soonest first. Mark things used to track what you get back.' },
-  { icon: 'pricetags', title: 'Deals', body: 'Offers your own inbox won’t show you, picked for what you’re into and where you live.' },
+  { icon: 'sparkles', title: 'Ready to use', body: 'Money PerkScan found that you can use now. Only amounts it’s sure of count.' },
+  { icon: 'flash', title: 'Act now', body: 'The few things worth doing today, most urgent first. Claim takes you straight there.' },
+  { icon: 'wallet', title: 'Your stuff', body: 'Your cards, their benefits, gift cards and credit. Activity shows what you used and missed.' },
 ];
 
 /** Three short tips on first open. */

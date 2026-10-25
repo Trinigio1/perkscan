@@ -5,6 +5,7 @@ import { Hero } from '@/components/Hero';
 import { Button, IconBubble, Row, Screen, T } from '@/components/ui';
 import type { IconName } from '@/components/ui';
 import type { IconTone } from '@/domain/visuals';
+import { track } from '@/lib/analytics';
 import { space, useColors } from '@/theme';
 
 const STEPS: { icon: IconName; tone: IconTone; title: string }[] = [
@@ -32,7 +33,14 @@ export default function Welcome() {
           </Row>
         ))}
       </View>
-      <Button title="Get started" icon="arrow-forward" onPress={() => router.push('/where')} />
+      <Button
+        title="Get started"
+        icon="arrow-forward"
+        onPress={() => {
+          track('onboarding_started');
+          router.push('/where');
+        }}
+      />
     </Screen>
   );
 }

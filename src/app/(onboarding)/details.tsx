@@ -38,7 +38,7 @@ export default function CardDetails() {
 
   return (
     <Screen>
-      <Steps step={3} total={6} />
+      <Steps step={3} total={5} />
       <View style={{ gap: space.xs }}>
         <T variant="display">A few details</T>
         <T muted>Just the last 4 digits — that’s all we ever store.</T>

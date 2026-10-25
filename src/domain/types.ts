@@ -26,6 +26,8 @@ export interface Card {
   sort_order: number;
 }
 
+export type MessageSource = 'email' | 'sms' | 'share';
+
 export interface CardBenefit {
   id: string;
   card_id: string;
@@ -60,7 +62,7 @@ export interface Profile {
   home_currency: string;
   university_id: string | null;
   onboarded_at: string | null;
-  /** What they're into, for Deals for you (ids from INTERESTS). */
+  /** Interests picked in older versions (ids from INTERESTS). No longer asked for. */
   interests?: string[];
   /** US state code, for state-only deals and events. */
   region?: string | null;
@@ -105,6 +107,8 @@ export interface Opportunity {
   claim_check_after?: string | null;
   /** The domain of the email it came from ("target.com"), where codes and gift cards get used. */
   sender_domain?: string | null;
+  /** How the message it came from reached PerkScan. */
+  message_source?: MessageSource | null;
   created_at: string;
 }
 

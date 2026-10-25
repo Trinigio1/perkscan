@@ -23,7 +23,7 @@ export function confidenceOf(o: Opportunity, statusOf: BenefitStatusOf = () => u
   // Reminders for events that haven't been announced yet stay a "check" until they are.
   if (key.startsWith('manual:unconfirmed:')) return 'check';
   if (key.startsWith('manual:')) return 'confirmed';
-  // Saved from Deals for you: the deal's own confidence travels in the key.
+  // Saved from an offer at your store: the deal's own confidence travels in the key.
   const deal = /^deal:(confirmed|likely|check):/.exec(key);
   if (deal) return deal[1] as Confidence;
   switch (o.type) {

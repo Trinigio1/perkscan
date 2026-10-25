@@ -2,10 +2,9 @@ import type { Confidence } from './confidence';
 import type { Opportunity, Receipt } from './types';
 import type { IconTone } from './visuals';
 
-// "Deals for you": deals near you that your own inbox won't show you — from store pages PerkScan
-// reads, and public promotions other people nearby received. Matched to what you pick plus what
-// PerkScan already sees: stores on your receipts, who emails you, what people who shop where you
-// do also use, and what you save or hide. Pure, so every rule is tested.
+// Offers at your stores: promotions on the official pages of stores you already shop at or hear
+// from, that aren't already in your Money. Not a coupon feed: a store you don't use never shows.
+// Pure, so every rule is tested.
 
 export const INTERESTS = [
   { id: 'groceries', label: 'Groceries', icon: 'cart', tone: 'green' },
@@ -57,13 +56,6 @@ export interface DealFeedback {
   action: 'saved' | 'dismissed' | 'didnt_work';
 }
 
-/** What a receipt says you spend on. */
-const PURCHASE_INTEREST: Record<string, Interest> = {
-  electronics: 'electronics', appliance: 'home', phone: 'electronics', clothing: 'fashion', other_goods: 'shopping',
-  flight: 'travel', car_rental: 'travel', hotel: 'travel', travel_other: 'travel',
-  food_delivery: 'delivery', restaurant: 'dining', groceries: 'groceries', subscription: 'entertainment',
-};
-
 /** "COURTS (TRINIDAD) LTD" -> "courts". The same rule as public.store_key in the database. */
 export const storeKey = (m: string) =>
   m.toLowerCase().replace(/\b(ltd|limited|inc|llc|corp|company|the|trinidad|tobago|jamaica|barbados|usa)\b/g, ' ').replace(/[^a-z0-9]/g, '').slice(0, 60);
@@ -80,30 +72,26 @@ export function domainStoreKey(domain: string): string | null {
 /** Offers that arrive by email: if a store sends you these, you'd see its deals anyway. */
 const EMAILED = new Set(['promo', 'gift_card', 'store_credit', 'points', 'free_trial']);
 
-export interface InterestInput {
-  picked: string[];
-  receipts: Pick<Receipt, 'merchant' | 'purchase_type'>[];
+export interface StoreInput {
+  receipts: Pick<Receipt, 'merchant'>[];
   opportunities: Pick<Opportunity, 'merchant' | 'code' | 'type' | 'dedupe_key' | 'value_estimate' | 'source_message_id'>[];
   /** Domains that emailed you, e.g. "courts.co.tt". */
   senderDomains: string[];
 }
 
-export interface InterestProfile {
-  picked: Set<string>;
-  /** How often each kind of spending shows up in your receipts and alerts. */
-  inferred: Map<Interest, number>;
+export interface StoreProfile {
   /** Stores on your receipts and card alerts. */
   shops: Set<string>;
-  /** Stores that email you: their deals reach you anyway. */
+  /** Stores that email you. */
   follows: Set<string>;
   /** A readable name for each store key. */
   names: Map<string, string>;
-  /** Already in Money: codes, and "store|amount" pairs. Deals matching these aren't shown again. */
+  /** Already in Money: codes, and "store|amount" pairs. Offers matching these aren't shown again. */
   inMoney: { codes: Set<string>; offers: Set<string>; savedDeals: Set<string> };
 }
 
-export function interestProfile(d: InterestInput): InterestProfile {
-  const inferred = new Map<Interest, number>();
+/** The stores you use, from your receipts and who emails you, and what's already in your Money. */
+export function storeProfile(d: StoreInput): StoreProfile {
   const names = new Map<string, string>();
   const shops = new Set<string>();
   const follows = new Set<string>();
@@ -112,11 +100,7 @@ export function interestProfile(d: InterestInput): InterestProfile {
     set.add(key);
     if (name && !names.has(key)) names.set(key, name);
   };
-  for (const r of d.receipts) {
-    const i = r.purchase_type ? PURCHASE_INTEREST[r.purchase_type] : undefined;
-    if (i) inferred.set(i, (inferred.get(i) ?? 0) + 1);
-    add(shops, r.merchant);
-  }
+  for (const r of d.receipts) add(shops, r.merchant);
   for (const dom of d.senderDomains) {
     const k = domainStoreKey(dom);
     if (k) add(follows, null, k);
@@ -134,8 +118,7 @@ export function interestProfile(d: InterestInput): InterestProfile {
     if (o.merchant && o.value_estimate !== null) offers.add(`${storeKey(o.merchant)}|${Number(o.value_estimate)}`);
     if (o.source_message_id && EMAILED.has(o.type)) add(follows, o.merchant);
   }
-  for (const [k, n] of [...names]) if (!n) names.delete(k);
-  return { picked: new Set(d.picked), inferred, shops, follows, names, inMoney: { codes, offers, savedDeals } };
+  return { shops, follows, names, inMoney: { codes, offers, savedDeals } };
 }
 
 /** The first of the deal's store names found in a set (exact, or one starting with the other). */
@@ -147,49 +130,19 @@ export function matchStore(deal: Pick<Deal, 'merchant' | 'merchant_keys'>, store
   return null;
 }
 
-export interface StoreStat {
-  store_key: string;
-  people: number;
-}
-export interface StorePair {
-  store_a: string;
-  store_b: string;
-  people: number;
-}
-
-/**
- * "People like you": for each store you don't use, the store of yours whose customers use it most,
- * and what share of them do. Built from counts of 5+ people who opted in — never individuals.
- */
-export function peopleLikeYou(p: InterestProfile, stats: StoreStat[], pairs: StorePair[]): Map<string, { via: string; share: number }> {
-  const mine = new Set([...p.shops, ...p.follows]);
-  const total = new Map(stats.map((s) => [s.store_key, s.people]));
-  const out = new Map<string, { via: string; share: number }>();
-  for (const x of pairs) {
-    if (!mine.has(x.store_a) || mine.has(x.store_b)) continue;
-    const n = total.get(x.store_a);
-    if (!n) continue;
-    const share = Math.min(1, x.people / n);
-    if ((out.get(x.store_b)?.share ?? 0) < share) out.set(x.store_b, { via: p.names.get(x.store_a) ?? x.store_a, share });
-  }
-  return out;
-}
-
-export interface DealsFor {
+export interface OffersFor {
   country: string | null;
   region?: string | null;
   today: string; // YYYY-MM-DD
-  profile: InterestProfile;
+  stores: StoreProfile;
   feedback: DealFeedback[];
-  /** From peopleLikeYou(). */
-  likeYou?: Map<string, { via: string; share: number }>;
 }
 
 export interface RankedDeal {
   deal: Deal;
   score: number;
-  /** One short line: why you're seeing it. Null for popular deals that don't match you. */
-  why: string | null;
+  /** One short line: why you're seeing it ("You shop at Courts"). */
+  why: string;
 }
 
 const addDays = (d: string, n: number) => {
@@ -197,38 +150,30 @@ const addDays = (d: string, n: number) => {
   t.setUTCDate(t.getUTCDate() + n);
   return t.toISOString().slice(0, 10);
 };
-const daysUntil = (from: string, to: string) => Math.round((new Date(`${to}T00:00:00Z`).getTime() - new Date(`${from}T00:00:00Z`).getTime()) / 86_400_000);
+export const daysUntil = (from: string, to: string) => Math.round((new Date(`${to}T00:00:00Z`).getTime() - new Date(`${from}T00:00:00Z`).getTime()) / 86_400_000);
 
 const CONFIDENCE_POINTS: Record<Confidence, number> = { confirmed: 6, likely: 3, check: 0 };
-/** Below this share, "people who use X also use Y" is too weak to mention. */
-const LIKE_YOU_MIN_SHARE = 0.2;
 
-/** How much a deal is worth to show, ignoring who you are: value, urgency, how sure, how popular. */
+/** How much an offer is worth showing: value, urgency and how sure. */
 function baseScore(d: Deal, today: string): number {
   // Amounts are in different currencies, so value is judged on a gentle curve, not compared exactly.
   const value = Math.max(d.amount !== null ? Math.min(15, Math.log10(Math.max(d.amount, 1)) * 6) : 0, d.percent_off !== null ? Math.min(15, d.percent_off / 3) : 0);
   const left = d.ends_on ? daysUntil(today, d.ends_on) : null;
   const urgency = left === null ? 0 : left <= 3 ? 8 : left <= 7 ? 5 : 0;
-  const popular = Math.min(6, d.saves + d.seen_by / 2);
-  return value + urgency + CONFIDENCE_POINTS[d.confidence] + popular;
+  return value + urgency + CONFIDENCE_POINTS[d.confidence];
 }
 
 /**
- * Deals for you: what your own inbox won't show you. Available where you live, not ended, not
- * hidden by you, and not already in your Money. Stores that already email you are lowered (you'd
- * see their deals anyway); what's raised is a store you shop at that doesn't email you, an interest
- * you picked, a store popular with people who shop where you do, and what you spend on — then
- * value, urgency, confidence and popularity. `popular` holds the best of the rest.
+ * Offers at your stores: available where you live, not ended or weeks away, not hidden by you,
+ * not already in your Money, and only at a store you shop at or that emails you. Stores you've
+ * bought from come first, then value, urgency and confidence.
  */
-export function rankDeals(deals: Deal[], who: DealsFor): { forYou: RankedDeal[]; popular: RankedDeal[] } {
+export function storeOffers(deals: Deal[], who: OffersFor): RankedDeal[] {
   const hiddenIds = new Set(who.feedback.filter((f) => f.action !== 'saved').map((f) => f.deal_id));
-  const dismissedStores = new Set(
-    deals.filter((d) => who.feedback.some((f) => f.deal_id === d.id && f.action === 'dismissed')).map((d) => storeKey(d.merchant)),
-  );
-  const { picked, inferred, shops, follows, inMoney } = who.profile;
-  const forYou: RankedDeal[] = [];
-  const popular: RankedDeal[] = [];
+  const { shops, follows, inMoney } = who.stores;
+  const out: RankedDeal[] = [];
   for (const d of deals) {
+    if (d.source === 'shared') continue;
     if (!who.country || !d.countries.includes(who.country)) continue;
     if (d.regions.length && (!who.region || !d.regions.includes(who.region))) continue;
     if (d.ends_on && d.ends_on < who.today) continue;
@@ -238,40 +183,12 @@ export function rankDeals(deals: Deal[], who: DealsFor): { forYou: RankedDeal[];
     const saved = inMoney.savedDeals.has(d.id);
     if (!saved && ((d.code && inMoney.codes.has(d.code.toUpperCase())) || (d.amount !== null && inMoney.offers.has(`${storeKey(d.merchant)}|${d.amount}`)))) continue;
 
-    const followed = !!matchStore(d, follows);
-    const shop = followed ? null : matchStore(d, shops);
-    const like = [...d.merchant_keys, storeKey(d.merchant)].map((k) => who.likeYou?.get(k)).filter((x) => !!x && x.share >= LIKE_YOU_MIN_SHARE).sort((a, b) => b!.share - a!.share)[0];
-    const spend = inferred.get(d.category) ?? 0;
-
-    let match = 0;
-    let why: string | null = null;
-    if (shop) {
-      match += 30;
-      why = `You shop at ${d.merchant}`;
-    }
-    if (picked.has(d.category)) {
-      match += 25;
-      why ??= `Matches ${interestLabel(d.category)}`;
-    }
-    if (like) {
-      match += 10 + Math.round(20 * like.share);
-      why ??= `Popular with people who use ${like.via}`;
-    }
-    if (spend > 0) {
-      match += Math.min(15, spend * 5);
-      why ??= `You spend on ${interestLabel(d.category).toLowerCase()}`;
-    }
-    let penalty = 0;
-    if (followed) penalty += 15;
-    if (dismissedStores.has(storeKey(d.merchant))) penalty += 20;
-
-    const ranked = { deal: d, score: match - penalty + baseScore(d, who.today), why };
-    if (match > 0 && match > penalty) forYou.push(ranked);
-    // A store that already emails you, with nothing else going for it, isn't news.
-    else if (!followed) popular.push({ ...ranked, why: null });
+    const shop = matchStore(d, shops);
+    const follow = shop ? null : matchStore(d, follows);
+    if (!shop && !follow) continue;
+    out.push({ deal: d, score: (shop ? 10 : 0) + baseScore(d, who.today), why: shop ? `You shop at ${d.merchant}` : `${d.merchant} emails you` });
   }
-  const order = (a: RankedDeal, b: RankedDeal) => b.score - a.score || (a.deal.ends_on ?? '9999').localeCompare(b.deal.ends_on ?? '9999');
-  return { forYou: forYou.sort(order), popular: popular.sort(order) };
+  return out.sort((a, b) => b.score - a.score || (a.deal.ends_on ?? '9999').localeCompare(b.deal.ends_on ?? '9999'));
 }
 
 /** "TT$300 off", "20% off", "Code SAVE10" — the deal's headline number, only if it was stated. */
@@ -281,7 +198,3 @@ export function dealValue(d: Pick<Deal, 'amount' | 'percent_off'>, format: (amou
   return null;
 }
 
-/** Interests worth suggesting when someone hasn't picked any: the ones their spending shows. */
-export function suggestedInterests(p: InterestProfile, max = 4): Interest[] {
-  return [...p.inferred.entries()].sort((a, b) => b[1] - a[1]).slice(0, max).map(([i]) => i);
-}

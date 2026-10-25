@@ -13,7 +13,7 @@ export default function Where() {
   const { data, refresh } = useData();
   return (
     <Screen>
-      <Steps step={1} total={6} />
+      <Steps step={1} total={5} />
       <View style={{ gap: space.xs }}>
         <T variant="display">Where do you live?</T>
         <T muted>PerkScan is built for the US. Pick somewhere else and your email and texts still work.</T>

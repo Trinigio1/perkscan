@@ -12,7 +12,6 @@ export default function OnboardingLayout() {
         <Stack.Screen name="pick-cards" />
         <Stack.Screen name="details" />
         <Stack.Screen name="find-money" />
-        <Stack.Screen name="spending" />
         <Stack.Screen name="finish" />
       </Stack>
     </OnboardingProvider>
