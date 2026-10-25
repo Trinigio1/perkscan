@@ -3,12 +3,14 @@
 -- Only the issuer, the card's name as written and its last 4 digits are kept. Never more.
 
 -- Travel credits count like store credit; certificates sit with points and miles.
+-- Compared as text: `supabase db push` runs pending migrations in one transaction, and Postgres
+-- won't use enum values added earlier in that same transaction ("unsafe use of new value").
 create or replace function public.opportunity_category_for(t public.opportunity_type)
 returns public.opportunity_category
 language sql immutable parallel safe
 set search_path = ''
 as $$
-  select case t
+  select case t::text
     when 'card_credit'   then 'card_credits'
     when 'protection'    then 'card_protections'
     when 'gift_card'     then 'store_credit_gift_cards'
