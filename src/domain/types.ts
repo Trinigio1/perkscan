@@ -103,6 +103,8 @@ export interface Opportunity {
   claim_started_at?: string | null;
   /** When to ask whether the money arrived. */
   claim_check_after?: string | null;
+  /** The domain of the email it came from ("target.com"), where codes and gift cards get used. */
+  sender_domain?: string | null;
   created_at: string;
 }
 

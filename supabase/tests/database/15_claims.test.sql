@@ -1,6 +1,6 @@
 -- Claims: started by the user, checked on later, and only theirs.
 begin;
-select plan(8);
+select plan(10);
 
 insert into auth.users (id, email) values
   ('cccccccc-0000-0000-0000-000000000001', 'c1@example.com'),
@@ -29,6 +29,10 @@ select is(
   'starting twice keeps the first date');
 
 select lives_ok($$select public.snooze_claim_check('cccccccc-1111-0000-0000-000000000001')$$, '"not yet" pushes the check back');
+
+select lives_ok($$select public.cancel_claim('cccccccc-1111-0000-0000-000000000001')$$, '"didn''t use it" forgets the claim');
+select ok((select claim_started_at is null and status = 'open' from public.opportunities where id = 'cccccccc-1111-0000-0000-000000000001'), 'and keeps the item open');
+select public.start_claim('cccccccc-1111-0000-0000-000000000001');
 
 -- "Yes, it arrived" is the existing mark-as-used, which records the money.
 select public.mark_opportunity('cccccccc-1111-0000-0000-000000000001', 'used', 25);

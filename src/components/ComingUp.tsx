@@ -70,7 +70,7 @@ export function EventRow({ e }: { e: LocalEvent }) {
             )}
             <Pressable onPress={() => Linking.openURL(e.url)} hitSlop={8} accessibilityRole="link" accessibilityLabel={`Open details for ${e.title}`}>
               <Row gap={4}>
-                <T variant="label" color={c.accent}>Details</T>
+                <T variant="label" color={c.accent}>{e.category === 'bank_promo' || e.category === 'sale' ? 'Claim' : 'Details'}</T>
                 <Ionicons name="open-outline" size={13} color={c.accent} />
               </Row>
             </Pressable>

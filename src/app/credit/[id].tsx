@@ -3,9 +3,11 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
 import { Linking, Pressable, View } from 'react-native';
 import { CardArt } from '@/components/CardArt';
+import { ClaimButton } from '@/components/Claims';
 import { ConfidenceTag } from '@/components/ConfidenceTag';
 import { Disclaimer } from '@/components/Disclaimer';
 import { Badge, Button, Chip, ErrorNote, Field, IconBubble, Money, Panel, ProgressRing, Row, Screen, T } from '@/components/ui';
+import { claimTarget } from '@/domain/claimTarget';
 import { formatMoney, lastDayLabel, PERIOD_LABELS, relativeDays } from '@/domain/format';
 import { benefitIcon } from '@/domain/visuals';
 import { markCredit } from '@/lib/credits';
@@ -43,6 +45,7 @@ export default function CreditDetail() {
   const expires = opp.expires_at ? new Date(opp.expires_at) : null;
   const used = opp.status === 'claimed';
   const missed = opp.status === 'expired' || (!!expires && expires <= now);
+  const target = !used && !missed ? claimTarget({ opp, benefit }) : null;
   const soon = !!expires && !used && !missed && expires.getTime() - now.getTime() < 7 * 86_400_000;
   const { icon, tone } = benefitIcon(opp.title, 'credit');
   const money = (n: number) => formatMoney(n, { currency: opp.currency });
@@ -115,10 +118,14 @@ export default function CreditDetail() {
 
       {error ? <ErrorNote message={error} /> : null}
 
+      {/* Straight to where the credit gets spent: the Lyft app for a Lyft credit, and so on. */}
+      {target ? <ClaimButton opp={opp} target={target} /> : null}
+
       <View style={{ gap: space.sm }}>
         {!used ? (
           <Button
             title="I used all of it"
+            kind={target ? 'secondary' : 'primary'}
             icon="checkmark-circle"
             loading={busy === 'full'}
             disabled={!!busy}

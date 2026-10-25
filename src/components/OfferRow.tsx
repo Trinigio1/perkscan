@@ -1,11 +1,13 @@
 import { router } from 'expo-router';
 import { Pressable, View } from 'react-native';
+import { claimTarget, followUpQuestion } from '@/domain/claimTarget';
 import { confidenceOf } from '@/domain/confidence';
 import { formatMoney, lastDayLabel, relativeDays } from '@/domain/format';
 import type { CardBenefit, Opportunity } from '@/domain/types';
 import { offerIcon, OFFER_TYPE_LABELS } from '@/domain/visuals';
 import { useLookups } from '@/lib/data';
 import { space, useColors } from '@/theme';
+import { ClaimButton } from './Claims';
 import { ConfidenceTag } from './ConfidenceTag';
 import { CreditRow } from './CreditRow';
 import { Badge, IconBubble, Row, T } from './ui';
@@ -29,8 +31,9 @@ export function OfferRow({ opp, now }: { opp: Opportunity; now: Date }) {
     status = `Expired ${lastDayLabel(opp.expires_at!)}`;
     statusColor = c.danger;
   } else if (opp.claim_started_at) {
-    // Asked for it: waiting on the store, bank or settlement.
-    status = `Requested ${relativeDays(new Date(opp.claim_started_at), now)} · waiting`;
+    // Asked for money back: waiting on the store, bank or settlement. Otherwise: opened to use.
+    const asked = followUpQuestion(opp) === 'Did it arrive?';
+    status = `${asked ? 'Requested' : 'Opened'} ${relativeDays(new Date(opp.claim_started_at), now)}${asked ? ' · waiting' : ''}`;
     statusColor = c.accentStrong;
   } else if (expires) {
     status = `${opp.type === 'free_trial' ? 'Ends' : 'Expires'} ${relativeDays(expires, now)}`;
@@ -72,13 +75,28 @@ export function OpportunityRow({
   benefit,
   recovered,
   subtitle,
+  claim = true,
 }: {
   opp: Opportunity;
   now: Date;
   benefit?: CardBenefit;
   recovered: number;
   subtitle?: string;
+  /** Show the Claim button under the row. */
+  claim?: boolean;
 }) {
-  if (opp.type === 'card_credit') return <CreditRow opp={opp} benefit={benefit} recovered={recovered} subtitle={subtitle} now={now} />;
-  return <OfferRow opp={opp} now={now} />;
+  const row = opp.type === 'card_credit' ? <CreditRow opp={opp} benefit={benefit} recovered={recovered} subtitle={subtitle} now={now} /> : <OfferRow opp={opp} now={now} />;
+  const missed = !!opp.expires_at && new Date(opp.expires_at) <= now;
+  const target = !missed && claim ? claimTarget({ opp, benefit }) : null;
+  if (!target) return row;
+  // The Claim button sits beside the row, not inside it: a button can't contain another button.
+  return (
+    <View>
+      {row}
+      <Row gap={space.sm} style={{ marginLeft: 56, marginTop: -4, paddingBottom: space.md }}>
+        <ClaimButton opp={opp} target={target} size="sm" />
+        <T variant="caption" faint numberOfLines={2} style={{ flex: 1 }}>{target.hint}</T>
+      </Row>
+    </View>
+  );
 }

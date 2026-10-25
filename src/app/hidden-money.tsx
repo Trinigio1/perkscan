@@ -85,6 +85,15 @@ export default function HiddenMoney() {
   );
 }
 
+const CLAIM_LABEL: Record<Program['kind'], string> = {
+  unclaimed: 'Search for mine',
+  loyalty: 'Check my balance',
+  price_adjust: 'See the policy',
+  library: 'Get a card',
+  refund_rule: 'Claim',
+  deadline_rule: 'Claim',
+};
+
 function ProgramLine({ p }: { p: Program }) {
   const c = useColors();
   const [open, setOpen] = useState(false);
@@ -110,16 +119,19 @@ function ProgramLine({ p }: { p: Program }) {
           <T variant="caption" color={c.accent}>How ›</T>
         </Pressable>
       )}
-      {addType ? (
-        <Button
-          title={addType === 'points' ? 'Add my balance' : 'Add my balance and deadline'}
-          icon="add"
-          size="sm"
-          kind="secondary"
-          style={{ alignSelf: 'flex-start' }}
-          onPress={() => router.push({ pathname: '/add-item', params: { type: addType, program: p.id } })}
-        />
-      ) : null}
+      <Row gap={space.sm} style={{ flexWrap: 'wrap', marginTop: 2 }}>
+        {/* Straight to the official place to claim, search or check a balance. */}
+        <Button title={CLAIM_LABEL[p.kind]} icon="open-outline" size="sm" onPress={() => Linking.openURL(p.url)} />
+        {addType ? (
+          <Button
+            title={addType === 'points' ? 'Add my balance' : 'Add balance'}
+            icon="add"
+            size="sm"
+            kind="secondary"
+            onPress={() => router.push({ pathname: '/add-item', params: { type: addType, program: p.id } })}
+          />
+        ) : null}
+      </Row>
     </View>
   );
 }

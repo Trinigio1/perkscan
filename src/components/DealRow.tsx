@@ -5,6 +5,7 @@ import { Linking, Pressable, View } from 'react-native';
 import { INTERESTS, dealValue, type RankedDeal } from '@/domain/deals';
 import { eventWhen } from '@/domain/events';
 import { formatMoney } from '@/domain/format';
+import { track } from '@/lib/analytics';
 import { useData } from '@/lib/data';
 import { sendDealFeedback } from '@/lib/deals';
 import { useToast } from '@/lib/toast';
@@ -28,6 +29,16 @@ export function DealRow({ item }: { item: RankedDeal }) {
   const value = dealValue(d, money);
   const when = d.ends_on ? eventWhen({ starts_on: d.starts_on && d.starts_on > today() ? d.starts_on : today(), ends_on: d.ends_on }, today()) : 'No end date listed';
   const soon = /^(Today|Ends)/.test(when);
+
+  // Copy the code (if any) and open the store's own page.
+  const claim = async () => {
+    if (d.code) {
+      await Clipboard.setStringAsync(d.code);
+      toast(`Copied ${d.code}`);
+    }
+    if (d.url) await Linking.openURL(d.url);
+    track('deal_claimed');
+  };
 
   const act = async (action: 'saved' | 'dismissed' | 'didnt_work') => {
     setBusy(true);
@@ -82,16 +93,17 @@ export function DealRow({ item }: { item: RankedDeal }) {
             <ConfidenceTag value={d.confidence} />
           </Row>
 
-          {/* One clear action; the rest behind "⋯". */}
-          <Row gap={space.sm} style={{ marginTop: 8 }}>
+          {/* Claim takes you there (code copied); Save keeps it for later; the rest behind "⋯". */}
+          <Row gap={space.sm} style={{ marginTop: 8, flexWrap: 'wrap' }}>
+            {d.url || d.code ? <Button title="Claim" icon={d.url ? 'open-outline' : 'copy-outline'} size="sm" onPress={claim} /> : null}
             {saved ? (
               <Row gap={4} style={{ flex: 1 }}>
                 <Ionicons name="checkmark-circle" size={16} color={c.accentStrong} />
-                <T variant="label" color={c.accentStrong}>Saved to Money</T>
+                <T variant="label" color={c.accentStrong}>Saved</T>
               </Row>
             ) : (
               <View style={{ flex: 1, alignItems: 'flex-start' }}>
-                <Button title="Save" icon="bookmark-outline" size="sm" onPress={() => act('saved')} loading={busy} />
+                <Button title="Save" kind="secondary" icon="bookmark-outline" size="sm" onPress={() => act('saved')} loading={busy} />
               </View>
             )}
             <Pressable
@@ -106,7 +118,6 @@ export function DealRow({ item }: { item: RankedDeal }) {
           </Row>
           {menu ? (
             <View style={{ marginTop: 4, borderRadius: 12, backgroundColor: c.surfaceAlt, overflow: 'hidden' }}>
-              {d.url ? <MenuItem icon="open-outline" label={`Open ${d.merchant}’s page`} onPress={() => Linking.openURL(d.url!)} /> : null}
               {saved ? (
                 <MenuItem icon="alert-circle-outline" label="It didn’t work" onPress={() => act('didnt_work')} />
               ) : (

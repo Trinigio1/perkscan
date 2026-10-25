@@ -3,11 +3,12 @@ import * as Clipboard from 'expo-clipboard';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
 import { Linking, Pressable, View } from 'react-native';
-import { ClaimHelper } from '@/components/Claims';
+import { ClaimButton, ClaimHelper } from '@/components/Claims';
 import { ConfidenceTag } from '@/components/ConfidenceTag';
 import { Disclaimer } from '@/components/Disclaimer';
 import { ReadCheck } from '@/components/ReadCheck';
 import { Badge, Button, ErrorNote, Field, IconBubble, Money, Panel, Row, Screen, T } from '@/components/ui';
+import { claimTarget } from '@/domain/claimTarget';
 import { claimHelp } from '@/domain/claims';
 import { CONFIDENCE_HELP, confidenceOf } from '@/domain/confidence';
 import { formatMoney, lastDayLabel, relativeDays } from '@/domain/format';
@@ -54,6 +55,8 @@ export default function OfferDetail() {
   const confidence = confidenceOf(opp, (b) => data.benefits.find((x) => x.id === b)?.status);
   const receipt = opp.source_receipt_id ? data.receipts.find((r) => r.id === opp.source_receipt_id) : undefined;
   const help = opp.status === 'open' && !missed ? claimHelp({ opp, receipt, name: data.profile?.display_name }) : null;
+  // Codes, gift cards, points, trials, settlements: straight to where you use them.
+  const target = !help || help.kind === 'settlement' ? (!missed ? claimTarget({ opp }) : null) : null;
 
   const act = async (key: string, action: 'used' | 'dismiss' | 'reopen', amount: number | null, message: string) => {
     setBusy(key);
@@ -141,7 +144,9 @@ export default function OfferDetail() {
 
       {error ? <ErrorNote message={error} /> : null}
 
-      {help && !askSaved ? <ClaimHelper opp={opp} help={help} /> : null}
+      {target && !askSaved ? <ClaimButton opp={opp} target={target} /> : null}
+      {help && help.kind !== 'settlement' && !askSaved ? <ClaimHelper opp={opp} help={help} /> : null}
+      {help?.kind === 'settlement' && !askSaved ? <ClaimHelper opp={opp} help={{ ...help, url: null }} /> : null}
 
       <View style={{ gap: space.sm }}>
         {opp.status === 'open' ? (
@@ -155,6 +160,7 @@ export default function OfferDetail() {
             <Button
               title={askSaved ? 'Save' : opp.type === 'free_trial' ? 'I cancelled / decided' : opp.type === 'return_window' ? 'Done with this' : isProtection || opp.type === 'settlement' ? 'I filed a claim' : comesBack ? 'I got it back' : 'I used it'}
               icon="checkmark-circle"
+              kind={(target || help) && !askSaved ? 'secondary' : 'primary'}
               loading={busy === 'used'}
               disabled={!!busy}
               onPress={markUsed}

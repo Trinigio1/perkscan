@@ -3,11 +3,13 @@ import * as Clipboard from 'expo-clipboard';
 import { router } from 'expo-router';
 import { useState } from 'react';
 import { Linking, Pressable, View } from 'react-native';
+import { followUpQuestion, type ClaimTarget } from '@/domain/claimTarget';
 import { mailtoLink, type ClaimHelp } from '@/domain/claims';
 import { formatMoney, relativeDays } from '@/domain/format';
 import type { Opportunity } from '@/domain/types';
 import { track } from '@/lib/analytics';
-import { snoozeClaimCheck, startClaim } from '@/lib/claims';
+import { cancelClaim, snoozeClaimCheck, startClaim } from '@/lib/claims';
+import { markCredit } from '@/lib/credits';
 import { useData } from '@/lib/data';
 import { markOpportunity } from '@/lib/inbox';
 import { useToast } from '@/lib/toast';
@@ -127,6 +129,37 @@ export function ClaimHelper({ opp, help }: { opp: Opportunity; help: ClaimHelp }
   );
 }
 
+/**
+ * The Claim button on every perk: copies the code if there is one, opens where you use it,
+ * and remembers to ask later whether you did. Requests to send open the item's own screen.
+ */
+export function ClaimButton({ opp, target, size = 'md' }: { opp: Opportunity; target: ClaimTarget; size?: 'sm' | 'md' }) {
+  const toast = useToast();
+  const { refresh } = useData();
+  const claim = async () => {
+    if (target.openItem) {
+      router.push(opp.type === 'card_credit' ? { pathname: '/credit/[id]', params: { id: opp.id } } : { pathname: '/offer/[id]', params: { id: opp.id } });
+      return;
+    }
+    if (target.copy) {
+      await Clipboard.setStringAsync(target.copy);
+      toast(`Copied ${target.copy}`, { tone: 'info' });
+    }
+    if (target.url) await Linking.openURL(target.url);
+    if (!opp.claim_started_at) {
+      startClaim(opp.id, 'use')
+        .then(() => refresh())
+        .catch(() => {});
+    }
+  };
+  return (
+    <View style={{ gap: 4, alignItems: size === 'sm' ? 'flex-start' : 'stretch' }}>
+      <Button title={target.label} icon={target.openItem ? 'arrow-forward' : target.url ? 'open-outline' : 'copy-outline'} size={size} onPress={claim} />
+      {size === 'md' ? <T variant="caption" muted center>{target.hint}</T> : null}
+    </View>
+  );
+}
+
 /** A few days after a claim: did the money arrive? Only a "yes" adds to the recovered total. */
 export function ArrivalCheck({ opp }: { opp: Opportunity }) {
   const c = useColors();
@@ -146,7 +179,19 @@ export function ArrivalCheck({ opp }: { opp: Opportunity }) {
     }
   };
 
+  const question = followUpQuestion(opp);
   const yes = () => {
+    if (opp.type === 'card_credit') {
+      run(
+        'yes',
+        async () => {
+          await markCredit(opp.id, true);
+          track('claim_checked', { result: 'arrived' });
+        },
+        opp.value_estimate !== null ? `Nice — ${formatMoney(opp.value_estimate, { currency: opp.currency })} used` : 'Marked as used',
+      );
+      return;
+    }
     // Without a known amount, ask how much on the item's own screen.
     if (opp.value_estimate === null) {
       router.push({ pathname: '/offer/[id]', params: { id: opp.id, arrived: '1' } });
@@ -167,7 +212,7 @@ export function ArrivalCheck({ opp }: { opp: Opportunity }) {
       <Row gap={space.md} style={{ alignItems: 'flex-start' }}>
         <IconBubble icon="help-circle" tone="blue" size={36} />
         <View style={{ flex: 1, gap: 2 }}>
-          <T variant="subheading">Did it arrive?</T>
+          <T variant="subheading">{question}</T>
           <T variant="caption" muted numberOfLines={2}>
             {opp.title}
             {opp.merchant ? ` · ${opp.merchant}` : ''}
@@ -178,25 +223,30 @@ export function ArrivalCheck({ opp }: { opp: Opportunity }) {
       <Row gap={space.sm} style={{ flexWrap: 'wrap' }}>
         <Button title="Yes" size="sm" icon="checkmark" loading={busy === 'yes'} disabled={!!busy} onPress={yes} />
         <Button title="Not yet" size="sm" kind="secondary" loading={busy === 'later'} disabled={!!busy} onPress={() => run('later', () => snoozeClaimCheck(opp.id), 'We’ll ask again in a few days')} />
-        <Button
-          title="It didn’t work"
-          size="sm"
-          kind="ghost"
-          loading={busy === 'no'}
-          disabled={!!busy}
-          onPress={() =>
-            run(
-              'no',
-              async () => {
-                await markOpportunity(opp.id, 'dismiss');
-                track('claim_checked', { result: 'didnt_work' });
-              },
-              'Sorry it didn’t work out',
-            )
-          }
-        />
+        {question === 'Did it arrive?' ? (
+          <Button
+            title="It didn’t work"
+            size="sm"
+            kind="ghost"
+            loading={busy === 'no'}
+            disabled={!!busy}
+            onPress={() =>
+              run(
+                'no',
+                async () => {
+                  await markOpportunity(opp.id, 'dismiss');
+                  track('claim_checked', { result: 'didnt_work' });
+                },
+                'Sorry it didn’t work out',
+              )
+            }
+          />
+        ) : (
+          // Didn't use it after all: stop asking, keep it in Money.
+          <Button title="Didn’t use it" size="sm" kind="ghost" loading={busy === 'no'} disabled={!!busy} onPress={() => run('no', () => cancelClaim(opp.id), 'Kept in Money')} />
+        )}
       </Row>
-      <T variant="caption" faint style={{ color: c.textFaint }}>Only money that actually arrived counts toward your total.</T>
+      <T variant="caption" faint style={{ color: c.textFaint }}>Only money you actually got counts toward your total.</T>
     </Panel>
   );
 }

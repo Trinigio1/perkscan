@@ -4,6 +4,7 @@ import { useMemo } from 'react';
 import { Linking, Pressable, View } from 'react-native';
 import { ConfidenceTag } from '@/components/ConfidenceTag';
 import { Badge, Button, Empty, IconBubble, Panel, Row, Screen, T } from '@/components/ui';
+import { merchantSite } from '@/domain/claimTarget';
 import { formatMoney } from '@/domain/format';
 import { groupPerks, loungeCards, type PerkGroup } from '@/domain/perks';
 import type { CardBenefit } from '@/domain/types';
@@ -85,11 +86,14 @@ export default function Perks() {
 function PerkLineView({ b, cards }: { b: CardBenefit; cards: string[] }) {
   const c = useColors();
   const limit = b.max_coverage !== null ? `Up to ${formatMoney(b.max_coverage, { currency: b.currency ?? 'USD' })}` : null;
+  // Where to use it: the merchant (e.g. Priority Pass for lounges), else the issuer's own terms page.
+  const site = merchantSite(b.name);
+  const use = site ? { label: `Open ${site.name}`, url: site.url } : b.source_url ? { label: b.type === 'protection' ? 'How to claim' : 'How to use it', url: b.source_url } : null;
   return (
     <View style={{ paddingVertical: space.md, gap: 4 }}>
       <Row>
         <T variant="subheading" style={{ flex: 1 }}>{b.name}</T>
-        {b.source_url ? (
+        {b.source_url && site ? (
           <Pressable accessibilityLabel="Open the bank’s terms" onPress={() => Linking.openURL(b.source_url!)} hitSlop={10}>
             <Ionicons name="open-outline" size={16} color={c.textFaint} />
           </Pressable>
@@ -102,6 +106,11 @@ function PerkLineView({ b, cards }: { b: CardBenefit; cards: string[] }) {
         {limit ? <Badge label={limit} tone="good" /> : null}
         {b.enrollment_required ? <Badge label="Enroll first" icon="alert-circle" tone="warn" /> : null}
       </Row>
+      {use ? (
+        <View style={{ alignItems: 'flex-start', marginTop: 4 }}>
+          <Button title={use.label} icon="open-outline" size="sm" onPress={() => Linking.openURL(use.url)} />
+        </View>
+      ) : null}
     </View>
   );
 }

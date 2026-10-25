@@ -207,7 +207,7 @@ function OfferCard({
         </Row>
       ) : null}
       <Row gap={space.sm}>
-        <Button title="Open offer" icon="open-outline" size="sm" kind="secondary" style={{ flex: 1 }} onPress={() => Linking.openURL(o.url)} />
+        <Button title="Claim" icon="open-outline" size="sm" style={{ flex: 1 }} onPress={() => Linking.openURL(o.url)} />
         {unavailable ? null : (
           <Button
             title={claimed ? 'Claimed' : 'I’ve claimed it'}
@@ -239,7 +239,7 @@ function MyPerkCard({ perk }: { perk: UserPerk }) {
         {perk.suggest ? <Badge label="Suggested to PerkScan" icon="paper-plane-outline" /> : null}
       </Row>
       {perk.url ? (
-        <Button title="Open link" icon="open-outline" size="sm" kind="secondary" style={{ alignSelf: 'flex-start' }} onPress={() => Linking.openURL(perk.url!)} />
+        <Button title="Claim" icon="open-outline" size="sm" style={{ alignSelf: 'flex-start' }} onPress={() => Linking.openURL(perk.url!)} />
       ) : null}
     </Panel>
   );

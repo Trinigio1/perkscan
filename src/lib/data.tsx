@@ -96,7 +96,7 @@ async function load(userId: string): Promise<AppData> {
     supabase.from('cards').select('*').order('sort_order'),
     supabase.from('card_benefits').select('*').order('sort_order'),
     supabase.from('user_cards').select('*').order('created_at'),
-    supabase.from('opportunities').select('*').or(`status.eq.open,expires_at.gte.${yearStart}`).order('expires_at', { ascending: true }),
+    supabase.from('opportunities').select('*, inbound_messages(from_domain)').or(`status.eq.open,expires_at.gte.${yearStart}`).order('expires_at', { ascending: true }),
     supabase.from('recovered').select('id, opportunity_id, amount, currency, recovered_at'),
     supabase.from('benefit_usage').select('id, user_card_id, benefit_id, period_start, amount_used, is_used, marked_by'),
     supabase
@@ -165,7 +165,12 @@ async function load(userId: string): Promise<AppData> {
     cards: must('cards', cards).map((c: Card) => ({ ...c, annual_fee: num(c.annual_fee) })),
     benefits: must('card_benefits', benefits).map((b: CardBenefit) => ({ ...b, amount: num(b.amount), max_coverage: num(b.max_coverage) })),
     userCards: must('user_cards', userCards),
-    opportunities: must('opportunities', opportunities).map((o: Opportunity) => ({ ...o, value_estimate: num(o.value_estimate) })),
+    opportunities: must('opportunities', opportunities).map(({ inbound_messages: msg, ...o }: Opportunity & { inbound_messages?: { from_domain: string | null } | null }) => ({
+      ...o,
+      value_estimate: num(o.value_estimate),
+      // Where the email came from: the store a code or gift card gets used at.
+      sender_domain: msg?.from_domain ?? null,
+    })),
     recovered: must('recovered', recovered).map((r: Recovered) => ({ ...r, amount: Number(r.amount) })),
     usage: must('benefit_usage', usage).map((u: BenefitUsage) => ({ ...u, amount_used: num(u.amount_used) })),
     receipts: must('receipts', receipts).map((r: Receipt) => ({ ...r, total: num(r.total) })),
