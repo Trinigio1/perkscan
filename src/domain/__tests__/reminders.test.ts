@@ -48,3 +48,18 @@ describe('planCreditReminders', () => {
     expect(planCreditReminders(many, [], NOW)).toHaveLength(MAX_REMINDERS);
   });
 });
+
+describe('claim follow-ups', () => {
+  const NOW2 = new Date('2026-10-25T08:00:00');
+  it('asks whether the money arrived on the check date', () => {
+    const plan = planCreditReminders(
+      [
+        opp({ id: 'asked', type: 'price_drop', merchant: 'Target', title: 'Price drop on TV', status: 'open', expires_at: null, claim_started_at: '2026-10-24T09:00:00Z', claim_check_after: '2026-10-28T09:00:00Z' }),
+        opp({ id: 'done', type: 'refund', status: 'claimed', expires_at: null, claim_started_at: '2026-10-20T09:00:00Z', claim_check_after: '2026-10-28T09:00:00Z' }),
+      ],
+      [],
+      NOW2,
+    );
+    expect(plan.map((r) => [r.id, r.title])).toEqual([['remind-asked-arrived', 'Did your Target money arrive?']]);
+  });
+});

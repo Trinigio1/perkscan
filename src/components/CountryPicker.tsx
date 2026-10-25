@@ -1,9 +1,8 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useState } from 'react';
 import { Pressable, Text, View } from 'react-native';
-import { COUNTRIES, CURRENCIES, OTHER_COUNTRY, countryByCode, guessCountry } from '@/domain/countries';
+import { CURRENCIES, OTHER_COUNTRY, countryByCode, pickerCountries, startCountry } from '@/domain/countries';
 import { currencyPrefix } from '@/domain/format';
-import { deviceTimeZone } from '@/lib/cards';
 import { radius, space, useColors } from '@/theme';
 import { Button, Chip, ErrorNote, Panel, Row, T } from './ui';
 
@@ -23,7 +22,7 @@ export function CountryPicker({
   saveTitle?: string;
 }) {
   const c = useColors();
-  const start = initial?.country ?? guessCountry(deviceTimeZone());
+  const start = startCountry(initial?.country);
   const [country, setCountry] = useState<string | null>(start);
   // home_currency defaults to USD in the database, so only trust it once a country has been chosen.
   const [currency, setCurrency] = useState(
@@ -51,7 +50,7 @@ export function CountryPicker({
     }
   };
 
-  const options = [...COUNTRIES.map((x) => ({ code: x.code, label: x.name, flag: x.flag })), { code: OTHER_COUNTRY, label: 'Somewhere else', flag: '🌎' }];
+  const options = [...pickerCountries(initial?.country).map((x) => ({ code: x.code, label: x.name, flag: x.flag })), { code: OTHER_COUNTRY, label: 'Somewhere else', flag: '🌎' }];
 
   return (
     <View style={{ gap: space.md }}>
@@ -99,6 +98,7 @@ export function CountryPicker({
 
       {country === OTHER_COUNTRY ? (
         <View style={{ gap: space.sm }}>
+          <T variant="caption" muted>PerkScan is built for the US for now. Elsewhere, your email and texts still work, but card perks and deals near you won’t show yet.</T>
           <T variant="subheading">Which currency do you mostly spend in?</T>
           <Row gap={space.sm} style={{ flexWrap: 'wrap' }}>
             {CURRENCIES.map((cur) => (

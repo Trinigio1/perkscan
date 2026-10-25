@@ -99,6 +99,10 @@ export interface Opportunity {
   source_receipt_id?: string | null;
   /** "manual:…" for items the user added by hand. */
   dedupe_key?: string | null;
+  /** When the user sent the request or filed the claim. */
+  claim_started_at?: string | null;
+  /** When to ask whether the money arrived. */
+  claim_check_after?: string | null;
   created_at: string;
 }
 
@@ -117,6 +121,7 @@ export interface Receipt {
   pending: boolean;
   /** Departure / pick-up / check-in date for travel bookings. */
   travel_date?: string | null;
+  order_number?: string | null;
 }
 
 export type ParseStatus = 'pending' | 'parsing' | 'parsed' | 'failed' | 'ignored';

@@ -1,11 +1,13 @@
 import { router, type Href } from 'expo-router';
 import { useCallback, useMemo, useState } from 'react';
 import { Pressable, RefreshControl, ScrollView, Text, View } from 'react-native';
+import { ArrivalCheck } from '@/components/Claims';
 import { DealRow } from '@/components/DealRow';
 import { Found, NextStep, Tour } from '@/components/FirstRun';
 import { Hero } from '@/components/Hero';
 import { OpportunityRow } from '@/components/OfferRow';
 import { Chip, ErrorNote, Money, Panel, Row, Screen, SectionHeader, T, type IconName } from '@/components/ui';
+import { claimsToCheck } from '@/domain/claims';
 import { foundSummary, nextStep, toCheckCount } from '@/domain/firstRun';
 import { addToBag, formatBag, getHomeCurrency, type MoneyBag } from '@/domain/format';
 import { nextToUse, setupSteps } from '@/domain/money';
@@ -43,7 +45,7 @@ export default function Home() {
   const topDeals = (deals.forYou.length ? deals.forYou : deals.popular).slice(0, 3);
   const statusOf = useCallback((id: string) => benefitById.get(id)?.status, [benefitById]);
 
-  const { now, home, totals, soon, toCheck, found } = useMemo(() => {
+  const { now, home, totals, soon, toCheck, found, arrivals } = useMemo(() => {
     const at = new Date();
     const homeCur = data.profile?.home_currency?.trim() || getHomeCurrency();
     // Amounts are never converted: one score per currency, the home currency shown big.
@@ -61,6 +63,7 @@ export default function Home() {
       soon: nextToUse(data.opportunities, at, 4, statusOf),
       toCheck: toCheckCount(data.opportunities, at, statusOf),
       found: foundSummary(data.opportunities),
+      arrivals: claimsToCheck(data.opportunities, at),
     };
   }, [data, statusOf]);
 
@@ -111,6 +114,7 @@ export default function Home() {
         )}
       </Hero>
 
+      {arrivals[0] ? <ArrivalCheck opp={arrivals[0]} /> : null}
       {dismissedLoaded && !dismissed.has('tour') ? <Tour onDone={() => dismiss('tour')} /> : null}
       {step ? <NextStep step={step} /> : null}
       {dismissedLoaded && found.total > 0 && !dismissed.has('found') ? <Found summary={found} onDone={() => dismiss('found')} /> : null}

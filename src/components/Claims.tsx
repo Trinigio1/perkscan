@@ -1,0 +1,202 @@
+import { Ionicons } from '@expo/vector-icons';
+import * as Clipboard from 'expo-clipboard';
+import { router } from 'expo-router';
+import { useState } from 'react';
+import { Linking, Pressable, View } from 'react-native';
+import { mailtoLink, type ClaimHelp } from '@/domain/claims';
+import { formatMoney, relativeDays } from '@/domain/format';
+import type { Opportunity } from '@/domain/types';
+import { track } from '@/lib/analytics';
+import { snoozeClaimCheck, startClaim } from '@/lib/claims';
+import { useData } from '@/lib/data';
+import { markOpportunity } from '@/lib/inbox';
+import { useToast } from '@/lib/toast';
+import { radius, space, useColors } from '@/theme';
+import { Button, IconBubble, Panel, Row, T } from './ui';
+
+/**
+ * "Ask for it": the request PerkScan wrote, ready for the user to send from their own email —
+ * or the details to copy into an official claim form. PerkScan never sends anything itself.
+ */
+export function ClaimHelper({ opp, help }: { opp: Opportunity; help: ClaimHelp }) {
+  const c = useColors();
+  const toast = useToast();
+  const { refresh } = useData();
+  const [expanded, setExpanded] = useState(false);
+
+  // Remember that they started, so PerkScan can ask later whether it arrived.
+  const started = async () => {
+    if (opp.claim_started_at) return;
+    try {
+      await startClaim(opp.id, help.kind);
+      await refresh();
+      toast('We’ll check in with you in a few days', { tone: 'success' });
+    } catch {
+      // Not essential: the request itself already went out.
+    }
+  };
+
+  const copy = async (text: string, what: string) => {
+    await Clipboard.setStringAsync(text);
+    toast(`${what} copied`, { tone: 'info' });
+  };
+
+  return (
+    <Panel style={{ gap: space.md }}>
+      <View style={{ gap: 2 }}>
+        <T variant="heading">{help.heading}</T>
+        <T variant="caption" muted>To: {help.to}</T>
+      </View>
+
+      {opp.claim_started_at ? (
+        <Row gap={space.sm} style={{ backgroundColor: c.accentSoft, borderRadius: radius.md, padding: space.md }}>
+          <Ionicons name="paper-plane" size={16} color={c.accentStrong} />
+          <T variant="caption" color={c.accentStrong} style={{ flex: 1 }}>
+            Started {relativeDays(new Date(opp.claim_started_at), new Date())}. We’ll ask whether it arrived.
+          </T>
+        </Row>
+      ) : null}
+
+      {help.message ? (
+        <>
+          <Pressable onPress={() => setExpanded(!expanded)} accessibilityRole="button" accessibilityLabel={expanded ? 'Show less' : 'Show the whole message'}>
+            <View style={{ backgroundColor: c.surfaceAlt, borderRadius: radius.md, padding: space.md, gap: space.xs }}>
+              <T variant="label">{help.message.subject}</T>
+              <T variant="caption" numberOfLines={expanded ? undefined : 5}>{help.message.body}</T>
+              <T variant="caption" color={c.accent}>{expanded ? 'Show less' : 'Show all'}</T>
+            </View>
+          </Pressable>
+          {help.gaps.length ? (
+            <Row gap={space.sm} style={{ alignItems: 'flex-start' }}>
+              <Ionicons name="create-outline" size={16} color={c.warn} />
+              <T variant="caption" color={c.warn} style={{ flex: 1 }}>
+                Fill in {help.gaps.join(', ')} before sending. PerkScan leaves out anything it doesn’t know rather than guess.
+              </T>
+            </Row>
+          ) : null}
+          <Button
+            title="Open in my email"
+            icon="mail"
+            onPress={async () => {
+              await Linking.openURL(mailtoLink(help.message!));
+              await started();
+            }}
+          />
+          <Button
+            title="Copy message"
+            kind="secondary"
+            icon="copy-outline"
+            onPress={async () => {
+              await copy(`${help.message!.subject}\n\n${help.message!.body}`, 'Message');
+              await started();
+            }}
+          />
+        </>
+      ) : null}
+
+      {help.facts.length ? (
+        <View style={{ gap: space.xs }}>
+          {help.message ? <T variant="overline" muted>Details</T> : null}
+          {help.facts.map((f) => (
+            <Pressable key={f.label} onPress={() => copy(f.value, f.label)} accessibilityRole="button" accessibilityLabel={`Copy ${f.label}`}>
+              <Row gap={space.sm} style={{ paddingVertical: 6 }}>
+                <T variant="caption" muted style={{ width: 110 }}>{f.label}</T>
+                <T variant="label" style={{ flex: 1 }}>{f.value}</T>
+                <Ionicons name="copy-outline" size={14} color={c.textFaint} />
+              </Row>
+            </Pressable>
+          ))}
+        </View>
+      ) : null}
+
+      {help.url ? (
+        <Button
+          title={help.kind === 'settlement' ? 'Open the official claim form' : 'Open the claim page'}
+          kind={help.message ? 'ghost' : 'primary'}
+          icon="open-outline"
+          onPress={async () => {
+            await Linking.openURL(help.url!);
+            await started();
+          }}
+        />
+      ) : null}
+      {!help.message && !help.url ? (
+        <Button title="I’ve filed it" kind="secondary" icon="checkmark" onPress={started} />
+      ) : null}
+    </Panel>
+  );
+}
+
+/** A few days after a claim: did the money arrive? Only a "yes" adds to the recovered total. */
+export function ArrivalCheck({ opp }: { opp: Opportunity }) {
+  const c = useColors();
+  const toast = useToast();
+  const { refresh } = useData();
+  const [busy, setBusy] = useState<string | null>(null);
+
+  const run = async (key: string, fn: () => Promise<unknown>, message: string) => {
+    setBusy(key);
+    try {
+      await fn();
+      await refresh();
+      toast(message, { tone: key === 'yes' ? 'success' : 'info' });
+    } catch (e) {
+      toast((e as Error).message, { tone: 'info' });
+      setBusy(null);
+    }
+  };
+
+  const yes = () => {
+    // Without a known amount, ask how much on the item's own screen.
+    if (opp.value_estimate === null) {
+      router.push({ pathname: '/offer/[id]', params: { id: opp.id, arrived: '1' } });
+      return;
+    }
+    run(
+      'yes',
+      async () => {
+        await markOpportunity(opp.id, 'used', opp.value_estimate);
+        track('claim_checked', { result: 'arrived' });
+      },
+      `Nice — ${formatMoney(opp.value_estimate, { currency: opp.currency })} recovered`,
+    );
+  };
+
+  return (
+    <Panel style={{ gap: space.sm }}>
+      <Row gap={space.md} style={{ alignItems: 'flex-start' }}>
+        <IconBubble icon="help-circle" tone="blue" size={36} />
+        <View style={{ flex: 1, gap: 2 }}>
+          <T variant="subheading">Did it arrive?</T>
+          <T variant="caption" muted numberOfLines={2}>
+            {opp.title}
+            {opp.merchant ? ` · ${opp.merchant}` : ''}
+            {opp.value_estimate !== null ? ` · ${formatMoney(opp.value_estimate, { currency: opp.currency })}` : ''}
+          </T>
+        </View>
+      </Row>
+      <Row gap={space.sm} style={{ flexWrap: 'wrap' }}>
+        <Button title="Yes" size="sm" icon="checkmark" loading={busy === 'yes'} disabled={!!busy} onPress={yes} />
+        <Button title="Not yet" size="sm" kind="secondary" loading={busy === 'later'} disabled={!!busy} onPress={() => run('later', () => snoozeClaimCheck(opp.id), 'We’ll ask again in a few days')} />
+        <Button
+          title="It didn’t work"
+          size="sm"
+          kind="ghost"
+          loading={busy === 'no'}
+          disabled={!!busy}
+          onPress={() =>
+            run(
+              'no',
+              async () => {
+                await markOpportunity(opp.id, 'dismiss');
+                track('claim_checked', { result: 'didnt_work' });
+              },
+              'Sorry it didn’t work out',
+            )
+          }
+        />
+      </Row>
+      <T variant="caption" faint style={{ color: c.textFaint }}>Only money that actually arrived counts toward your total.</T>
+    </Panel>
+  );
+}

@@ -101,7 +101,7 @@ async function load(userId: string): Promise<AppData> {
     supabase.from('benefit_usage').select('id, user_card_id, benefit_id, period_start, amount_used, is_used, marked_by'),
     supabase
       .from('receipts')
-      .select('id, merchant, total, currency, purchase_date, last_four, purchase_type, matched_user_card_id, kind, pending, travel_date')
+      .select('id, merchant, total, currency, purchase_date, last_four, purchase_type, matched_user_card_id, kind, pending, travel_date, order_number')
       .or(`purchase_date.gte.${since},purchase_date.is.null`)
       .order('purchase_date', { ascending: false, nullsFirst: false })
       .limit(300),

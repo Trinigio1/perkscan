@@ -74,6 +74,20 @@ export function planCreditReminders(opportunities: Opportunity[], recovered: Rec
       }
     }
   }
+  // "Did it arrive?" a few days after the user asked for a refund or filed a claim.
+  for (const opp of opportunities) {
+    if (opp.status !== 'open' || !opp.claim_started_at || !opp.claim_check_after) continue;
+    const fireAt = new Date(opp.claim_check_after);
+    fireAt.setHours(REMINDER_HOUR, 0, 0, 0);
+    if (fireAt.getTime() <= now.getTime()) continue;
+    out.push({
+      id: `remind-${opp.id}-arrived`,
+      opportunityId: opp.id,
+      fireAt,
+      title: `Did your ${opp.merchant ? `${opp.merchant} ` : ''}${opp.type === 'settlement' ? 'settlement' : 'money'} arrive?`,
+      body: `${opp.title}. Tap to tell PerkScan, so your total stays real.`,
+    });
+  }
   out.sort((a, b) => a.fireAt.getTime() - b.fireAt.getTime());
   return out.slice(0, MAX_REMINDERS);
 }

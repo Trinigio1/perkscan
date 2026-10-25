@@ -28,6 +28,10 @@ export function OfferRow({ opp, now }: { opp: Opportunity; now: Date }) {
   else if (missed && expires) {
     status = `Expired ${lastDayLabel(opp.expires_at!)}`;
     statusColor = c.danger;
+  } else if (opp.claim_started_at) {
+    // Asked for it: waiting on the store, bank or settlement.
+    status = `Requested ${relativeDays(new Date(opp.claim_started_at), now)} · waiting`;
+    statusColor = c.accentStrong;
   } else if (expires) {
     status = `${opp.type === 'free_trial' ? 'Ends' : 'Expires'} ${relativeDays(expires, now)}`;
     if (soon) statusColor = c.warn;

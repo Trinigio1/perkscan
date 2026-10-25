@@ -3,10 +3,12 @@ import * as Clipboard from 'expo-clipboard';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
 import { Linking, Pressable, View } from 'react-native';
+import { ClaimHelper } from '@/components/Claims';
 import { ConfidenceTag } from '@/components/ConfidenceTag';
 import { Disclaimer } from '@/components/Disclaimer';
 import { ReadCheck } from '@/components/ReadCheck';
 import { Badge, Button, ErrorNote, Field, IconBubble, Money, Panel, Row, Screen, T } from '@/components/ui';
+import { claimHelp } from '@/domain/claims';
 import { CONFIDENCE_HELP, confidenceOf } from '@/domain/confidence';
 import { formatMoney, lastDayLabel, relativeDays } from '@/domain/format';
 import { offerIcon, OFFER_TYPE_LABELS } from '@/domain/visuals';
@@ -20,10 +22,10 @@ import { radius, space, useColors } from '@/theme';
 export default function OfferDetail() {
   const c = useColors();
   const toast = useToast();
-  const { id } = useLocalSearchParams<{ id: string }>();
+  const { id, arrived } = useLocalSearchParams<{ id: string; arrived?: string }>();
   const { data, refresh } = useData();
   const [saved, setSaved] = useState('');
-  const [askSaved, setAskSaved] = useState(false);
+  const [askSaved, setAskSaved] = useState(arrived === '1');
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -50,6 +52,8 @@ export default function OfferDetail() {
   const comesBack = opp.type === 'refund' || opp.type === 'price_drop';
   const manual = !!opp.dedupe_key?.startsWith('manual:');
   const confidence = confidenceOf(opp, (b) => data.benefits.find((x) => x.id === b)?.status);
+  const receipt = opp.source_receipt_id ? data.receipts.find((r) => r.id === opp.source_receipt_id) : undefined;
+  const help = opp.status === 'open' && !missed ? claimHelp({ opp, receipt, name: data.profile?.display_name }) : null;
 
   const act = async (key: string, action: 'used' | 'dismiss' | 'reopen', amount: number | null, message: string) => {
     setBusy(key);
@@ -136,6 +140,8 @@ export default function OfferDetail() {
       </Panel>
 
       {error ? <ErrorNote message={error} /> : null}
+
+      {help && !askSaved ? <ClaimHelper opp={opp} help={help} /> : null}
 
       <View style={{ gap: space.sm }}>
         {opp.status === 'open' ? (

@@ -16,7 +16,7 @@ export default function Where() {
       <Steps step={1} total={6} />
       <View style={{ gap: space.xs }}>
         <T variant="display">Where do you live?</T>
-        <T muted>Sets your currency and which cards we show first.</T>
+        <T muted>PerkScan is built for the US. Pick somewhere else and your email and texts still work.</T>
       </View>
       <CountryPicker
         initial={data.profile}

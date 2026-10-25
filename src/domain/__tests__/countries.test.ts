@@ -1,4 +1,4 @@
-import { countryByCode, guessCountry } from '../countries';
+import { countryByCode, guessCountry, pickerCountries, startCountry } from '../countries';
 
 describe('guessCountry', () => {
   it('maps Trinidad’s time zone to TT', () => {
@@ -12,5 +12,16 @@ describe('guessCountry', () => {
   it('returns null when unsure', () => {
     expect(guessCountry('Asia/Tokyo')).toBeNull();
     expect(guessCountry(null)).toBeNull();
+  });
+});
+
+describe('US-first pickers', () => {
+  it('offers the US to new users', () => {
+    expect(pickerCountries(null).map((c) => c.code)).toEqual(['US']);
+    expect(startCountry(null)).toBe('US');
+  });
+  it('keeps a country someone already chose', () => {
+    expect(pickerCountries('TT').map((c) => c.code)).toEqual(['TT', 'US']);
+    expect(startCountry('TT')).toBe('TT');
   });
 });
