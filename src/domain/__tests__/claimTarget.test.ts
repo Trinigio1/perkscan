@@ -1,5 +1,5 @@
 import { opp } from '../__fixtures__/opportunities';
-import { claimTarget, followUpQuestion, merchantSite } from '../claimTarget';
+import { claimTarget, followUpQuestion, merchantSite, storeSiteFromEmail } from '../claimTarget';
 
 describe('claimTarget', () => {
   it('opens the merchant for a card credit spent there', () => {
@@ -36,6 +36,8 @@ describe('claimTarget', () => {
     expect(claimTarget({ opp: opp({ type: 'promo', code: null }) })).toBeNull();
     expect(claimTarget({ opp: opp({ type: 'card_credit', title: 'Mystery credit' }) })).toBeNull();
     expect(claimTarget({ opp: { ...opp({ type: 'promo' }), sender_domain: 'my.school.edu' } })).toBeNull();
+    // Sent through a mailing service: copy the code, but don't open the mailing service.
+    expect(claimTarget({ opp: { ...opp({ type: 'promo', code: 'SAVE10', merchant: 'Glow Shop' }), sender_domain: 'klaviyomail.com' } })).toMatchObject({ url: null, label: 'Copy code', copy: 'SAVE10' });
     expect(claimTarget({ opp: opp({ type: 'card_credit', title: 'Lyft credit', status: 'claimed' }) })).toBeNull();
   });
 
@@ -54,4 +56,18 @@ describe('helpers', () => {
     expect(followUpQuestion({ type: 'refund' })).toBe('Did it arrive?');
     expect(followUpQuestion({ type: 'promo' })).toBe('Did you use it?');
   });
+});
+
+describe('storeSiteFromEmail', () => {
+  it.each([
+    ['target.com', 'Target', 'https://www.target.com'],
+    ['ulta.com', 'Ulta Beauty', 'https://www.ulta.com'],
+    ['email.marriott.com', 'Marriott Bonvoy', 'https://www.marriott.com'],
+    ['oldnavy.com', 'Old Navy', 'https://www.oldnavy.com'],
+    ['klaviyomail.com', 'Glow Shop', null],
+    ['shopifyemail.com', 'Glow Shop', null],
+    ['gmail.com', 'Target', null],
+    ['randomsender.com', 'Target', null],
+    ['target.com', null, null],
+  ])('%s for %s', (domain, merchant, site) => expect(storeSiteFromEmail(domain, merchant)).toBe(site));
 });

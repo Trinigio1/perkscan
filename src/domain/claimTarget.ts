@@ -1,4 +1,5 @@
 import { claimHelp } from './claims';
+import { domainStoreKey, storeKey } from './deals';
 import type { CardBenefit, Opportunity } from './types';
 
 // "Claim": one button on every perk that takes you to where you actually use it — the store's
@@ -47,10 +48,35 @@ export function merchantSite(name: string): { name: string; url: string } | null
 }
 
 const https = (u: string | null | undefined): string | null => (u && /^https:\/\/[^\s]+$/i.test(u) ? u : null);
+/** The main domain: "email.marriott.com" -> "marriott.com", "news.courts.co.tt" -> "courts.co.tt". */
+export function mainDomain(domain: string): string {
+  const parts = domain.toLowerCase().replace(/^www\./, '').split('.').filter(Boolean);
+  const cc = parts.length >= 3 && parts[parts.length - 1]!.length === 2 && ['co', 'com', 'net', 'org', 'ac'].includes(parts[parts.length - 2]!);
+  return parts.slice(-(cc ? 3 : 2)).join('.');
+}
 /** "target.com" -> "https://www.target.com"; schools and government aren't shops. */
 const siteFor = (domain: string | null | undefined): string | null =>
-  domain && /^[a-z0-9.-]+\.[a-z]{2,}$/i.test(domain) && !/\.(gov|edu)(\.[a-z]{2})?$/i.test(domain) ? `https://www.${domain.replace(/^www\./, '')}` : null;
+  domain && /^[a-z0-9.-]+\.[a-z]{2,}$/i.test(domain) && !/\.(gov|edu)(\.[a-z]{2})?$/i.test(domain) ? `https://www.${mainDomain(domain)}` : null;
 const hostOf = (url: string) => url.replace(/^https:\/\//, '').replace(/^www\./, '').split('/')[0]!;
+
+/** Domains that send email for other companies, and mail providers: never the store itself. */
+const NOT_THE_STORE = /(^|\.)(klaviyomail|klaviyo|shopifyemail|shopify|sendgrid|mailchimp|mailchimpapp|mcsv|mcdlv|list-manage|amazonses|sparkpostmail|mailgun|exacttarget|rsys\d*|bluehornet|cmail\d*|createsend|constantcontact|hubspotemail|hs-email|salesforce|marketingcloud|braze|iterable|sailthru|emarsys|mandrillapp|postmarkapp|gmail|googlemail|outlook|hotmail|live|yahoo|icloud|me|aol|proton|protonmail)\.[a-z.]+$/i;
+
+/**
+ * The store's own site, from the domain its email came from — but only when that domain is
+ * clearly the store's ("target.com" for Target, "ulta.com" for Ulta Beauty). Emails sent through
+ * a mailing service, or forwarded from your own inbox, don't count.
+ */
+export function storeSiteFromEmail(domain: string | null | undefined, merchant: string | null | undefined): string | null {
+  const site = siteFor(domain);
+  if (!site || NOT_THE_STORE.test(domain!)) return null;
+  if (!merchant) return null;
+  const fromDomain = domainStoreKey(domain!);
+  const store = storeKey(merchant);
+  if (!fromDomain || store.length < 3) return null;
+  const same = fromDomain === store || (fromDomain.length >= 4 && store.startsWith(fromDomain)) || (store.length >= 4 && fromDomain.startsWith(store));
+  return same ? site : null;
+}
 
 export interface ClaimTargetInput {
   opp: Opportunity & { sender_domain?: string | null };
@@ -60,7 +86,7 @@ export interface ClaimTargetInput {
 export function claimTarget({ opp, benefit }: ClaimTargetInput): ClaimTarget | null {
   if (opp.status !== 'open') return null;
   const stepUrl = https(opp.action_steps.find((s) => s.url)?.url);
-  const fromEmail = siteFor(opp.sender_domain);
+  const fromEmail = storeSiteFromEmail(opp.sender_domain, opp.merchant);
 
   // Money you ask for: the request is written on the item's own screen.
   const help = claimHelp({ opp });
