@@ -26,8 +26,10 @@ export function CardPicker({
   const [q, setQ] = useState('');
   const shown = useMemo(() => {
     const needle = q.trim().toLowerCase();
-    if (!needle) return cards;
-    return cards.filter((card) => `${card.issuer} ${card.product_name}`.toLowerCase().includes(needle));
+    // Memberships live in the same catalog but are added from their own screen.
+    const payment = cards.filter((card) => card.kind !== 'membership');
+    if (!needle) return payment;
+    return payment.filter((card) => `${card.issuer} ${card.product_name}`.toLowerCase().includes(needle));
   }, [cards, q]);
   const local = shown.filter((card) => card.country === country);
   const groups =

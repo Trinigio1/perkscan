@@ -9,6 +9,7 @@ export const EVENTS = {
   // Activation: someone sees what PerkScan found, and how long after finishing setup (coarse buckets only).
   found_viewed: { first: 'boolean', has_money: 'boolean', items: 'small_int', groups: 'small_int', after: ['under_5m', 'under_30m', 'same_day', 'later', 'unknown'] },
   card_added: { count: 'small_int' },
+  membership_toggled: { on: 'boolean' },
   // A card spotted in the user's email: added (matched = PerkScan knew which card) or "Not mine".
   spotted_card: { action: ['add', 'pick', 'not_mine'], matched: 'boolean' },
   credit_marked_used: { partial: 'boolean' },

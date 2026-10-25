@@ -183,7 +183,7 @@ export default function CreditDetail() {
           <T variant="heading">Terms</T>
           <T variant="caption" muted>{benefit.terms_summary}</T>
           <ConfidenceTag value={benefit.status === 'active' ? 'confirmed' : 'check'} />
-          {benefit.status === 'active' && checkedLabel(benefit.last_verified) ? <T variant="caption" faint>{checkedLabel(benefit.last_verified)} on the issuer’s site</T> : null}
+          {benefit.status === 'active' && checkedLabel(benefit.last_verified) ? <T variant="caption" faint>{checkedLabel(benefit.last_verified)} on the official site</T> : null}
         </Panel>
       ) : null}
 

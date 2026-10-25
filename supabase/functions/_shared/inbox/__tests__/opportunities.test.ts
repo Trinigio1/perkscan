@@ -119,3 +119,20 @@ describe('travel credits and certificates', () => {
     expect(opportunities[0]).toMatchObject({ type: 'certificate', value_estimate: null, expires_at: '2027-06-30T23:59:59Z' });
   });
 });
+
+describe('offers that are not money owed', () => {
+  it('never counts a trade-in or an "up to" amount', () => {
+    const { opportunities } = toRows(
+      email({
+        merchant: 'Apple',
+        offers: [
+          offer({ title: 'Get up to $1,200 in credit when you trade in your iPhone', amount: 1200, expires_on: '2026-12-31' }),
+          offer({ title: 'Trade-in credit', amount: 650, details: 'With an eligible trade-in', expires_on: '2026-12-31' }),
+          offer({ title: '$20 off your order', amount: 20, code: 'SAVE20' }),
+        ],
+      }),
+      TODAY,
+    );
+    expect(opportunities.map((o) => o.value_estimate)).toEqual([null, null, 20]);
+  });
+});

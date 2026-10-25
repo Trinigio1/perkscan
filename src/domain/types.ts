@@ -16,6 +16,8 @@ export type OpportunityCategory =
 
 export interface Card {
   id: string;
+  /** A payment card, or a membership (Prime, Costco, a phone plan) that comes with perks. */
+  kind: 'card' | 'membership';
   issuer: string;
   product_name: string;
   country: string;
@@ -73,7 +75,8 @@ export interface UserCard {
   id: string;
   user_id: string;
   card_id: string;
-  last_four: string;
+  /** Null for memberships. */
+  last_four: string | null;
   open_date: string | null;
   nickname: string | null;
   created_at: string;

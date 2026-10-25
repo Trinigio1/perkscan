@@ -14,7 +14,7 @@ import { Button, IconBubble, Panel, Row, T } from './ui';
 /** The cards the user's email shows they hold but that aren't in PerkScan yet. */
 export function useSpottedCards(): SpottedCard[] {
   const { data } = useData();
-  return useMemo(() => spottedCards(data.cardSightings, data.userCards, data.cards), [data.cardSightings, data.userCards, data.cards]);
+  return useMemo(() => spottedCards(data.cardSightings, data.userCards, data.cards.filter((c) => c.kind !== 'membership')), [data.cardSightings, data.userCards, data.cards]);
 }
 
 /** Opens Add cards with the spotted card (or its issuer's cards) and its last 4 digits filled in. */

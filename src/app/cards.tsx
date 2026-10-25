@@ -21,7 +21,9 @@ export default function Cards() {
 
   const rows = useMemo(() => {
     const now = new Date();
-    return data.userCards.map((uc) => {
+    const kindOf = (uc: (typeof data.userCards)[number]) => data.cards.find((x) => x.id === uc.card_id)?.kind;
+    // Cards first, then memberships.
+    return [...data.userCards].sort((a, b) => Number(kindOf(a) === 'membership') - Number(kindOf(b) === 'membership')).map((uc) => {
       const card = data.cards.find((x) => x.id === uc.card_id);
       const open = data.opportunities
         .filter((o) => o.user_card_id === uc.id && o.type === 'card_credit' && o.status === 'open' && o.expires_at && new Date(o.expires_at) > now)
@@ -55,15 +57,19 @@ export default function Cards() {
   return (
     <Screen edges={[]}>
       <SpottedCardList />
-      {rows.map(({ uc, card, available, benefits, next, topPerk }) =>
+      {rows.map(({ uc, card, available, benefits, next, topPerk }, i) =>
         card ? (
-          <Panel key={uc.id} onPress={() => router.push({ pathname: '/card/[id]', params: { id: uc.id } })} style={{ gap: space.md }}>
+          <View key={uc.id} style={{ gap: space.sm }}>
+          {card.kind === 'membership' && rows.findIndex((r) => r.card?.kind === 'membership') === i ? <T variant="overline" muted style={{ marginTop: space.sm }}>Memberships</T> : null}
+          <Panel onPress={() => router.push({ pathname: '/card/[id]', params: { id: uc.id } })} style={{ gap: space.md }}>
             <Row gap={space.md}>
               <CardArt cardId={card.id} issuer={card.issuer} name={card.product_name} size="sm" />
               <View style={{ flex: 1 }}>
                 <T variant="subheading" numberOfLines={2}>{uc.nickname || shortCardName(card.product_name)}</T>
                 <T variant="caption" muted numberOfLines={1}>
-                  ·· {uc.last_four} · {card.annual_fee === null ? 'fee unconfirmed' : card.annual_fee === 0 ? 'no fee' : `${formatMoney(card.annual_fee, { currency: card.currency })} a year`}
+                  {card.kind === 'membership'
+                    ? card.annual_fee === null ? 'Membership' : `Membership · ${formatMoney(card.annual_fee, { currency: card.currency })} a year`
+                    : `·· ${uc.last_four} · ${card.annual_fee === null ? 'fee unconfirmed' : card.annual_fee === 0 ? 'no fee' : `${formatMoney(card.annual_fee, { currency: card.currency })} a year`}`}
                 </T>
               </View>
               <View style={{ alignItems: 'flex-end' }}>
@@ -95,6 +101,7 @@ export default function Cards() {
               </View>
             ) : null}
           </Panel>
+          </View>
         ) : null,
       )}
 
@@ -110,6 +117,7 @@ export default function Cards() {
       </Panel>
 
       <Button title="Add a card" icon="add" kind="secondary" onPress={() => router.push('/add-card')} />
+      <Button title="Memberships (Prime, Costco, Walmart+…)" icon="ribbon" kind="ghost" onPress={() => router.push('/memberships')} />
     </Screen>
   );
 }

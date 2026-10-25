@@ -267,7 +267,9 @@ export function useLookups() {
     const userCardLabel = (id: string | null) => {
       const uc = id ? userCardById.get(id) : undefined;
       if (!uc) return '';
-      return uc.nickname || `${shortCardName(cardById.get(uc.card_id)?.product_name ?? 'Card')} ·· ${uc.last_four}`;
+      const name = shortCardName(cardById.get(uc.card_id)?.product_name ?? 'Card');
+      // Memberships have no card number.
+      return uc.nickname || (uc.last_four ? `${name} ·· ${uc.last_four}` : name);
     };
     return { cardById, benefitById, userCardById, recoveredByOpp, userCardLabel };
   }, [data]);

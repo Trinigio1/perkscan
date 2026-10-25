@@ -46,6 +46,8 @@ export const benefitSchema = z
 export const cardSchema = z
   .object({
     id: slug,
+    /** A payment card, or a membership (Prime, Costco, a phone plan…) that comes with perks. */
+    kind: z.enum(['card', 'membership']).default('card'),
     issuer: z.string().min(1),
     product_name: z.string().min(1),
     country: z.string().regex(/^[A-Z]{2}$/, 'Use a 2-letter country code, e.g. US or TT').default('US'),
@@ -61,7 +63,8 @@ export const cardSchema = z
     if (c.status === 'TODO_VERIFY' && c.annual_fee !== null) {
       ctx.addIssue({ code: 'custom', path: ['annual_fee'], message: 'Set status "active" and last_verified when you verify the annual fee' });
     }
-    if (c.status === 'active' && (c.annual_fee === null || !c.last_verified || !c.source_url)) {
+    // A membership that's part of something else (a phone plan) may have no fee of its own.
+    if (c.status === 'active' && ((c.annual_fee === null && c.kind !== 'membership') || !c.last_verified || !c.source_url)) {
       ctx.addIssue({ code: 'custom', path: ['status'], message: 'A verified card needs annual_fee, source_url and last_verified' });
     }
     c.benefits.forEach((b, i) => {
@@ -104,9 +107,9 @@ export function seedToSql(seed: SeedFile): string {
   ];
   seed.cards.forEach((c, ci) => {
     lines.push(
-      `insert into public.cards (id, issuer, product_name, country, currency, annual_fee, status, source_url, last_verified, sort_order) values (` +
-        [c.id, c.issuer, c.product_name, c.country, c.currency, c.annual_fee, c.status, c.source_url, c.last_verified, ci].map(sqlLiteral).join(', ') +
-        `) on conflict (id) do update set issuer = excluded.issuer, product_name = excluded.product_name, country = excluded.country, ` +
+      `insert into public.cards (id, kind, issuer, product_name, country, currency, annual_fee, status, source_url, last_verified, sort_order) values (` +
+        [c.id, c.kind, c.issuer, c.product_name, c.country, c.currency, c.annual_fee, c.status, c.source_url, c.last_verified, ci].map(sqlLiteral).join(', ') +
+        `) on conflict (id) do update set kind = excluded.kind, issuer = excluded.issuer, product_name = excluded.product_name, country = excluded.country, ` +
         `currency = excluded.currency, annual_fee = excluded.annual_fee, ` +
         `status = excluded.status, source_url = excluded.source_url, last_verified = excluded.last_verified, sort_order = excluded.sort_order;`,
     );

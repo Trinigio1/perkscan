@@ -34,7 +34,8 @@ export async function matchAndApply(db: SupabaseClient, userId: string, receiptI
   const { data: ucs, error: cErr } = await db
     .from('user_cards')
     .select('id, card_id, last_four, nickname, cards(product_name, currency)')
-    .eq('user_id', userId);
+    .eq('user_id', userId)
+    .not('last_four', 'is', null); // memberships aren't paid with, so receipts never match them
   if (cErr) throw new Error(`user_cards: ${cErr.message}`);
   const cardCurrency = new Map<string, string>();
   const userCards: UserCardIn[] = (ucs ?? []).map((u) => {

@@ -21,7 +21,10 @@ function load<T>(file: string, schema: ZodType<T>): T {
   return parsed.data;
 }
 
-const cards = load('seed/card_benefits.json', seedFileSchema);
+const cardFile = load('seed/card_benefits.json', seedFileSchema);
+// Memberships share the cards catalog (kind = 'membership'); they come after the cards.
+const memberships = load('seed/memberships.json', seedFileSchema);
+const cards = { ...cardFile, cards: [...cardFile.cards, ...memberships.cards.map((m) => ({ ...m, kind: 'membership' as const }))] };
 const students = load('seed/student_discounts.json', studentFileSchema);
 const settlements = load('seed/settlements.json', settlementFileSchema);
 const programs = load('seed/programs.json', programFileSchema);

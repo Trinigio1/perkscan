@@ -5,6 +5,7 @@ import { ArrivalCheck } from '@/components/Claims';
 import { DealRow } from '@/components/DealRow';
 import { Found, NextStep, Tour } from '@/components/FirstRun';
 import { Hero } from '@/components/Hero';
+import { MembershipNudge, PayingTwicePanel } from '@/components/PayingTwice';
 import { SpottedCardPanel, useSpottedCards } from '@/components/SpottedCards';
 import { OpportunityRow } from '@/components/OfferRow';
 import { Chip, ErrorNote, Money, Panel, Row, Screen, SectionHeader, T, type IconName } from '@/components/ui';
@@ -16,6 +17,7 @@ import { scoreByCurrency } from '@/domain/score';
 import { greeting } from '@/domain/visuals';
 import { useData, useLookups } from '@/lib/data';
 import { useDeals } from '@/lib/deals';
+import { useMembershipHints } from '@/lib/memberships';
 import { useDismissed } from '@/lib/suggestions';
 import { font, space, useColors } from '@/theme';
 
@@ -44,6 +46,11 @@ export default function Home() {
   const deals = useDeals();
   // Cards the inbox shows you hold but you haven't added: each one unlocks more perks.
   const spotted = useSpottedCards();
+  // Memberships: nudge until they've added one, or when receipts show one they pay for.
+  const hints = useMembershipHints();
+  const hasMembership = data.userCards.some((u) => data.cards.find((c) => c.id === u.card_id)?.kind === 'membership');
+  const showMembershipNudge = !!data.profile?.onboarded_at && (hints.length > 0 || !hasMembership);
+  const membershipNudgeKey = `memberships:${hints[0]?.membershipId ?? 'general'}`;
   // Matched deals first; a couple of popular ones if nothing matches yet.
   const topDeals = (deals.forYou.length ? deals.forYou : deals.popular).slice(0, 3);
   const statusOf = useCallback((id: string) => benefitById.get(id)?.status, [benefitById]);
@@ -129,6 +136,8 @@ export default function Home() {
       {dismissedLoaded && !dismissed.has('tour') ? <Tour onDone={() => dismiss('tour')} /> : null}
       {step ? <NextStep step={step} /> : null}
       {spotted[0] ? <SpottedCardPanel spotted={spotted[0]} more={spotted.length - 1} /> : null}
+      <PayingTwicePanel />
+      {dismissedLoaded && showMembershipNudge && !dismissed.has(membershipNudgeKey) ? <MembershipNudge onHide={() => dismiss(membershipNudgeKey)} /> : null}
       {dismissedLoaded && celebrate && !dismissed.has('found') ? <Found found={found} home={home} onDone={() => dismiss('found')} /> : null}
 
       <SectionHeader title="Use soon" action="See all" onAction={() => router.push('/money')} />

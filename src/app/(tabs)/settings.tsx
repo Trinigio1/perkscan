@@ -115,6 +115,7 @@ export default function Settings() {
 
       <Group title="You">
         <ListRow icon="card" tone="green" title="Your cards" value={data.userCards.length ? String(data.userCards.length) : 'None yet'} onPress={() => router.push('/cards')} />
+        <ListRow icon="ribbon" tone="purple" title="Memberships" subtitle="Prime, Costco, Walmart+, your phone plan…" onPress={() => router.push('/memberships')} />
         <ListRow icon="globe-outline" tone="blue" title="Country" value={region ? `${region.name} · ${data.profile?.home_currency}` : 'Not set'} onPress={() => router.push('/country')} />
         <ListRow
           icon="pricetags"

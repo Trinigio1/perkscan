@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useRef } from 'react';
 import { View } from 'react-native';
 import { Hero } from '@/components/Hero';
 import { OpportunityRow } from '@/components/OfferRow';
+import { PayingTwicePanel } from '@/components/PayingTwice';
 import { SpottedCardPanel, useSpottedCards } from '@/components/SpottedCards';
 import { Button, Panel, Row, Screen, T } from '@/components/ui';
 import { activationBucket, foundMoney } from '@/domain/firstRun';
@@ -97,6 +98,8 @@ export default function Found() {
           ) : null}
         </View>
       ))}
+
+      <PayingTwicePanel max={5} />
 
       {spotted.length ? (
         <View style={{ gap: space.sm }}>

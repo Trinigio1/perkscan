@@ -90,6 +90,7 @@ function RootNavigator() {
         <Stack.Screen name="hidden-money" options={{ ...header, title: 'Hidden money' }} />
         <Stack.Screen name="coming-up" options={{ ...header, title: 'Coming up' }} />
         <Stack.Screen name="cards" options={{ ...header, title: 'Your cards' }} />
+        <Stack.Screen name="memberships" options={{ ...modal, title: 'Memberships' }} />
         <Stack.Screen name="interests" options={{ ...modal, title: 'Your interests' }} />
         <Stack.Screen name="add" options={{ ...modal, title: 'Add' }} />
         <Stack.Screen name="add-item" options={{ ...modal, title: '' }} />

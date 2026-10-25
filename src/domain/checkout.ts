@@ -128,7 +128,8 @@ export function checkoutStack(merchant: string, category: SpendCategory, d: Chec
   const picks: CardPick[] = [];
   for (const uc of d.userCards) {
     const card = d.cards.find((c) => c.id === uc.card_id);
-    if (!card) continue;
+    // Memberships aren't something you pay with.
+    if (!card || card.kind === 'membership') continue;
     const reasons: Reason[] = [];
     let score = 0;
 

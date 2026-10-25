@@ -118,3 +118,32 @@ describe('seedToSql', () => {
     expect(sql.startsWith('-- GENERATED')).toBe(true);
   });
 });
+
+describe('seed/memberships.json', () => {
+  const file = JSON.parse(readFileSync(resolve(__dirname, '../../../seed/memberships.json'), 'utf8'));
+
+  it('is valid, and every membership is marked as one', () => {
+    const r = seedFileSchema.safeParse(file);
+    if (!r.success) throw new Error(r.error.issues.map((i) => `${i.path.join('.')}: ${i.message}`).join('\n'));
+    expect(file.cards.every((c: { kind: string }) => c.kind === 'membership')).toBe(true);
+  });
+
+  it('never reuses a card id', () => {
+    const cardIds = new Set(seedJson.cards.map((c: { id: string }) => c.id));
+    expect(file.cards.filter((c: { id: string }) => cardIds.has(c.id))).toEqual([]);
+  });
+
+  it('takes every perk from the provider’s own site', () => {
+    const own: Record<string, string[]> = {
+      Amazon: ['aboutamazon.com', 'amazon.com', 'wholefoodsmarket.com'], Walmart: ['walmart.com'], Costco: ['costco.com'], "Sam's Club": ['samsclub.com'],
+      Instacart: ['instacart.com'], Uber: ['uber.com'], DoorDash: ['doordash.com'], Target: ['target.com'], 'T-Mobile': ['t-mobile.com'], AAA: ['aaa.com'],
+    };
+    for (const m of file.cards) {
+      const hosts = own[m.issuer]!;
+      for (const item of [m, ...m.benefits]) {
+        const h = new URL(item.source_url).hostname;
+        expect({ id: item.id, ok: hosts.some((x: string) => h === x || h.endsWith(`.${x}`)) }).toEqual({ id: item.id, ok: true });
+      }
+    }
+  });
+});

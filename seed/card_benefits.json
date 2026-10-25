@@ -202,7 +202,8 @@
           "enrollment_required": false,
           "merchant_match": {
             "merchants": [
-              "clear"
+              "clear",
+              "clearme"
             ]
           },
           "status": "TODO_VERIFY",
@@ -225,7 +226,8 @@
           "enrollment_required": false,
           "merchant_match": {
             "merchants": [
-              "walmart+"
+              "walmart+",
+              "walmart plus"
             ]
           },
           "status": "active",
@@ -1093,7 +1095,11 @@
           "max_coverage": null,
           "coverage_window_days": null,
           "enrollment_required": true,
-          "merchant_match": null,
+          "merchant_match": {
+            "merchants": [
+              "dashpass"
+            ]
+          },
           "status": "active",
           "source_url": "https://creditcards.chase.com/rewards-credit-cards/sapphire/preferred",
           "last_verified": "2026-10-25",
@@ -1601,7 +1607,11 @@
           "max_coverage": null,
           "coverage_window_days": null,
           "enrollment_required": true,
-          "merchant_match": null,
+          "merchant_match": {
+            "merchants": [
+              "dashpass"
+            ]
+          },
           "status": "active",
           "source_url": "https://www.chase.com/personal/credit-cards/education/chase-cards/chase-freedom-benefits-guide",
           "last_verified": "2026-10-25",

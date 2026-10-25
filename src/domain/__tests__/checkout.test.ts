@@ -4,7 +4,7 @@ import type { Card, CardBenefit, Receipt, UserCard } from '../types';
 
 const NOW = new Date('2026-10-20T12:00:00Z');
 const card = (id: string, currency = 'USD'): Card => ({
-  id, issuer: 'Bank', product_name: id, country: currency === 'TTD' ? 'TT' : 'US', currency, annual_fee: null,
+  id, kind: 'card', issuer: 'Bank', product_name: id, country: currency === 'TTD' ? 'TT' : 'US', currency, annual_fee: null,
   status: 'TODO_VERIFY', source_url: null, last_verified: null, sort_order: 0,
 });
 const benefit = (b: Partial<CardBenefit> & Pick<CardBenefit, 'id' | 'card_id' | 'type'>): CardBenefit => ({

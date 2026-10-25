@@ -121,6 +121,8 @@ function offerRow(o: Offer, merchant: string | null, currency: string, flightRef
   }
   if (o.expires_on) steps.push({ step: `Expires ${o.expires_on}.` });
 
+  // A ceiling or a trade-in isn't money owed: keep the item if it has a code or deadline, never its amount.
+  if (notMoneyOwed(o)) value = null;
   const description = [o.percent_off ? `${o.percent_off}% off` : null, o.details].filter(Boolean).join(' · ') || null;
   return {
     type,
@@ -134,6 +136,15 @@ function offerRow(o: Offer, merchant: string | null, currency: string, flightRef
     dedupe_key: `${type}:${slug(merchant)}:${slug(o.code ?? o.title)}:${o.expires_on ?? ''}`,
     action_steps: steps,
   };
+}
+
+/**
+ * "Up to $1,200 when you trade in", "up to 50% off": a ceiling or a swap, not money the user has.
+ * Never counted, whatever the model returned. Exported for tests.
+ */
+export function notMoneyOwed(o: Pick<Offer, 'title' | 'details'>): boolean {
+  const text = `${o.title} ${o.details ?? ''}`;
+  return /\btrade[- ]?in\b|\bup to\b|\bfinanc(e|ing)\b|\bsweepstakes\b|\bchance to win\b/i.test(text);
 }
 
 /** Offers with no value, code, points or deadline are marketing noise. */

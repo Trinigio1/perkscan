@@ -38,3 +38,16 @@ export async function dismissCardSighting(id: string) {
   const { error } = await supabase.rpc('dismiss_card_sighting', { p_id: id });
   if (error) throw new Error(error.message);
 }
+
+/** Add a membership (Prime, Costco…): it has no card number, just the perks. */
+export async function addMembership(cardId: string) {
+  const { error } = await supabase.from('user_cards').insert({ card_id: cardId, last_four: null });
+  if (error && error.code !== '23505') throw new Error(error.message); // 23505: already added
+  track('membership_toggled', { on: true });
+}
+
+export async function removeMembership(userCardId: string) {
+  const { error } = await supabase.from('user_cards').delete().eq('id', userCardId);
+  if (error) throw new Error(error.message);
+  track('membership_toggled', { on: false });
+}

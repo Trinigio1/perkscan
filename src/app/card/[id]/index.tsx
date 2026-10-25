@@ -52,7 +52,7 @@ function BenefitLine({ b, card }: { b: CardBenefit; card: Card }) {
           <ConfidenceTag value={b.status === 'active' ? 'confirmed' : 'check'} />
         </Row>
         {b.terms_summary ? <T variant="caption" muted numberOfLines={2}>{b.terms_summary}</T> : null}
-        {b.status === 'active' && checkedLabel(b.last_verified) ? <T variant="caption" faint>{checkedLabel(b.last_verified)} on the issuer’s site</T> : null}
+        {b.status === 'active' && checkedLabel(b.last_verified) ? <T variant="caption" faint>{checkedLabel(b.last_verified)} on the official site</T> : null}
       </View>
     </Row>
   );
@@ -144,12 +144,14 @@ export default function CardScreen() {
     );
   }
   const benefits = data.benefits.filter((b) => b.card_id === card.id);
+  const membership = card.kind === 'membership';
+  const what = membership ? 'membership' : 'card';
   // Only tabs with something in them; purchases always.
   const tabs = TABS.filter((t) => t.value === 'purchases' || benefits.some((b) => b.type === t.value));
   const shownTab = tabs.some((t) => t.value === tab) ? tab : tabs[0]!.value;
 
   const startEdit = () => {
-    setDraft({ card_id: uc.card_id, last_four: uc.last_four, open_date: uc.open_date ?? '', nickname: uc.nickname ?? '' });
+    setDraft({ card_id: uc.card_id, last_four: uc.last_four ?? '', open_date: uc.open_date ?? '', nickname: uc.nickname ?? '' });
     setEditing(true);
   };
 
@@ -172,17 +174,17 @@ export default function CardScreen() {
     const { error: e } = await supabase.from('user_cards').delete().eq('id', uc.id);
     if (e) return setError(e.message);
     await refresh();
-    toast('Card removed', { tone: 'info' });
+    toast(membership ? 'Membership removed' : 'Card removed', { tone: 'info' });
     router.back();
   };
 
   const remove = () => {
     // Alert buttons aren't supported on web; fall back to the browser's confirm dialog there.
     if (Platform.OS === 'web') {
-      if (globalThis.confirm?.('Remove this card? Its credit history in PerkScan will be deleted too.')) doRemove();
+      if (globalThis.confirm?.(`Remove this ${what}? Its credit history in PerkScan will be deleted too.`)) doRemove();
       return;
     }
-    Alert.alert('Remove this card?', 'Its credit history in PerkScan will be deleted too.', [
+    Alert.alert(`Remove this ${what}?`, 'Its credit history in PerkScan will be deleted too.', [
       { text: 'Cancel', style: 'cancel' },
       { text: 'Remove', style: 'destructive', onPress: doRemove },
     ]);
@@ -190,14 +192,18 @@ export default function CardScreen() {
 
   return (
     <Screen edges={[]}>
-      <CardArt cardId={card.id} issuer={card.issuer} name={uc.nickname || card.product_name.replace(/®/g, '')} lastFour={uc.last_four} />
+      <CardArt cardId={card.id} issuer={card.issuer} name={uc.nickname || card.product_name.replace(/®/g, '')} lastFour={uc.last_four ?? undefined} />
       <Row gap={space.sm}>
         <View style={{ flex: 1 }}>
-          <T variant="caption" muted>Annual fee</T>
-          <T variant="subheading">{card.annual_fee === null ? 'Unconfirmed' : card.annual_fee === 0 ? 'None' : formatMoney(card.annual_fee, { currency: card.currency })}</T>
+          <T variant="caption" muted>{membership ? 'Yearly price' : 'Annual fee'}</T>
+          <T variant="subheading">{card.annual_fee === null ? (membership ? 'Depends on your plan' : 'Unconfirmed') : card.annual_fee === 0 ? 'None' : formatMoney(card.annual_fee, { currency: card.currency })}</T>
         </View>
         <Button title="Worth it?" icon="calculator" size="sm" kind="secondary" onPress={() => router.push({ pathname: '/card/[id]/worth-it', params: { id: uc.id } })} />
-        <Button title={editing ? 'Cancel' : 'Edit'} icon={editing ? 'close' : 'create-outline'} size="sm" kind="secondary" onPress={() => (editing ? setEditing(false) : startEdit())} />
+        {membership ? (
+          <Button title="Remove" icon="trash-outline" size="sm" kind="secondary" onPress={remove} />
+        ) : (
+          <Button title={editing ? 'Cancel' : 'Edit'} icon={editing ? 'close' : 'create-outline'} size="sm" kind="secondary" onPress={() => (editing ? setEditing(false) : startEdit())} />
+        )}
       </Row>
 
       {editing && draft ? (

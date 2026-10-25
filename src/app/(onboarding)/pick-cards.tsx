@@ -1,6 +1,7 @@
 import { router } from 'expo-router';
 import { View } from 'react-native';
 import { CardPicker } from '@/components/CardPicker';
+import { MembershipPicker } from '@/components/MembershipPicker';
 import { Steps } from '@/components/Steps';
 import { Button, Screen, T } from '@/components/ui';
 import { useData } from '@/lib/data';
@@ -20,6 +21,13 @@ export default function PickCards() {
         <T muted>Pick all that apply. You can add more later.</T>
       </View>
       <CardPicker cards={data.cards} selected={selected} onToggle={toggle} country={data.profile?.country ?? null} />
+      {data.cards.some((c) => c.kind === 'membership' && c.country === (data.profile?.country ?? 'US')) ? (
+        <View style={{ gap: space.sm }}>
+          <T variant="heading">Also a member of…</T>
+          <T variant="caption" muted>Memberships come with perks too. Tap the ones you have.</T>
+          <MembershipPicker variant="chips" />
+        </View>
+      ) : null}
       <Button
         title={selected.length ? `Continue with ${selected.length} card${selected.length > 1 ? 's' : ''}` : 'Pick at least one card'}
         icon={selected.length ? 'arrow-forward' : undefined}
