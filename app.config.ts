@@ -40,6 +40,6 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     ...(appleSignIn ? ['expo-apple-authentication'] : []),
   ],
   experiments: { typedRoutes: true },
-  // EAS links builds to a project; `eas init` prints the id — set EAS_PROJECT_ID before building.
-  extra: { appleSignIn, ...(process.env.EAS_PROJECT_ID ? { eas: { projectId: process.env.EAS_PROJECT_ID } } : {}) },
+  // The EAS project builds are linked to (not a secret). EAS_PROJECT_ID overrides it.
+  extra: { appleSignIn, eas: { projectId: process.env.EAS_PROJECT_ID || 'ae9e0efc-e2d4-4b90-937b-7064eb83c7ae' } },
 });
