@@ -8,7 +8,7 @@ import { ConfidenceTag } from '@/components/ConfidenceTag';
 import { Disclaimer } from '@/components/Disclaimer';
 import { Badge, Button, ErrorNote, IconBubble, Panel, Row, Screen, Segmented, T } from '@/components/ui';
 import { draftToRow, validateDraft, type CardDraft } from '@/domain/cardDraft';
-import { formatMoney, PERIOD_LABELS } from '@/domain/format';
+import { checkedLabel, formatMoney, PERIOD_LABELS } from '@/domain/format';
 import type { BenefitType, Card, CardBenefit, Opportunity, Receipt } from '@/domain/types';
 import { benefitIcon, offerIcon } from '@/domain/visuals';
 import { useData } from '@/lib/data';
@@ -52,6 +52,7 @@ function BenefitLine({ b, card }: { b: CardBenefit; card: Card }) {
           <ConfidenceTag value={b.status === 'active' ? 'confirmed' : 'check'} />
         </Row>
         {b.terms_summary ? <T variant="caption" muted numberOfLines={2}>{b.terms_summary}</T> : null}
+        {b.status === 'active' && checkedLabel(b.last_verified) ? <T variant="caption" faint>{checkedLabel(b.last_verified)} on the issuer’s site</T> : null}
       </View>
     </Row>
   );

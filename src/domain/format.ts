@@ -62,6 +62,13 @@ export function lastDayLabel(expiresAt: string): string {
   return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 }
 
+/** "Checked Oct 25, 2026": when PerkScan last confirmed a benefit on the issuer's site. */
+export function checkedLabel(lastVerified: string | null | undefined): string | null {
+  if (!lastVerified || !/^\d{4}-\d{2}-\d{2}/.test(lastVerified)) return null;
+  const d = new Date(`${lastVerified.slice(0, 10)}T12:00:00Z`);
+  return `Checked ${d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' })}`;
+}
+
 export const PERIOD_LABELS = {
   monthly: 'Monthly',
   quarterly: 'Quarterly',

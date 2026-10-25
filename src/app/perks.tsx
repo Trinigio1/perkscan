@@ -5,7 +5,7 @@ import { Linking, Pressable, View } from 'react-native';
 import { ConfidenceTag } from '@/components/ConfidenceTag';
 import { Badge, Button, Empty, IconBubble, Panel, Row, Screen, T } from '@/components/ui';
 import { merchantSite } from '@/domain/claimTarget';
-import { formatMoney } from '@/domain/format';
+import { checkedLabel, formatMoney } from '@/domain/format';
 import { groupPerks, loungeCards, type PerkGroup } from '@/domain/perks';
 import type { CardBenefit } from '@/domain/types';
 import { useData, useLookups } from '@/lib/data';
@@ -106,6 +106,7 @@ function PerkLineView({ b, cards }: { b: CardBenefit; cards: string[] }) {
         {limit ? <Badge label={limit} tone="good" /> : null}
         {b.enrollment_required ? <Badge label="Enroll first" icon="alert-circle" tone="warn" /> : null}
       </Row>
+      {b.status === 'active' && checkedLabel(b.last_verified) ? <T variant="caption" faint>{checkedLabel(b.last_verified)}</T> : null}
       {use ? (
         <View style={{ alignItems: 'flex-start', marginTop: 4 }}>
           <Button title={use.label} icon="open-outline" size="sm" onPress={() => Linking.openURL(use.url)} />

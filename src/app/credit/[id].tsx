@@ -8,7 +8,7 @@ import { ConfidenceTag } from '@/components/ConfidenceTag';
 import { Disclaimer } from '@/components/Disclaimer';
 import { Badge, Button, Chip, ErrorNote, Field, IconBubble, Money, Panel, ProgressRing, Row, Screen, T } from '@/components/ui';
 import { claimTarget } from '@/domain/claimTarget';
-import { formatMoney, lastDayLabel, PERIOD_LABELS, relativeDays } from '@/domain/format';
+import { checkedLabel, formatMoney, lastDayLabel, PERIOD_LABELS, relativeDays } from '@/domain/format';
 import { benefitIcon } from '@/domain/visuals';
 import { markCredit } from '@/lib/credits';
 import { useData, useLookups } from '@/lib/data';
@@ -183,6 +183,7 @@ export default function CreditDetail() {
           <T variant="heading">Terms</T>
           <T variant="caption" muted>{benefit.terms_summary}</T>
           <ConfidenceTag value={benefit.status === 'active' ? 'confirmed' : 'check'} />
+          {benefit.status === 'active' && checkedLabel(benefit.last_verified) ? <T variant="caption" faint>{checkedLabel(benefit.last_verified)} on the issuer’s site</T> : null}
         </Panel>
       ) : null}
 

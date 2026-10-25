@@ -6,6 +6,8 @@ type Allowed = 'boolean' | 'small_int' | readonly string[];
 
 export const EVENTS = {
   onboarding_completed: { cards: 'small_int', student: 'boolean' },
+  // Activation: someone sees what PerkScan found, and how long after finishing setup (coarse buckets only).
+  found_viewed: { first: 'boolean', has_money: 'boolean', items: 'small_int', groups: 'small_int', after: ['under_5m', 'under_30m', 'same_day', 'later', 'unknown'] },
   card_added: { count: 'small_int' },
   credit_marked_used: { partial: 'boolean' },
   offer_marked_used: { type: ['promo', 'gift_card', 'store_credit', 'points', 'free_trial', 'return_window', 'settlement', 'protection', 'price_drop', 'refund', 'benefit'] },

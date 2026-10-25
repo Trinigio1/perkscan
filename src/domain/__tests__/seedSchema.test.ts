@@ -19,7 +19,7 @@ describe('seed/card_benefits.json', () => {
     }
   });
 
-  it('has the 10 US launch cards and the Trinidad & Tobago cards', () => {
+  it('has the US cards and the Trinidad & Tobago cards', () => {
     expect(seedJson.cards.map((c: { id: string }) => c.id)).toEqual([
       'amex_platinum', 'amex_gold', 'chase_sapphire_reserve', 'chase_sapphire_preferred', 'capital_one_venture_x',
       'capital_one_savor', 'citi_strata_premier', 'chase_freedom_unlimited', 'discover_it', 'apple_card',
@@ -28,7 +28,25 @@ describe('seed/card_benefits.json', () => {
       'first_citizens_tt_2_in_1', 'first_citizens_tt_vacation_lifestyle_mc',
       'republic_tt_visa_classic', 'republic_tt_visa_gold', 'republic_tt_pricesmart_visa_platinum',
       'republic_tt_aadvantage_visa_infinite', 'republic_tt_visa_signature', 'first_citizens_tt_visa_signature',
+      'amex_blue_cash_preferred', 'amex_blue_cash_everyday', 'amex_green', 'amex_delta_gold', 'amex_delta_platinum', 'amex_hilton_surpass',
+      'chase_freedom_flex', 'chase_prime_visa', 'chase_united_explorer', 'chase_marriott_boundless',
+      'capital_one_venture', 'capital_one_quicksilver', 'citi_double_cash', 'citi_custom_cash', 'citi_costco',
+      'wells_fargo_active_cash', 'wells_fargo_autograph', 'boa_customized_cash', 'boa_premium_rewards', 'target_circle_card',
     ]);
+  });
+
+  it('takes verified US card terms only from the issuer’s own site', () => {
+    const own: Record<string, string> = {
+      'American Express': 'americanexpress.com', Chase: 'chase.com', 'Capital One': 'capitalone.com', Citi: 'citi.com',
+      Discover: 'discover.com', Apple: 'apple.com', 'Wells Fargo': 'wellsfargo.com', 'Bank of America': 'bankofamerica.com', Target: 'target.com',
+    };
+    for (const card of seedJson.cards.filter((c: { country: string }) => c.country === 'US')) {
+      const host = Object.entries(own).find(([name]) => card.issuer.startsWith(name))![1];
+      for (const item of [card, ...card.benefits].filter((x: { status: string }) => x.status === 'active')) {
+        const h = new URL(item.source_url).hostname;
+        expect({ id: item.id, ok: h === host || h.endsWith(`.${host}`) }).toEqual({ id: item.id, ok: true });
+      }
+    }
   });
 
   it('gives Trinidad & Tobago cards TT$ and keeps US$ coverage explicit', () => {
@@ -51,28 +69,34 @@ describe('seed/card_benefits.json', () => {
 
 describe('seedFileSchema rules', () => {
   const base = () => JSON.parse(JSON.stringify(seedJson));
+  type B = { id: string; type: string; period: string; status: string };
+  type C = { status: string; benefits: B[]; annual_fee: number | null };
+  // An unverified, amount-based credit and an unverified card to break the rules with.
+  const todoCredit = (s: { cards: C[] }) =>
+    s.cards.flatMap((c) => c.benefits).find((b) => b.status === 'TODO_VERIFY' && b.type === 'credit' && b.period !== 'per_claim') as B & Record<string, unknown>;
+  const todoCard = (s: { cards: C[] }) => s.cards.find((c) => c.status === 'TODO_VERIFY')!;
 
   it('rejects a verified credit without an amount', () => {
     const s = base();
-    Object.assign(s.cards[0].benefits[0], { status: 'active', source_url: 'https://example.com', last_verified: '2026-10-01' });
+    Object.assign(todoCredit(s), { status: 'active', source_url: 'https://example.com', last_verified: '2026-10-01' });
     expect(seedFileSchema.safeParse(s).success).toBe(false);
   });
 
   it('accepts a properly verified credit', () => {
     const s = base();
-    Object.assign(s.cards[0].benefits[0], { amount: 15, status: 'active', source_url: 'https://example.com', last_verified: '2026-10-01' });
+    Object.assign(todoCredit(s), { amount: 15, status: 'active', source_url: 'https://example.com', last_verified: '2026-10-01' });
     expect(seedFileSchema.safeParse(s).success).toBe(true);
   });
 
   it('rejects an amount on a benefit still marked TODO_VERIFY', () => {
     const s = base();
-    s.cards[0].benefits[0].amount = 15;
+    todoCredit(s).amount = 15;
     expect(seedFileSchema.safeParse(s).success).toBe(false);
   });
 
   it('rejects an annual fee on a card still marked TODO_VERIFY', () => {
     const s = base();
-    s.cards[0].annual_fee = 100;
+    todoCard(s).annual_fee = 100;
     expect(seedFileSchema.safeParse(s).success).toBe(false);
   });
 

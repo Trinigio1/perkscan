@@ -15,11 +15,11 @@ export const PERK_GROUPS: { group: PerkGroup; title: string }[] = [
 
 // Matched against the benefit key (the part after "__" in the id), first match wins.
 const RULES: [RegExp, PerkGroup][] = [
-  [/lounge|global_entry|clear|airport/, 'airport'],
-  [/trip_|baggage|rental_car|travel_(insurance|medical|accident)|emergency_medical/, 'travel'],
-  [/status|concierge|hotel_perks|entertainment_access|dashpass/, 'status'],
-  [/cash|miles|points|rewards|rotating|match/, 'rewards'],
-  [/protection|warranty|cell_phone/, 'shopping'],
+  [/lounge|global_entry|clear|airport|checked_bag|club_passes/, 'airport'],
+  [/trip_|baggage|rental_car|travel_(insurance|medical|accident|credit)|emergency_medical|flight_credit|companion/, 'travel'],
+  [/status|elite|free_night|concierge|hotel_perks|entertainment_access|dashpass/, 'status'],
+  [/cash|miles|points|reward|rotating|match|discount/, 'rewards'],
+  [/protection|warranty|cell_phone|returns|shipping/, 'shopping'],
 ];
 
 /** Which group a non-credit benefit belongs in. */

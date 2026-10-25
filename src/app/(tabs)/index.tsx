@@ -1,5 +1,5 @@
 import { router, type Href } from 'expo-router';
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Pressable, RefreshControl, ScrollView, Text, View } from 'react-native';
 import { ArrivalCheck } from '@/components/Claims';
 import { DealRow } from '@/components/DealRow';
@@ -8,7 +8,7 @@ import { Hero } from '@/components/Hero';
 import { OpportunityRow } from '@/components/OfferRow';
 import { Chip, ErrorNote, Money, Panel, Row, Screen, SectionHeader, T, type IconName } from '@/components/ui';
 import { claimsToCheck } from '@/domain/claims';
-import { foundSummary, nextStep, toCheckCount } from '@/domain/firstRun';
+import { foundMoney, nextStep, toCheckCount, worthCelebrating } from '@/domain/firstRun';
 import { addToBag, formatBag, getHomeCurrency, type MoneyBag } from '@/domain/format';
 import { nextToUse, setupSteps } from '@/domain/money';
 import { scoreByCurrency } from '@/domain/score';
@@ -62,10 +62,18 @@ export default function Home() {
       },
       soon: nextToUse(data.opportunities, at, 4, statusOf),
       toCheck: toCheckCount(data.opportunities, at, statusOf),
-      found: foundSummary(data.opportunities),
+      found: foundMoney(data.opportunities, data.recovered, at, statusOf),
       arrivals: claimsToCheck(data.opportunities, at),
     };
   }, [data, statusOf]);
+
+  // The "We found $X" moment: opens by itself once, the first time there's something to show after setup.
+  const celebrate = worthCelebrating(found) && !!data.profile?.onboarded_at;
+  useEffect(() => {
+    if (!dismissedLoaded || !celebrate || dismissed.has('found_seen')) return;
+    dismiss('found_seen');
+    router.push({ pathname: '/found', params: { first: '1' } });
+  }, [dismissedLoaded, celebrate, dismissed, dismiss]);
 
   const onRefresh = async () => {
     setRefreshing(true);
@@ -117,7 +125,7 @@ export default function Home() {
       {arrivals[0] ? <ArrivalCheck opp={arrivals[0]} /> : null}
       {dismissedLoaded && !dismissed.has('tour') ? <Tour onDone={() => dismiss('tour')} /> : null}
       {step ? <NextStep step={step} /> : null}
-      {dismissedLoaded && found.total > 0 && !dismissed.has('found') ? <Found summary={found} onDone={() => dismiss('found')} /> : null}
+      {dismissedLoaded && celebrate && !dismissed.has('found') ? <Found found={found} home={home} onDone={() => dismiss('found')} /> : null}
 
       <SectionHeader title="Use soon" action="See all" onAction={() => router.push('/money')} />
       {soon.length ? (

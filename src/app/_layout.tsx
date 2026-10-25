@@ -83,6 +83,7 @@ function RootNavigator() {
         <Stack.Screen name="student" options={{ ...header, title: 'Student offers' }} />
         <Stack.Screen name="school" options={{ ...modal, title: 'Your school' }} />
         <Stack.Screen name="my-perk" options={{ ...modal, title: 'A perk from your school' }} />
+        <Stack.Screen name="found" options={{ ...modal, title: '' }} />
         <Stack.Screen name="recap" options={{ ...header, title: 'Monthly recap' }} />
         <Stack.Screen name="at-risk" options={{ ...header, title: 'At risk this week' }} />
         <Stack.Screen name="perks" options={{ ...header, title: 'Your card perks' }} />

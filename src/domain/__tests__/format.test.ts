@@ -1,4 +1,4 @@
-import { addToBag, currencyPrefix, formatBag, formatMoney, relativeDays, shortCardName, type MoneyBag } from '../format';
+import { addToBag, checkedLabel, currencyPrefix, formatBag, formatMoney, relativeDays, shortCardName, type MoneyBag } from '../format';
 
 describe('formatMoney', () => {
   it.each([
@@ -54,4 +54,14 @@ describe('shortCardName', () => {
     ['Scotiabank No Fee Visa Classic', 'Scotiabank No Fee Visa Classic'],
     ['Chase Sapphire Reserve®', 'Chase Sapphire Reserve'],
   ])('%s → %s', (a, b) => expect(shortCardName(a)).toBe(b));
+});
+
+describe('checkedLabel', () => {
+  it('names the day a benefit was checked', () => {
+    expect(checkedLabel('2026-10-25')).toBe('Checked Oct 25, 2026');
+  });
+  it('says nothing when it was never checked', () => {
+    expect(checkedLabel(null)).toBeNull();
+    expect(checkedLabel('soon')).toBeNull();
+  });
 });

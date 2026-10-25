@@ -2,7 +2,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { useState } from 'react';
 import { Pressable, View } from 'react-native';
-import type { FoundSummary } from '@/domain/firstRun';
+import { countLabel, type FoundMoney } from '@/domain/firstRun';
+import { formatBag } from '@/domain/format';
 import type { SetupStep } from '@/domain/money';
 import { space, useColors } from '@/theme';
 import { Button, IconBubble, Panel, Row, T, type IconName } from './ui';
@@ -74,16 +75,19 @@ export function NextStep({ step }: { step: SetupStep }) {
   );
 }
 
-/** "PerkScan found 5 things in your email", once, after the first scan. */
-export function Found({ summary, onDone }: { summary: FoundSummary; onDone: () => void }) {
+/** "We found $340 for you", until it's opened or hidden. Opens the full breakdown. */
+export function Found({ found, home, onDone }: { found: FoundMoney; home: string; onDone: () => void }) {
   const c = useColors();
+  const money = Object.values(found.total).some((v) => v > 0);
   return (
     <Panel style={{ gap: space.sm }}>
       <Row gap={space.md} style={{ alignItems: 'flex-start' }}>
         <IconBubble icon="checkmark-done" tone="green" size={36} />
         <View style={{ flex: 1, gap: 2 }}>
-          <T variant="subheading">PerkScan found {summary.total} {summary.total === 1 ? 'thing' : 'things'} in your email</T>
-          <T variant="caption" muted>{summary.parts.slice(0, 4).map((p) => p.label).join(' · ')}</T>
+          <T variant="subheading">
+            {money ? `PerkScan found ${formatBag(found.total, home)} for you` : `PerkScan found ${found.itemCount} things for you`}
+          </T>
+          <T variant="caption" muted>{found.groups.slice(0, 4).map((g) => countLabel(g.kind, g.items.length)).join(' · ')}</T>
         </View>
         <Pressable onPress={onDone} hitSlop={10} accessibilityLabel="Hide">
           <Ionicons name="close" size={18} color={c.textFaint} />
@@ -91,12 +95,11 @@ export function Found({ summary, onDone }: { summary: FoundSummary; onDone: () =
       </Row>
       <View style={{ alignItems: 'flex-start' }}>
         <Button
-          title="See them"
+          title="See what we found"
           size="sm"
-          kind="secondary"
           onPress={() => {
             onDone();
-            router.push('/money');
+            router.push('/found');
           }}
         />
       </View>
