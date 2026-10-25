@@ -13,7 +13,7 @@ import { space, useColors } from '@/theme';
 
 const nonZero = (b: MoneyBag) => Object.values(b).some((v) => v > 0);
 const plural = (n: number, one: string) => `${n} ${one}${n === 1 ? '' : 's'}`;
-/** Rows shown per group before "See all". */
+/** Rows shown per group before "See all in Money". */
 const PER_GROUP = 3;
 
 /**

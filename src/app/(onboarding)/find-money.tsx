@@ -17,7 +17,7 @@ export default function FindMoney() {
   const c = useColors();
   return (
     <Screen>
-      <Steps step={4} total={5} />
+      <Steps step={4} total={6} />
       <View style={{ gap: space.xs }}>
         <T variant="display">Find money in your email</T>
         <T muted>Most of what you’re owed arrives by email. Connect it and PerkScan finds it by itself.</T>
@@ -38,8 +38,8 @@ export default function FindMoney() {
       </Panel>
       <T variant="caption" faint>Only the emails and texts PerkScan needs are read, card numbers are hidden, and the text is deleted within a day.</T>
 
-      <Button title="Continue" icon="arrow-forward" onPress={() => router.push('/finish')} />
-      <Button title="I’ll do this later" kind="ghost" onPress={() => router.push('/finish')} />
+      <Button title="Continue" icon="arrow-forward" onPress={() => router.push('/spending')} />
+      <Button title="I’ll do this later" kind="ghost" onPress={() => router.push('/spending')} />
     </Screen>
   );
 }

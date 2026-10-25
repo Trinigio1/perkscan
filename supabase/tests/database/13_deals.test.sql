@@ -1,7 +1,7 @@
 -- Deals for you: read-only catalog, per-user feedback, reports hide a deal, and public codes
 -- only appear once enough different opted-in people received them.
 begin;
-select plan(22);
+select plan(21);
 
 insert into auth.users (id, email) values
   ('dddddddd-0000-0000-0000-000000000001', 'd1@example.com'),
@@ -45,8 +45,7 @@ select throws_ok($$insert into public.deal_sightings (user_id, country, merchant
 select throws_ok($$select public._promote_shared_deals()$$, '42501', null, 'or run the internal jobs');
 
 -- Profile: interests from the fixed list.
-select lives_ok($$update public.profiles set interests = array['home', 'dining'], region = 'FL' where id = auth.uid()$$, 'you can set interests and state');
-select throws_ok($$update public.profiles set share_deals = true where id = auth.uid()$$, '42501', null, 'sharing deals was retired: it can''t be turned on');
+select lives_ok($$update public.profiles set interests = array['home', 'dining'], region = 'FL', share_deals = true where id = auth.uid()$$, 'you can set interests, state and sharing');
 select throws_ok($$update public.profiles set interests = array['crypto'] where id = auth.uid()$$, '23514', null, 'only known interests');
 
 -- Saving makes a reminder in Money, once.

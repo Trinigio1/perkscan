@@ -15,7 +15,7 @@ import { Badge, Button, IconBubble, Row, T, type IconName } from './ui';
 
 const today = () => new Date().toISOString().slice(0, 10);
 
-/** An offer at one of your stores: what, until when, why you're seeing it — and Claim, Save, Hide. */
+/** A store deal: what, where, until when, why it's for you — and Save, Hide, Details. */
 export function DealRow({ item }: { item: RankedDeal }) {
   const c = useColors();
   const toast = useToast();
@@ -46,7 +46,7 @@ export function DealRow({ item }: { item: RankedDeal }) {
     try {
       await sendDealFeedback(d.id, action);
       await refresh();
-      toast(action === 'saved' ? 'Saved — you’ll get a reminder before it ends' : action === 'dismissed' ? 'Hidden. You’ll see fewer like it.' : 'Thanks — we’ll take it down if others agree', { tone: action === 'saved' ? 'success' : 'info' });
+      toast(action === 'saved' ? 'Saved to Money — you’ll get a reminder' : action === 'dismissed' ? 'Hidden. You’ll see fewer like it.' : 'Thanks — we’ll take it down if others agree', { tone: action === 'saved' ? 'success' : 'info' });
     } catch (e) {
       toast((e as Error).message, { tone: 'info' });
     } finally {
@@ -70,6 +70,7 @@ export function DealRow({ item }: { item: RankedDeal }) {
               <T variant="caption" color={c.accentStrong}>{item.why}</T>
             </Row>
           ) : null}
+          {d.source === 'shared' ? <T variant="caption" faint>{d.seen_by} PerkScan users near you got this</T> : null}
 
           <Row gap={6} style={{ flexWrap: 'wrap', marginTop: 4, alignItems: 'center' }}>
             {value ? <Badge label={value} tone="good" /> : null}

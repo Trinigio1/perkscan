@@ -5,9 +5,6 @@
 type Allowed = 'boolean' | 'small_int' | readonly string[];
 
 export const EVENTS = {
-  onboarding_started: {},
-  // Each setup step reached; a funnel over these shows where people stop.
-  onboarding_step: { step: 'small_int', total: 'small_int' },
   onboarding_completed: { cards: 'small_int', student: 'boolean' },
   // Activation: someone sees what PerkScan found, and how long after finishing setup (coarse buckets only).
   found_viewed: { first: 'boolean', has_money: 'boolean', items: 'small_int', groups: 'small_int', after: ['under_5m', 'under_30m', 'same_day', 'later', 'unknown'] },
@@ -16,12 +13,12 @@ export const EVENTS = {
   offer_marked_used: { type: ['promo', 'gift_card', 'store_credit', 'points', 'free_trial', 'return_window', 'settlement', 'protection', 'price_drop', 'refund', 'benefit'] },
   item_added: { type: ['points', 'gift_card', 'store_credit', 'promo', 'benefit', 'refund'] },
   hidden_money_viewed: {},
-  offers_viewed: { count: 'small_int' },
-  act_now_tapped: { kind: ['item', 'offer', 'event'], position: 'small_int' },
-  claim_started: { kind: ['price_adjustment', 'refund', 'duplicate_charge', 'return', 'settlement', 'card_claim', 'use'], method: ['copy_and_open', 'open', 'copy', 'email_draft', 'copy_message', 'form', 'details'] },
+  deals_viewed: { matched: 'small_int' },
+  claim_started: { kind: ['price_adjustment', 'refund', 'duplicate_charge', 'return', 'settlement', 'card_claim', 'use'] },
   deal_claimed: {},
   claim_checked: { result: ['arrived', 'not_yet', 'didnt_work'] },
   deal_feedback: { action: ['saved', 'dismissed', 'didnt_work'] },
+  interests_saved: { count: 'small_int' },
   gmail_token_created: {},
   texts_token_created: {},
   text_added: { result: ['parsed', 'security_code', 'duplicate', 'failed'] },

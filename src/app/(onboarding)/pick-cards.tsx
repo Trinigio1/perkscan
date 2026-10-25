@@ -14,7 +14,7 @@ export default function PickCards() {
 
   return (
     <Screen>
-      <Steps step={2} total={5} />
+      <Steps step={2} total={6} />
       <View style={{ gap: space.xs }}>
         <T variant="display">Which cards do you carry?</T>
         <T muted>Pick all that apply. You can add more later.</T>

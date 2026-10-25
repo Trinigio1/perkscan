@@ -44,7 +44,7 @@ Nothing in the product is inherently illegal. What's missing is mostly paperwork
 | Internal functions not callable from the app | ✅ | All `SECURITY DEFINER` functions set `search_path`. None are runnable by anonymous users, and internal jobs aren't runnable by signed-in users. |
 | Secrets only in environment variables | ✅ | No keys in the repository. Only `.env.example` is tracked. |
 | Every inbound webhook verified | ✅ | Email/text ingest needs a personal token (format-checked, looked up hashed, revocable). The scout needs a 24+ character secret, compared in constant time. |
-| Never sell or share data | ✅ | No ads or tracking SDKs. Nothing one user sends is shown to another. ("Help people nearby find deals" was retired.) Store pages are found only from domains that email 3+ users. |
+| Never sell or share data | ✅ | No ads or tracking SDKs. "Help people nearby find deals" is opt-in and shares only promotions 3+ people received; store statistics need 5+ people. |
 | Never invent benefit amounts | ✅ | Unverified amounts stay empty and show as "Check". Scouted deals must quote their page. |
 | Export and delete my data | ✅ | In the app. Deletion cascades through every user table. |
 | No financial or legal advice | ✅ | Disclaimers in onboarding, the terms and offer screens. |

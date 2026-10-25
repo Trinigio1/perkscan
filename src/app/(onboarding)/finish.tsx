@@ -45,7 +45,7 @@ export default function Finish() {
 
   return (
     <Screen>
-      <Steps step={5} total={5} />
+      <Steps step={6} total={6} />
       <View style={{ gap: space.xs }}>
         <T variant="display">Last thing</T>
         <T muted>You can change these in Settings.</T>

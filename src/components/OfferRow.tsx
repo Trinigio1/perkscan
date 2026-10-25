@@ -15,11 +15,9 @@ import { Badge, IconBubble, Row, T } from './ui';
 /** A promo, gift card, trial, return window or settlement found in email. */
 export function OfferRow({ opp, now }: { opp: Opportunity; now: Date }) {
   const c = useColors();
-  const { benefitById, why } = useLookups();
+  const { benefitById } = useLookups();
   const statusOf = (id: string) => benefitById.get(id)?.status;
   const { icon, tone } = offerIcon(opp.type);
-  // "Target · From your email": the store, and where PerkScan got it.
-  const source = [opp.merchant, why(opp)?.short].filter(Boolean).join(' · ');
   const expires = opp.expires_at ? new Date(opp.expires_at) : null;
   const done = opp.status === 'claimed';
   const missed = opp.status === 'expired' || (opp.status === 'open' && !!expires && expires <= now);
@@ -53,7 +51,7 @@ export function OfferRow({ opp, now }: { opp: Opportunity; now: Date }) {
         <IconBubble icon={icon} tone={tone} />
         <View style={{ flex: 1, gap: 2 }}>
           <T variant="subheading" numberOfLines={2}>{opp.title}</T>
-          {source ? <T variant="caption" muted numberOfLines={1}>{source}</T> : null}
+          {opp.merchant ? <T variant="caption" muted numberOfLines={1}>{opp.merchant}</T> : null}
           <T variant="caption" color={statusColor} numberOfLines={1}>{status}</T>
         </View>
         <View style={{ alignItems: 'flex-end', gap: 4, maxWidth: 110 }}>

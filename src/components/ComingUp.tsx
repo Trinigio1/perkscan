@@ -22,7 +22,7 @@ const EVENT_ICON: Record<LocalEvent['category'], { icon: IconName; tone: 'green'
 
 const today = () => new Date().toISOString().slice(0, 10);
 
-/** An event near you: when, what, how sure, and "Remind me" so it becomes an item with a deadline. */
+/** An event near you: when, what, how sure, and "Remind me" so it lands in Money with a deadline. */
 export function EventRow({ e }: { e: LocalEvent }) {
   const c = useColors();
   const toast = useToast();
@@ -39,7 +39,7 @@ export function EventRow({ e }: { e: LocalEvent }) {
       const r = reminderFor(e);
       await addItem({ type: r.type, title: r.title, expiresOn: r.expiresOn, note: r.note, currency: null, unconfirmed: r.unconfirmed });
       await refresh();
-      toast('Added — you’ll get a reminder', { tone: 'success' });
+      toast('Added to Money — you’ll get a reminder', { tone: 'success' });
     } catch (err) {
       toast((err as Error).message, { tone: 'info' });
     } finally {

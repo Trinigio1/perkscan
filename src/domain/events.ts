@@ -81,14 +81,14 @@ export function eventWhen(e: Pick<LocalEvent, 'starts_on' | 'ends_on'>, today: s
   return `${fmt(e.starts_on)} – ${fmt(e.ends_on, crossesYear)}`;
 }
 
-/** What a reminder for this event becomes in your list. */
+/** What a reminder for this event becomes in Money. */
 export function reminderFor(e: LocalEvent): { type: 'promo' | 'benefit'; title: string; expiresOn: string; note: string; unconfirmed: boolean } {
   return {
     type: e.category === 'bank_promo' || e.category === 'sale' ? 'promo' : 'benefit',
     title: e.title,
     expiresOn: e.ends_on,
     note: e.summary,
-    // Not announced yet: the reminder stays "Check" there too.
+    // Not announced yet: the reminder stays "Check" in Money too.
     unconfirmed: e.status === 'expected',
   };
 }
