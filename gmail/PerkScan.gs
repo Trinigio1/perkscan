@@ -11,7 +11,7 @@
  *   5. Optional: choose "scanPastYear" and click Run once to also look through the last 12 months.
  *
  * The script runs inside your own Google account. It searches for the kinds of email PerkScan can use
- * (AUTO_SCAN), plus anything you label "PerkScan" yourself. Sign-in and verification-code emails are skipped.
+ * (AUTO_SCAN), promotions from the stores your receipts come from, plus anything you label "PerkScan" yourself. Sign-in and verification-code emails are skipped.
  * Set AUTO_SCAN = false to send only emails you label "PerkScan".
  * Each email is sent once; afterwards the thread gets the "PerkScan-sent" label.
  */
@@ -57,8 +57,52 @@ const SKIP = '-in:spam -in:trash -category:social -category:forums ' +
   '-subject:("verification code" OR "security code" OR "sign in" OR "sign-in" OR "log in" OR password OR OTP OR "one-time")';
 
 function query_(newer) {
-  const wanted = AUTO_SCAN ? '(label:' + LABEL + ' OR ' + WANTED.join(' OR ') + ')' : 'label:' + LABEL;
+  const wanted = AUTO_SCAN ? '(label:' + LABEL + ' OR ' + WANTED.concat(storePromos_()).join(' OR ') + ')' : 'label:' + LABEL;
   return wanted + ' -label:' + SENT_LABEL + ' newer_than:' + newer + ' ' + SKIP;
+}
+
+// Promotions from stores you actually buy from: most codes, sales and rewards are in Gmail's
+// Promotions tab, where the searches above rarely look. The stores are the senders of your own
+// receipts (worked out here, inside your Gmail, once a day). Only the last 30 days: older promos
+// have usually ended.
+const MAX_STORES = 25;
+const NOT_STORES = ['gmail.com', 'googlemail.com', 'yahoo.com', 'outlook.com', 'hotmail.com', 'icloud.com', 'me.com', 'aol.com',
+  'paypal.com', 'venmo.com', 'stripe.com', 'squareup.com', 'square.com', 'shopify.com', 'intuit.com', 'google.com',
+  'chase.com', 'americanexpress.com', 'aexp.com', 'capitalone.com', 'citi.com', 'citibank.com', 'discover.com',
+  'wellsfargo.com', 'bankofamerica.com', 'usbank.com', 'scotiabank.com', 'republictt.com', 'firstcitizenstt.com'];
+
+/** "Nike <hello@email.nike.com>" -> "nike.com"; "x@mail.courts.co.tt" -> "courts.co.tt". */
+function storeDomain_(from) {
+  const m = /@([A-Za-z0-9.-]+)/.exec(from || '');
+  if (!m) return null;
+  const parts = m[1].toLowerCase().split('.').filter(Boolean);
+  if (parts.length < 2) return null;
+  const cc = parts.length >= 3 && parts[parts.length - 1].length === 2 && ['co', 'com', 'net', 'org'].indexOf(parts[parts.length - 2]) !== -1;
+  const domain = parts.slice(cc ? -3 : -2).join('.');
+  return NOT_STORES.indexOf(domain) === -1 ? domain : null;
+}
+
+/** The stores whose receipts are in your Gmail, most frequent first. Cached for a day. */
+function myStores_() {
+  const props = PropertiesService.getUserProperties();
+  const cached = JSON.parse(props.getProperty('PERKSCAN_STORES') || 'null');
+  if (cached && Date.now() - cached.at < 24 * 3600 * 1000) return cached.stores;
+  const counts = {};
+  GmailApp.search('(category:purchases OR subject:(receipt OR "order confirmation" OR "your order")) newer_than:365d', 0, 200).forEach(function (t) {
+    const d = storeDomain_(t.getMessages()[0].getFrom());
+    if (d) counts[d] = (counts[d] || 0) + 1;
+  });
+  const stores = Object.keys(counts).sort(function (a, b) { return counts[b] - counts[a]; }).slice(0, MAX_STORES);
+  props.setProperty('PERKSCAN_STORES', JSON.stringify({ at: Date.now(), stores: stores }));
+  return stores;
+}
+
+/** The Promotions-tab search for those stores, only emails that mention a saving. */
+function storePromos_() {
+  const stores = myStores_();
+  if (!stores.length) return [];
+  return ['(category:promotions newer_than:30d from:(' + stores.join(' OR ') + ') ' +
+    '(off OR code OR coupon OR reward OR rewards OR free OR save OR savings OR sale OR deal OR "gift card" OR birthday))'];
 }
 
 /** Runs every 10 minutes once the trigger is installed. While a past-year scan is pending, it continues that too. */
@@ -152,6 +196,7 @@ function previewPerkScan() {
   const recent = GmailApp.search(query_('14d'), 0, 100).length;
   const year = GmailApp.search(query_('365d'), 0, 500).length;
   console.log('Would send ' + recent + ' thread(s) from the last 2 weeks' + (AUTO_SCAN ? ', and up to ' + year + ' from the last 12 months with scanPastYear.' : '.'));
+  if (AUTO_SCAN) console.log('Promotions included from the stores on your receipts: ' + (myStores_().join(', ') || 'none found yet'));
 }
 
 /** Run once. Checks for new emails every 10 minutes. */

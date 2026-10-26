@@ -10,6 +10,7 @@ import { SpottedCardPanel, useSpottedCards } from '@/components/SpottedCards';
 import { OpportunityRow } from '@/components/OfferRow';
 import { Chip, ErrorNote, Money, Panel, Row, Screen, SectionHeader, T, type IconName } from '@/components/ui';
 import { claimsToCheck } from '@/domain/claims';
+import { dealsWorth, discountSummary } from '@/domain/estimate';
 import { foundMoney, nextStep, toCheckCount, worthCelebrating } from '@/domain/firstRun';
 import { addToBag, formatBag, getHomeCurrency, type MoneyBag } from '@/domain/format';
 import { nextToUse, setupSteps } from '@/domain/money';
@@ -30,6 +31,7 @@ const others = (bag: MoneyBag, shown: string) => {
 
 const EXPLORE: { icon: IconName; label: string; href: Href }[] = [
   { icon: 'search', label: 'Hidden money', href: '/hidden-money' },
+  { icon: 'mail-open', label: 'What PerkScan read', href: '/inbox' },
   { icon: 'airplane', label: 'Card perks', href: '/perks' },
   { icon: 'card', label: 'Your cards', href: '/cards' },
   { icon: 'storefront', label: 'Before you pay', href: '/checkout' },
@@ -55,7 +57,7 @@ export default function Home() {
   const topDeals = (deals.forYou.length ? deals.forYou : deals.popular).slice(0, 3);
   const statusOf = useCallback((id: string) => benefitById.get(id)?.status, [benefitById]);
 
-  const { now, home, totals, soon, toCheck, found, arrivals } = useMemo(() => {
+  const { now, home, totals, soon, toCheck, found, arrivals, discounts } = useMemo(() => {
     const at = new Date();
     const homeCur = data.profile?.home_currency?.trim() || getHomeCurrency();
     // Amounts are never converted: one score per currency, the home currency shown big.
@@ -74,8 +76,12 @@ export default function Home() {
       toCheck: toCheckCount(data.opportunities, at, statusOf),
       found: foundMoney(data.opportunities, data.recovered, at, statusOf),
       arrivals: claimsToCheck(data.opportunities, at),
+      // Not in Ready to use: percent-off codes estimated from what you usually spend at that store.
+      discounts: discountSummary(data.opportunities, data.receipts, at),
     };
   }, [data, statusOf]);
+  // Deals matched to you: stated amounts off, or a percent of your usual spend at that store.
+  const dealsFor = useMemo(() => dealsWorth(deals.forYou, data.receipts, now, home), [deals.forYou, data.receipts, now, home]);
 
   // The "We found $X" moment: opens by itself once, the first time there's something to show after setup.
   const celebrate = worthCelebrating(found) && !!data.profile?.onboarded_at;
@@ -122,6 +128,21 @@ export default function Home() {
             </>
           )}
         </Pressable>
+        {/* Estimates and deals: their own lines, never added to the number above. */}
+        <ExtraLine
+          show={nonZero(discounts.estimated) || discounts.otherCount > 0}
+          text={
+            nonZero(discounts.estimated)
+              ? `+ ≈ ${formatBag(discounts.estimated, big)} in discounts · ${discounts.estimatedCount + discounts.otherCount} code${discounts.estimatedCount + discounts.otherCount === 1 ? '' : 's'}`
+              : `+ ${discounts.otherCount} discount${discounts.otherCount === 1 ? '' : 's'}${discounts.bestPercent ? ` · up to ${discounts.bestPercent}% off` : ''}`
+          }
+          onPress={() => router.push('/money')}
+        />
+        <ExtraLine
+          show={dealsFor.total > 0}
+          text={nonZero(dealsFor.worth) ? `+ ≈ ${formatBag(dealsFor.worth, big)} in deals for you · ${dealsFor.total} deal${dealsFor.total === 1 ? '' : 's'}` : `+ ${dealsFor.total} deal${dealsFor.total === 1 ? '' : 's'} for you`}
+          onPress={() => router.push('/deals')}
+        />
         {/* The three small numbers only once there's something in them. */}
         {quiet ? null : (
           <Row gap={0} style={{ marginTop: space.lg, borderTopWidth: 1, borderTopColor: c.heroTrack, paddingTop: space.md }}>
@@ -195,6 +216,17 @@ function Stat({ label, value, home, onPress }: { label: string; value: MoneyBag;
     <Pressable onPress={onPress} accessibilityRole="button" style={({ pressed }) => ({ flex: 1, gap: 2, opacity: pressed ? 0.6 : 1 })}>
       <T variant="caption" color={c.heroMuted}>{label}</T>
       <T variant="subheading" color={c.heroText} numberOfLines={2}>{formatBag(value, home)}</T>
+    </Pressable>
+  );
+}
+
+/** A line under the headline for what isn't in it: estimated discounts, deals for you. */
+function ExtraLine({ show, text, onPress }: { show: boolean; text: string; onPress: () => void }) {
+  const c = useColors();
+  if (!show) return null;
+  return (
+    <Pressable onPress={onPress} accessibilityRole="button" hitSlop={4} style={({ pressed }) => ({ marginTop: space.xs, opacity: pressed ? 0.6 : 1 })}>
+      <T variant="label" color={c.heroText}>{text} ›</T>
     </Pressable>
   );
 }

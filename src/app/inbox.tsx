@@ -1,10 +1,11 @@
 import { Ionicons } from '@expo/vector-icons';
 import { router, useFocusEffect } from 'expo-router';
-import { useCallback, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { RefreshControl, View } from 'react-native';
 import { Button, Empty, ErrorNote, IconBubble, Note, Panel, Row, Screen, T } from '@/components/ui';
 import type { IconName } from '@/components/ui';
-import { relativeDays } from '@/domain/format';
+import { formatBag, relativeDays } from '@/domain/format';
+import { readReport, type ReadOutcome } from '@/domain/readReport';
 import type { InboundMessage } from '@/domain/types';
 import type { IconTone } from '@/domain/visuals';
 import { useData } from '@/lib/data';
@@ -23,25 +24,13 @@ const KIND: Record<string, { icon: IconName; tone: IconTone; label: string }> = 
   other: { icon: 'mail-open', tone: 'gray', label: 'Nothing to act on' },
 };
 
-function statusLine(m: InboundMessage): { text: string; color?: 'warn' | 'bad' } {
-  switch (m.parse_status) {
-    case 'pending':
-      return { text: m.parse_error ?? 'Waiting to be read', color: m.parse_error ? 'warn' : undefined };
-    case 'parsing':
-      return { text: 'Reading…' };
-    case 'failed':
-      return { text: m.parse_error ?? 'Couldn’t read this email', color: 'bad' };
-    case 'ignored':
-      return { text: 'No offers or receipts found' };
-    default:
-      return { text: KIND[m.kind ?? 'other']?.label ?? 'Read' };
-  }
-}
+const OUTCOME_COLOR: Record<ReadOutcome, 'accent' | 'muted' | 'warn' | 'bad'> = { found: 'accent', receipt: 'muted', nothing: 'muted', failed: 'bad', waiting: 'warn' };
 
+/** "What PerkScan read": every email and text it got, what it found in each, or why it found nothing. */
 export default function Inbox() {
   const c = useColors();
   const toast = useToast();
-  const { refresh } = useData();
+  const { data, refresh } = useData();
   const [messages, setMessages] = useState<InboundMessage[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -49,7 +38,7 @@ export default function Inbox() {
 
   const load = useCallback(async () => {
     try {
-      setMessages(await listMessages(100));
+      setMessages(await listMessages(200));
       setError(null);
     } catch (e) {
       setError((e as Error).message);
@@ -77,6 +66,7 @@ export default function Inbox() {
     }
   };
 
+  const report = useMemo(() => (messages ? readReport(messages, data.opportunities) : null), [messages, data.opportunities]);
   const needsRetry = (messages ?? []).filter((m) => m.parse_status === 'failed' || m.parse_status === 'pending').length;
 
   return (
@@ -100,24 +90,42 @@ export default function Inbox() {
       {messages?.length ? (
         <Button title="Check what PerkScan read" icon="checkmark-done" kind="secondary" onPress={() => router.push('/review')} />
       ) : null}
+      {report && messages?.length ? (
+        <Panel style={{ gap: space.sm }}>
+          <T variant="subheading">
+            Last {messages.length} message{messages.length === 1 ? '' : 's'}: {report.offers} offer{report.offers === 1 ? '' : 's'} found
+            {Object.keys(report.money).length ? ` worth ${formatBag(report.money)}` : ''}
+          </T>
+          <Row gap={space.md} style={{ flexWrap: 'wrap' }}>
+            <Count n={report.counts.found} label="had something to use" color={c.accentStrong} />
+            <Count n={report.counts.receipt} label="receipts" color={c.text} />
+            <Count n={report.counts.nothing} label="nothing to use" color={c.textMuted} />
+            {report.counts.failed ? <Count n={report.counts.failed} label="couldn’t read" color={c.danger} /> : null}
+            {report.counts.waiting ? <Count n={report.counts.waiting} label="waiting" color={c.warn} /> : null}
+          </Row>
+          <T variant="caption" muted>
+            Something missing? Label the email “PerkScan” in Gmail and it’s sent next time, or check what was read and tell PerkScan what it got wrong.
+          </T>
+        </Panel>
+      ) : null}
       {error ? <ErrorNote message={error} /> : null}
       {needsRetry ? <Button title={`Try again (${needsRetry})`} icon="refresh" kind="secondary" loading={busy} onPress={retry} /> : null}
       {messages && messages.length === 0 ? (
         <Empty icon="mail" title="Nothing here yet" body="Once your Gmail script or texts Shortcut runs, what it sends shows up here." action={<Button title="Set up Gmail" icon="settings" onPress={() => router.push('/connect-gmail')} />} />
       ) : null}
-      {messages && messages.length ? (
+      {messages && messages.length && report ? (
         <Panel style={{ paddingVertical: space.xs }}>
-          {messages.map((m, i) => {
+          {report!.lines.map(({ message: m, outcome, detail }, i) => {
             const k = KIND[m.kind ?? 'other'] ?? KIND.other!;
-            const s = statusLine(m);
-            const failed = m.parse_status === 'failed';
+            const tone = OUTCOME_COLOR[outcome];
             return (
-              <Row key={m.id} gap={space.md} style={[{ paddingVertical: space.md }, i > 0 ? { borderTopWidth: 1, borderTopColor: c.border } : null]}>
-                {failed ? <IconBubble icon="alert-circle" tone="orange" /> : <IconBubble icon={k.icon} tone={m.parse_status === 'parsed' ? k.tone : 'gray'} />}
+              <Row key={m.id} gap={space.md} style={[{ paddingVertical: space.md, alignItems: 'flex-start' }, i > 0 ? { borderTopWidth: 1, borderTopColor: c.border } : null]}>
+                {outcome === 'failed' ? <IconBubble icon="alert-circle" tone="orange" /> : <IconBubble icon={k.icon} tone={outcome === 'found' || outcome === 'receipt' ? k.tone : 'gray'} />}
                 <View style={{ flex: 1, gap: 2 }}>
                   <T variant="subheading" numberOfLines={1}>{m.summary ?? (m.source !== 'email' ? 'Text message' : m.from_domain ? `Email from ${m.from_domain}` : 'Email')}</T>
-                  <T variant="caption" color={s.color === 'bad' ? c.danger : s.color === 'warn' ? c.warn : c.textMuted} numberOfLines={2}>
-                    {s.text}
+                  {m.summary && m.from_domain ? <T variant="caption" faint numberOfLines={1}>{m.from_domain}</T> : null}
+                  <T variant="caption" color={tone === 'accent' ? c.accentStrong : tone === 'bad' ? c.danger : tone === 'warn' ? c.warn : c.textMuted} numberOfLines={3}>
+                    {outcome === 'found' ? `Found: ${detail}` : detail}
                   </T>
                 </View>
                 <View style={{ alignItems: 'flex-end' }}>
@@ -125,7 +133,7 @@ export default function Inbox() {
                     <Ionicons name={m.source === 'email' ? 'mail-outline' : 'chatbubble-outline'} size={12} color={c.textFaint} />
                     <T variant="caption" faint>{relativeDays(new Date(m.received_at), new Date())}</T>
                   </Row>
-                  {m.parse_status === 'parsed' ? <Ionicons name="checkmark-circle" size={16} color={c.accent} /> : null}
+                  {outcome === 'found' ? <Ionicons name="checkmark-circle" size={16} color={c.accent} /> : null}
                 </View>
               </Row>
             );
@@ -133,5 +141,13 @@ export default function Inbox() {
         </Panel>
       ) : null}
     </Screen>
+  );
+}
+
+function Count({ n, label, color }: { n: number; label: string; color: string }) {
+  return (
+    <T variant="caption" color={color}>
+      <T variant="label" color={color}>{n}</T> {label}
+    </T>
   );
 }

@@ -32,6 +32,52 @@
       "found_via": "Web search restricted to the official domain, 2026-10-23"
     },
     {
+      "id": "massy_stores_tt_offers",
+      "name": "Massy Stores",
+      "url": "https://massystorestt.com/special-offers/",
+      "kind": "store",
+      "countries": [
+        "TT"
+      ],
+      "regions": [],
+      "categories": [
+        "groceries",
+        "home",
+        "shopping"
+      ],
+      "merchants": [
+        "massy",
+        "massystores"
+      ],
+      "issuers": [],
+      "card_keywords": [],
+      "active": true,
+      "found_via": "Web search restricted to the official domain, 2026-10-26. robots.txt is checked on every read."
+    },
+    {
+      "id": "massy_stores_tt_promotions",
+      "name": "Massy Stores",
+      "url": "https://massystorestt.com/category/promotions/",
+      "kind": "store",
+      "countries": [
+        "TT"
+      ],
+      "regions": [],
+      "categories": [
+        "groceries",
+        "home",
+        "shopping"
+      ],
+      "merchants": [
+        "massy",
+        "massystores"
+      ],
+      "issuers": [],
+      "card_keywords": [],
+      "active": true,
+      "found_via": "Web search restricted to the official domain, 2026-10-26. robots.txt is checked on every read."
+    },
+    {
       "id": "courts_tt_mega_sale",
       "name": "Courts",
       "kind": "store",

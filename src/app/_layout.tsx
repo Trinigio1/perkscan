@@ -74,7 +74,7 @@ function RootNavigator() {
         <Stack.Screen name="card/[id]/worth-it" options={{ ...modal, title: 'Worth the fee?' }} />
         <Stack.Screen name="add-card" options={{ ...modal, title: 'Add cards' }} />
         <Stack.Screen name="offer/[id]" options={{ ...modal, title: '' }} />
-        <Stack.Screen name="inbox" options={{ ...header, title: 'Inbox' }} />
+        <Stack.Screen name="inbox" options={{ ...header, title: 'What PerkScan read' }} />
         <Stack.Screen name="country" options={{ ...modal, title: 'Country & currency' }} />
         <Stack.Screen name="add-text" options={{ ...modal, title: 'Add a text' }} />
         <Stack.Screen name="review" options={{ ...header, title: 'Reading accuracy' }} />

@@ -11,6 +11,7 @@ import { Badge, Button, ErrorNote, Field, IconBubble, Money, Panel, Row, Screen,
 import { claimTarget } from '@/domain/claimTarget';
 import { claimHelp } from '@/domain/claims';
 import { CONFIDENCE_HELP, confidenceOf } from '@/domain/confidence';
+import { offerEstimate } from '@/domain/estimate';
 import { formatMoney, lastDayLabel, relativeDays } from '@/domain/format';
 import { offerIcon, OFFER_TYPE_LABELS } from '@/domain/visuals';
 import { track } from '@/lib/analytics';
@@ -41,6 +42,7 @@ export default function OfferDetail() {
   }
 
   const now = new Date();
+  const estimate = offerEstimate(opp, data.receipts, now);
   const { icon, tone } = offerIcon(opp.type);
   const expires = opp.expires_at ? new Date(opp.expires_at) : null;
   const missed = opp.status === 'expired' || (opp.status === 'open' && !!expires && expires <= now);
@@ -104,6 +106,15 @@ export default function OfferDetail() {
 
       <Panel style={{ alignItems: 'center', paddingVertical: space.xl, gap: space.md }}>
         {opp.value_estimate !== null ? <Money value={opp.value_estimate} size={44} currency={opp.currency} /> : null}
+        {estimate ? (
+          <View style={{ alignItems: 'center', gap: 2 }}>
+            <T variant="heading">≈ {formatMoney(estimate.value, { currency: estimate.currency })}</T>
+            <T variant="caption" muted center>
+              Estimate: {estimate.percent}% of the {formatMoney(estimate.basis.amount, { currency: estimate.currency })} you usually spend at {opp.merchant}
+              {estimate.basis.orders > 1 ? ` (${estimate.basis.orders} orders this year)` : ' (your last order there)'}. Not added to Ready to use.
+            </T>
+          </View>
+        ) : null}
         {opp.description ? <T muted center>{opp.description}</T> : null}
         {opp.code ? (
           <Pressable

@@ -12,7 +12,7 @@ describe('toRows', () => {
   it('turns a promo code into an opportunity with steps', () => {
     const { opportunities } = toRows(email({ offers: [offer({ title: '$20 off $100', amount: 20, code: 'SAVE20', min_spend: 100, expires_on: '2026-04-30' })] }), TODAY);
     expect(opportunities).toHaveLength(1);
-    expect(opportunities[0]).toMatchObject({ type: 'promo', value_estimate: 20, code: 'SAVE20', expires_at: '2026-04-30T23:59:59Z', dedupe_key: 'promo:acme:save20:2026-04-30' });
+    expect(opportunities[0]).toMatchObject({ type: 'promo', value_estimate: 20, code: 'SAVE20', expires_at: '2026-04-30T23:59:59Z', dedupe_key: 'promo:acme:save20:2026-04-30', min_spend: 100 });
     expect(opportunities[0]!.action_steps.map((s) => s.step).join(' ')).toContain('SAVE20');
   });
 
@@ -20,6 +20,11 @@ describe('toRows', () => {
     const { opportunities } = toRows(email({ merchant: 'Sephora', interest: 'beauty', offers: [offer({ type: 'promo', title: 'Free birthday gift', expires_on: '2026-04-30' })] }), TODAY);
     expect(opportunities[0]).toMatchObject({ interest: 'beauty', value_estimate: null });
     expect(toRows(email({ offers: [offer({ amount: 5, expires_on: '2026-04-30' })] }), TODAY).opportunities[0]!.interest).toBeNull();
+  });
+
+  it('keeps a percent off as a number, never as money', () => {
+    const { opportunities } = toRows(email({ offers: [offer({ title: '20% off sitewide', percent_off: 20, code: 'TWENTY', expires_on: '2026-04-30' })] }), TODAY);
+    expect(opportunities[0]).toMatchObject({ percent_off: 20, value_estimate: null });
   });
 
   it('counts an issued reward like store credit', () => {

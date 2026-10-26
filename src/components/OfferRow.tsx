@@ -2,10 +2,11 @@ import { router } from 'expo-router';
 import { Pressable, View } from 'react-native';
 import { claimTarget, followUpQuestion } from '@/domain/claimTarget';
 import { confidenceOf } from '@/domain/confidence';
+import { offerEstimate } from '@/domain/estimate';
 import { formatMoney, lastDayLabel, relativeDays } from '@/domain/format';
 import type { CardBenefit, Opportunity } from '@/domain/types';
 import { offerIcon, OFFER_TYPE_LABELS } from '@/domain/visuals';
-import { useLookups } from '@/lib/data';
+import { useData, useLookups } from '@/lib/data';
 import { space, useColors } from '@/theme';
 import { ClaimButton } from './Claims';
 import { ConfidenceTag } from './ConfidenceTag';
@@ -16,7 +17,10 @@ import { Badge, IconBubble, Row, T } from './ui';
 export function OfferRow({ opp, now }: { opp: Opportunity; now: Date }) {
   const c = useColors();
   const { benefitById } = useLookups();
+  const { data } = useData();
   const statusOf = (id: string) => benefitById.get(id)?.status;
+  // A percent-off code at a store you buy from: what it's roughly worth to you.
+  const estimate = offerEstimate(opp, data.receipts, now);
   const { icon, tone } = offerIcon(opp.type);
   const expires = opp.expires_at ? new Date(opp.expires_at) : null;
   const done = opp.status === 'claimed';
@@ -58,6 +62,10 @@ export function OfferRow({ opp, now }: { opp: Opportunity; now: Date }) {
           {opp.value_estimate !== null ? (
             <T variant="subheading" color={missed ? c.danger : done ? c.textFaint : c.text} style={{ fontVariant: ['tabular-nums'] }}>
               {formatMoney(opp.value_estimate, { currency: opp.currency })}
+            </T>
+          ) : estimate ? (
+            <T variant="subheading" color={c.textMuted} style={{ fontVariant: ['tabular-nums'] }}>
+              ≈ {formatMoney(estimate.value, { currency: estimate.currency })}
             </T>
           ) : null}
           {opp.code && !done ? <Badge label={opp.code} /> : null}

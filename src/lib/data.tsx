@@ -172,6 +172,8 @@ async function load(userId: string): Promise<AppData> {
     opportunities: must('opportunities', opportunities).map(({ inbound_messages: msg, ...o }: Opportunity & { inbound_messages?: { from_domain: string | null } | null }) => ({
       ...o,
       value_estimate: num(o.value_estimate),
+      percent_off: num(o.percent_off),
+      min_spend: num(o.min_spend),
       // Where the email came from: the store a code or gift card gets used at.
       sender_domain: msg?.from_domain ?? null,
     })),

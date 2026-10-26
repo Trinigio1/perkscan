@@ -1788,8 +1788,8 @@
           "currency": null,
           "status": "active",
           "source_url": "https://tt.scotiabank.com/personal/credit-cards/scotiabank-No-Fee-Visa.html",
-          "last_verified": "2026-10-22",
-          "notes": "Read from the bank's own page text via web search on 2026-10-22 (the page itself could not be opened from the build environment). Bank pages can be dated: confirm with the bank before relying on it."
+          "last_verified": "2026-10-26",
+          "notes": "Read from the bank's own page text via web search on 2026-10-26 (the page itself could not be opened from the build environment). Bank pages can be dated: confirm with the bank before relying on it."
         },
         {
           "id": "scotiabank_tt_visa_classic__additional_cards",
@@ -1807,27 +1807,27 @@
           "currency": null,
           "status": "active",
           "source_url": "https://tt.scotiabank.com/personal/credit-cards/scotiabank-No-Fee-Visa.html",
-          "last_verified": "2026-10-22",
-          "notes": "Read from the bank's own page text via web search on 2026-10-22 (the page itself could not be opened from the build environment). Bank pages can be dated: confirm with the bank before relying on it."
+          "last_verified": "2026-10-26",
+          "notes": "Read from the bank's own page text via web search on 2026-10-26 (the page itself could not be opened from the build environment). Bank pages can be dated: confirm with the bank before relying on it."
         },
         {
           "id": "scotiabank_tt_visa_classic__emergency_card_replacement",
           "type": "perk",
-          "name": "Emergency card replacement",
+          "name": "Emergency help through Visa",
           "amount": null,
           "period": "per_claim",
           "period_anchor": "calendar",
           "amount_schedule": null,
-          "terms_summary": "Visa may replace a lost or stolen card, or send emergency cash, while you travel.",
+          "terms_summary": "Emergency services through the Visa International Service Centre, for example if your card is lost or stolen while you travel.",
           "max_coverage": null,
           "coverage_window_days": null,
           "enrollment_required": false,
           "merchant_match": null,
           "currency": null,
-          "status": "TODO_VERIFY",
+          "status": "active",
           "source_url": "https://tt.scotiabank.com/personal/credit-cards/scotiabank-No-Fee-Visa.html",
-          "last_verified": null,
-          "notes": "Scotiabank T&T's card comparison lists emergency card / cash replacement through Visa, but the Classic product page doesn't confirm it. Ask Scotiabank."
+          "last_verified": "2026-10-26",
+          "notes": "Read from the bank's own page text via web search on 2026-10-26 (the page itself could not be opened from the build environment). Bank pages can be dated: confirm with the bank before relying on it."
         }
       ],
       "fee_note": "No annual fee for the first year, and none after if purchases average at least TT$1,250 a month. The fee charged otherwise is not on the product page."

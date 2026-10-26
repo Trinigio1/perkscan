@@ -33,6 +33,9 @@ export interface OpportunityRow {
   action_steps: { step: string; url?: string }[];
   /** What it's about ("fitness", "beauty"), so it can sit under the interests the user picked. */
   interest: string | null;
+  /** "20% off" as 20, and any minimum spend: kept so the app can estimate a percent-off code. */
+  percent_off: number | null;
+  min_spend: number | null;
 }
 
 export interface Rows {
@@ -138,6 +141,8 @@ function offerRow(o: Offer, merchant: string | null, currency: string, flightRef
     dedupe_key: `${type}:${slug(merchant)}:${slug(o.code ?? o.title)}:${o.expires_on ?? ''}`,
     action_steps: steps,
     interest,
+    percent_off: o.percent_off,
+    min_spend: o.min_spend,
   };
 }
 
@@ -225,6 +230,8 @@ export function toRows(p: ParsedEmail, today: string, defaultCurrency = 'USD', f
           { step: `Last day to return: ${returnBy}.` },
         ],
         interest: p.interest ?? null,
+        percent_off: null,
+        min_spend: null,
       });
     }
   }

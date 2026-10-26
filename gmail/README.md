@@ -1,8 +1,8 @@
 # Connect Gmail to PerkScan (free)
 
 A small Google Apps Script in your own Google account finds the emails PerkScan can use — receipts, bank alerts,
-promo codes, gift cards, store credit, expiring points, refunds, trials and settlement notices — and sends them to
-PerkScan every 10 minutes. No labels or filters to set up, no domain, no paid service.
+promo codes, gift cards, store credit and rewards, expiring points, refunds, trials and settlement notices, plus
+promotions from the stores your own receipts come from — and sends them to PerkScan every 10 minutes. No labels or filters to set up, no domain, no paid service.
 
 Sign-in, password and verification-code emails are skipped, and so are social, forum, spam and bin.
 Prefer to choose emails yourself? Set `AUTO_SCAN = false` in the script: then only emails you label `PerkScan` are sent.

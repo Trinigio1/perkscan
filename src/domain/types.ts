@@ -111,6 +111,10 @@ export interface Opportunity {
   sender_domain?: string | null;
   /** What the email's offer is about ("fitness"), as the reader saw it. Older offers have none. */
   interest?: string | null;
+  /** "20% off": the percent, when the offer states one (older offers: read from the title). */
+  percent_off?: number | null;
+  /** Minimum spend to use it, if stated. */
+  min_spend?: number | null;
   created_at: string;
 }
 
