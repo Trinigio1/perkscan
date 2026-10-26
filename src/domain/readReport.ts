@@ -41,7 +41,11 @@ function offerLine(o: Opportunity): string {
 /** A reader error in plain words: the raw API message means nothing to people. */
 export function failureText(error: string | null): string {
   if (!error) return 'Couldn’t read this one';
-  if (/^Model request failed/i.test(error)) return 'PerkScan couldn’t read this one because of a problem on our side. Its text has been deleted, so it needs to be sent again (Gmail script: resendUnread).';
+  if (/^Model request failed/i.test(error)) {
+    // The API's own message, short, so a cause can still be told apart ("grammar is too large", "overloaded").
+    const why = /"message":"([^"]{1,80})/.exec(error)?.[1] ?? error.replace(/^Model request failed:\s*/i, '').slice(0, 80);
+    return `PerkScan couldn’t read this one because of a problem on our side (${why.replace(/[.\s]+$/, '')}). Send it again with the Gmail script’s resendUnread.`;
+  }
   if (/cut off/i.test(error)) return 'Too long to read in one go';
   if (/declined/i.test(error)) return 'The reader declined to process this one';
   return 'Couldn’t read this one';
