@@ -5,7 +5,7 @@ import { opp } from '../__fixtures__/opportunities';
 
 const program = (p: Partial<Program> & { id: string }): Program => ({
   kind: 'loyalty', name: p.id, provider: p.id, countries: [], summary: 'Expires after 24 months.', how_to: 'h', url: 'https://x.example', merchants: [],
-  window_days: null, interests: [], issuers: [], student_only: false, status: 'active', last_verified: '2026-10-22', sort_order: 0, ...p,
+  window_days: null, status: 'active', last_verified: '2026-10-22', sort_order: 0, ...p,
 });
 const uwi: University = { id: 'uwi_sta', name: 'The University of the West Indies, St. Augustine', short_name: 'UWI St. Augustine', country: 'TT', state: null, email_domains: ['my.uwi.edu'], website: null };
 const offer = (o: Partial<StudentOffer> & { id: string }) => ({ name: o.id, provider: 'P', category: 'software', summary: 's', eligibility: 'e', how_to_verify: 'h', url: 'https://x.example', countries: [], university_ids: [], status: 'active', last_verified: null, ...o }) as StudentOffer;

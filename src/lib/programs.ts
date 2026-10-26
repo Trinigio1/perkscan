@@ -7,7 +7,7 @@ import { supabase } from './supabase';
 export async function listPrograms(): Promise<Program[]> {
   const { data, error } = await supabase
     .from('perk_programs')
-    .select('id, kind, name, provider, countries, summary, how_to, url, merchants, window_days, interests, issuers, student_only, status, last_verified, sort_order')
+    .select('id, kind, name, provider, countries, summary, how_to, url, merchants, window_days, status, last_verified, sort_order')
     .order('sort_order');
   if (error) throw new Error(error.message);
   return (data ?? []) as Program[];

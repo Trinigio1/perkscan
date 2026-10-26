@@ -3,7 +3,6 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Pressable, RefreshControl, ScrollView, Text, View } from 'react-native';
 import { ArrivalCheck } from '@/components/Claims';
 import { DealRow } from '@/components/DealRow';
-import { PerkForYouRow } from '@/components/ForYou';
 import { Found, NextStep, Tour } from '@/components/FirstRun';
 import { Hero } from '@/components/Hero';
 import { MembershipNudge, PayingTwicePanel } from '@/components/PayingTwice';
@@ -18,7 +17,6 @@ import { scoreByCurrency } from '@/domain/score';
 import { greeting } from '@/domain/visuals';
 import { useData, useLookups } from '@/lib/data';
 import { useDeals } from '@/lib/deals';
-import { usePerksForYou } from '@/lib/forYou';
 import { useMembershipHints } from '@/lib/memberships';
 import { useDismissed } from '@/lib/suggestions';
 import { font, space, useColors } from '@/theme';
@@ -38,7 +36,7 @@ const EXPLORE: { icon: IconName; label: string; href: Href }[] = [
   { icon: 'add', label: 'Add', href: '/add' },
 ];
 
-/** Home: your total, the one next thing to do, what to use soon, perks and deals for you. */
+/** Home: your total, the one next thing to do, what to use soon, and deals for you. */
 export default function Home() {
   const c = useColors();
   const { data, error, refresh } = useData();
@@ -46,8 +44,6 @@ export default function Home() {
   const [refreshing, setRefreshing] = useState(false);
   const [dismissed, dismiss, dismissedLoaded] = useDismissed();
   const deals = useDeals();
-  // Perks beyond the inbox: what their cards and memberships include, free perks where they shop.
-  const forYou = usePerksForYou();
   // Cards the inbox shows you hold but you haven't added: each one unlocks more perks.
   const spotted = useSpottedCards();
   // Memberships: nudge until they've added one, or when receipts show one they pay for.
@@ -126,11 +122,6 @@ export default function Home() {
             </>
           )}
         </Pressable>
-        {forYou.length ? (
-          <Pressable onPress={() => router.push('/for-you')} accessibilityRole="button" hitSlop={6} style={({ pressed }) => ({ marginTop: space.sm, opacity: pressed ? 0.6 : 1 })}>
-            <T variant="label" color={c.heroText}>+ {forYou.length} perk{forYou.length === 1 ? '' : 's'} for you beyond your inbox ›</T>
-          </Pressable>
-        ) : null}
         {/* The three small numbers only once there's something in them. */}
         {quiet ? null : (
           <Row gap={0} style={{ marginTop: space.lg, borderTopWidth: 1, borderTopColor: c.heroTrack, paddingTop: space.md }}>
@@ -167,19 +158,6 @@ export default function Home() {
       ) : (
         <T muted>{step ? 'Credits and offers will show up here.' : 'Nothing expiring soon.'}</T>
       )}
-
-      {forYou.length ? (
-        <>
-          <SectionHeader title="Perks for you" action="See all" onAction={() => router.push('/for-you')} />
-          <Panel style={{ paddingVertical: space.xs }}>
-            {forYou.slice(0, 3).map((item, i) => (
-              <View key={item.key} style={i > 0 ? { borderTopWidth: 1, borderTopColor: c.border } : undefined}>
-                <PerkForYouRow item={item} compact />
-              </View>
-            ))}
-          </Panel>
-        </>
-      ) : null}
 
       {data.profile?.country ? (
         <>

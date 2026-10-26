@@ -16,9 +16,6 @@ export const EVENTS = {
   offer_marked_used: { type: ['promo', 'gift_card', 'store_credit', 'points', 'free_trial', 'return_window', 'settlement', 'protection', 'price_drop', 'refund', 'benefit', 'travel_credit', 'certificate'] },
   item_added: { type: ['points', 'gift_card', 'store_credit', 'promo', 'benefit', 'refund'] },
   hidden_money_viewed: {},
-  // Perks for you: the list was opened, or a perk was opened / marked "I have it" / "Not for me".
-  for_you_viewed: { items: 'small_int', yours: 'small_int' },
-  perk_for_you: { action: ['open', 'have', 'dismissed', 'undo'], group: ['yours', 'claim'] },
   deals_viewed: { matched: 'small_int' },
   claim_started: { kind: ['price_adjustment', 'refund', 'duplicate_charge', 'return', 'settlement', 'card_claim', 'use'] },
   deal_claimed: {},

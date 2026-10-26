@@ -15,19 +15,11 @@
       "summary": "Miles expire after 24 months with no earning or redeeming. Primary AAdvantage credit cardmembers keep them while the card is open.",
       "how_to": "Earn or redeem at least once every 24 months — even a small purchase with a partner counts.",
       "url": "https://www.aa.com/web/i18n/aadvantage-program/aadvantage-terms-and-conditions.html",
-      "merchants": [
-        "american airlines",
-        "aadvantage"
-      ],
+      "merchants": ["american airlines", "aadvantage"],
       "window_days": null,
       "status": "active",
       "source_url": "https://www.aa.com/web/i18n/aadvantage-program/aadvantage-terms-and-conditions.html",
-      "last_verified": "2026-10-22",
-      "interests": [
-        "travel"
-      ],
-      "issuers": [],
-      "student_only": false
+      "last_verified": "2026-10-22"
     },
     {
       "id": "marriott_bonvoy",
@@ -38,18 +30,11 @@
       "summary": "Points are forfeited after 24 months with no earning or redeeming, and can't be reinstated.",
       "how_to": "Earn or redeem at least once every two years.",
       "url": "https://www.marriott.com/loyalty/points-expiration.mi",
-      "merchants": [
-        "marriott"
-      ],
+      "merchants": ["marriott"],
       "window_days": null,
       "status": "active",
       "source_url": "https://www.marriott.com/loyalty/terms/default.mi",
-      "last_verified": "2026-10-22",
-      "interests": [
-        "travel"
-      ],
-      "issuers": [],
-      "student_only": false
+      "last_verified": "2026-10-22"
     },
     {
       "id": "hilton_honors",
@@ -60,193 +45,123 @@
       "summary": "Points expire after 24 months with no qualifying activity (a stay, card earning, a partner, or buying or donating points).",
       "how_to": "Do one qualifying activity every 24 months.",
       "url": "https://www.hilton.com/en/p/hilton-honors/ways-to-stay-active/",
-      "merchants": [
-        "hilton"
-      ],
+      "merchants": ["hilton"],
       "window_days": null,
       "status": "active",
       "source_url": "https://www.hilton.com/en/hilton-honors/support-faq/",
-      "last_verified": "2026-10-22",
-      "interests": [
-        "travel"
-      ],
-      "issuers": [],
-      "student_only": false
+      "last_verified": "2026-10-22"
     },
     {
       "id": "starbucks_rewards",
       "kind": "loyalty",
       "name": "Starbucks Rewards",
       "provider": "Starbucks",
-      "countries": [
-        "US"
-      ],
-      "summary": "Free to join. A free birthday drink or food item (make one Star-earning purchase first). Green-level Stars expire after 6 months.",
+      "countries": ["US"],
+      "summary": "Green-level Stars expire 6 months after the month you earn them. Gold and Reserve members' Stars don't expire.",
       "how_to": "A Star-earning purchase, a reward redemption or a $30+ digital reload in the month before pushes expiry back a month.",
       "url": "https://www.starbucks.com/rewards/terms/",
-      "merchants": [
-        "starbucks"
-      ],
+      "merchants": ["starbucks"],
       "window_days": null,
       "status": "active",
       "source_url": "https://www.starbucks.com/rewards/terms/",
-      "last_verified": "2026-10-22",
-      "interests": [
-        "dining"
-      ],
-      "issuers": [],
-      "student_only": false
+      "last_verified": "2026-10-22"
     },
     {
       "id": "caribbean_miles",
       "kind": "loyalty",
       "name": "Caribbean Miles",
       "provider": "Caribbean Airlines",
-      "countries": [
-        "TT",
-        "JM",
-        "BB",
-        "GY",
-        "BS"
-      ],
+      "countries": ["TT", "JM", "BB", "GY", "BS"],
       "summary": "Caribbean Airlines' miles program. We couldn't confirm when miles expire — check your account and add the date here.",
       "how_to": "Log in to Caribbean Miles to see your balance and any expiry date.",
       "url": "https://www.caribbean-airlines.com/",
-      "merchants": [
-        "caribbean airlines"
-      ],
+      "merchants": ["caribbean airlines"],
       "window_days": null,
       "status": "TODO_VERIFY",
       "source_url": null,
-      "last_verified": null,
-      "interests": [
-        "travel"
-      ],
-      "issuers": [],
-      "student_only": false
+      "last_verified": null
     },
     {
       "id": "massy_card",
       "kind": "loyalty",
       "name": "Massy Card",
       "provider": "Massy",
-      "countries": [
-        "TT"
-      ],
+      "countries": ["TT"],
       "summary": "Points at Massy Stores and partners (1 point per TT$10 at launch). We couldn't confirm if or when points expire.",
       "how_to": "Check your balance in the Massy Card app or on your receipt, and add it here with any expiry date.",
       "url": "https://massygroup.com/news-item/welcome-to-the-massy-card-welcome-to-more-rewards/",
-      "merchants": [
-        "massy"
-      ],
+      "merchants": ["massy"],
       "window_days": null,
       "status": "TODO_VERIFY",
       "source_url": "https://massygroup.com/news-item/welcome-to-the-massy-card-welcome-to-more-rewards/",
-      "last_verified": null,
-      "interests": [
-        "groceries"
-      ],
-      "issuers": [],
-      "student_only": false
+      "last_verified": null
     },
     {
       "id": "target_price_match",
       "kind": "price_adjust",
       "name": "Target price match",
       "provider": "Target",
-      "countries": [
-        "US"
-      ],
+      "countries": ["US"],
       "summary": "If Target lowers the price of an identical item within 14 days of your purchase, it refunds the difference. Clearance is excluded.",
       "how_to": "Bring the receipt to a store, or call 1-800-591-3869 for Target.com orders. Screenshots aren't accepted — show the live price.",
       "url": "https://www.target.com/help/articles/policies-guidelines/price-match-guarantee",
-      "merchants": [
-        "target"
-      ],
+      "merchants": ["target"],
       "window_days": 14,
       "status": "active",
       "source_url": "https://www.target.com/help/articles/policies-guidelines/price-match-guarantee",
-      "last_verified": "2026-10-22",
-      "interests": [],
-      "issuers": [],
-      "student_only": false
+      "last_verified": "2026-10-22"
     },
     {
       "id": "best_buy_price_match",
       "kind": "price_adjust",
       "name": "Best Buy price match",
       "provider": "Best Buy",
-      "countries": [
-        "US"
-      ],
+      "countries": ["US"],
       "summary": "If Best Buy lowers its price during your return and exchange period, it matches the lower price on request — more than once. Open-box and clearance are excluded.",
       "how_to": "Online orders: chat or call 1-888-237-8289. Store purchases: Customer Service desk.",
       "url": "https://www.bestbuy.com/site/help-topics/price-match-guarantee/pcmcat290300050002.c?id=pcmcat290300050002",
-      "merchants": [
-        "best buy",
-        "bestbuy"
-      ],
+      "merchants": ["best buy", "bestbuy"],
       "window_days": null,
       "status": "active",
       "source_url": "https://www.bestbuy.com/site/help-topics/price-match-guarantee/pcmcat290300050002.c?id=pcmcat290300050002",
-      "last_verified": "2026-10-22",
-      "interests": [],
-      "issuers": [],
-      "student_only": false
+      "last_verified": "2026-10-22"
     },
     {
       "id": "costco_price_adjustment",
       "kind": "price_adjust",
       "name": "Costco price adjustment",
       "provider": "Costco",
-      "countries": [
-        "US"
-      ],
+      "countries": ["US"],
       "summary": "If the price drops within 30 days of purchase, members can get the difference back. Costco can deny requests at its discretion.",
       "how_to": "Costco.com orders: the price adjustment form online. Warehouse purchases: the returns counter where you bought it.",
       "url": "https://customerservice.costco.com/app/answers/answer_view/a_id/628/~/price-match---costco.com-orders",
-      "merchants": [
-        "costco"
-      ],
+      "merchants": ["costco"],
       "window_days": 30,
       "status": "active",
       "source_url": "https://customerservice.costco.com/app/answers/answer_view/a_id/628/~/price-match---costco.com-orders",
-      "last_verified": "2026-10-22",
-      "interests": [],
-      "issuers": [],
-      "student_only": false
+      "last_verified": "2026-10-22"
     },
     {
       "id": "macys_price_adjustment",
       "kind": "price_adjust",
       "name": "Macy's price adjustment",
       "provider": "Macy's",
-      "countries": [
-        "US"
-      ],
+      "countries": ["US"],
       "summary": "If an eligible item's advertised price drops within 10 days of your order, Macy's refunds the difference. Clearance and some items are excluded.",
       "how_to": "Request it from Macy's customer service; it goes back to your original payment method.",
       "url": "https://www.macys.com/customer-service/articles/how-can-i-get-a-price-adjustment",
-      "merchants": [
-        "macy's",
-        "macys"
-      ],
+      "merchants": ["macy's", "macys"],
       "window_days": 10,
       "status": "active",
       "source_url": "https://www.macys.com/customer-service/articles/how-can-i-get-a-price-adjustment",
-      "last_verified": "2026-10-22",
-      "interests": [],
-      "issuers": [],
-      "student_only": false
+      "last_verified": "2026-10-22"
     },
     {
       "id": "us_missing_money",
       "kind": "unclaimed",
       "name": "Unclaimed money (US states)",
       "provider": "NAUPA · MissingMoney.com",
-      "countries": [
-        "US"
-      ],
+      "countries": ["US"],
       "summary": "Forgotten bank balances, refunds, deposits and insurance payouts held by states. Searching is free.",
       "how_to": "Search your name on MissingMoney.com, plus your state's own site. Never pay a finder to search.",
       "url": "https://www.missingmoney.com/",
@@ -254,19 +169,14 @@
       "window_days": null,
       "status": "active",
       "source_url": "https://unclaimed.org/search-for-your-unclaimed-property-its-free/",
-      "last_verified": "2026-10-22",
-      "interests": [],
-      "issuers": [],
-      "student_only": false
+      "last_verified": "2026-10-22"
     },
     {
       "id": "tt_unclaimed_securities",
       "kind": "unclaimed",
       "name": "Unclaimed government bond payments",
       "provider": "Central Bank of Trinidad and Tobago",
-      "countries": [
-        "TT"
-      ],
+      "countries": ["TT"],
       "summary": "Unpaid interest and maturity payments on government bonds, treasury bills and notes. The Central Bank publishes the names.",
       "how_to": "Check the list, then call the Government Services Unit at 621-2288 or 235-2288.",
       "url": "https://www.central-bank.org.tt/notice-collection-unclaimed-funds",
@@ -274,19 +184,14 @@
       "window_days": null,
       "status": "active",
       "source_url": "https://www.central-bank.org.tt/notice-collection-unclaimed-funds",
-      "last_verified": "2026-10-22",
-      "interests": [],
-      "issuers": [],
-      "student_only": false
+      "last_verified": "2026-10-22"
     },
     {
       "id": "jm_unclaimed_balances",
       "kind": "unclaimed",
       "name": "Unclaimed bank balances",
       "provider": "Ministry of Finance and the Public Service",
-      "countries": [
-        "JM"
-      ],
+      "countries": ["JM"],
       "summary": "Accounts untouched for 15+ years are published twice a year. Claim at your bank within a year of publication, then from the Accountant General.",
       "how_to": "Search the latest list on the Ministry's publications page, then contact the bank named.",
       "url": "https://www.mof.gov.jm/documents/publications/",
@@ -294,19 +199,14 @@
       "window_days": null,
       "status": "active",
       "source_url": "https://mof.gov.jm/about/overview/faq/183-financial-regulations/22-how-can-i-obtain-my-money-published-as-unclaimed-balances-in-the-newspaper.html",
-      "last_verified": "2026-10-22",
-      "interests": [],
-      "issuers": [],
-      "student_only": false
+      "last_verified": "2026-10-22"
     },
     {
       "id": "bs_dormant_accounts",
       "kind": "unclaimed",
       "name": "Dormant bank balances",
       "provider": "Central Bank of The Bahamas",
-      "countries": [
-        "BS"
-      ],
+      "countries": ["BS"],
       "summary": "Balances inactive for years are moved to the Central Bank for safekeeping until the owner claims them.",
       "how_to": "Ask the bank where you held the account — it makes the claim with the Central Bank for you.",
       "url": "https://www.centralbankbahamas.com/viewPDF/documents/2019-06-21-04-11-47-Dormant-Account-Guidelines.pdf",
@@ -314,19 +214,14 @@
       "window_days": null,
       "status": "active",
       "source_url": "https://www.centralbankbahamas.com/viewPDF/documents/2019-06-21-04-11-47-Dormant-Account-Guidelines.pdf",
-      "last_verified": "2026-10-22",
-      "interests": [],
-      "issuers": [],
-      "student_only": false
+      "last_verified": "2026-10-22"
     },
     {
       "id": "bb_inactive_accounts",
       "kind": "unclaimed",
       "name": "Inactive bank accounts",
       "provider": "Barbados banks",
-      "countries": [
-        "BB"
-      ],
+      "countries": ["BB"],
       "summary": "Banks publish lists of long-inactive accounts before unclaimed money goes to the Central Bank of Barbados. We couldn't find an official searchable list.",
       "how_to": "Ask any bank where you've had an account whether you're on its inactive-accounts list.",
       "url": "https://www.centralbank.org.bb/",
@@ -334,10 +229,7 @@
       "window_days": null,
       "status": "TODO_VERIFY",
       "source_url": null,
-      "last_verified": null,
-      "interests": [],
-      "issuers": [],
-      "student_only": false
+      "last_verified": null
     },
     {
       "id": "libby",
@@ -352,23 +244,14 @@
       "window_days": null,
       "status": "active",
       "source_url": "https://help.libbyapp.com/en-us/6144.htm",
-      "last_verified": "2026-10-22",
-      "interests": [
-        "education",
-        "entertainment",
-        "kids"
-      ],
-      "issuers": [],
-      "student_only": false
+      "last_verified": "2026-10-22"
     },
     {
       "id": "kanopy",
       "kind": "library",
       "name": "Kanopy",
       "provider": "Kanopy",
-      "countries": [
-        "US"
-      ],
+      "countries": ["US"],
       "summary": "Free films and documentaries through participating libraries and universities.",
       "how_to": "Find your library on Kanopy and sign in with your library card.",
       "url": "https://www.kanopy.com/en/signup/find/publiclibrary",
@@ -376,22 +259,14 @@
       "window_days": null,
       "status": "active",
       "source_url": "https://help.kanopy.com/en-us/4171.htm",
-      "last_verified": "2026-10-22",
-      "interests": [
-        "entertainment",
-        "education"
-      ],
-      "issuers": [],
-      "student_only": false
+      "last_verified": "2026-10-22"
     },
     {
       "id": "nalis",
       "kind": "library",
       "name": "NALIS library card",
       "provider": "NALIS",
-      "countries": [
-        "TT"
-      ],
+      "countries": ["TT"],
       "summary": "Free for residents: e-books and audiobooks on Libby, popular magazines on Flipster and EBSCO research databases.",
       "how_to": "Register online, collect your card at a branch, then set your PIN for the digital library.",
       "url": "https://www.nalis.gov.tt/FAQs",
@@ -399,19 +274,14 @@
       "window_days": null,
       "status": "active",
       "source_url": "https://www.nalis.gov.tt/FAQs",
-      "last_verified": "2026-10-22",
-      "interests": [],
-      "issuers": [],
-      "student_only": false
+      "last_verified": "2026-10-22"
     },
     {
       "id": "jamaica_library_service",
       "kind": "library",
       "name": "Jamaica Library Service",
       "provider": "Jamaica Library Service",
-      "countries": [
-        "JM"
-      ],
+      "countries": ["JM"],
       "summary": "Free computers and internet at 119 libraries; members can use EBSCO research databases.",
       "how_to": "Join at any parish or branch library.",
       "url": "https://jis.gov.jm/jamaica-library-service-embraces-use-technology-services/",
@@ -419,10 +289,7 @@
       "window_days": null,
       "status": "active",
       "source_url": "https://jis.gov.jm/jamaica-library-service-embraces-use-technology-services/",
-      "last_verified": "2026-10-22",
-      "interests": [],
-      "issuers": [],
-      "student_only": false
+      "last_verified": "2026-10-22"
     },
     {
       "id": "us_dot_flight_refunds",
@@ -437,10 +304,7 @@
       "window_days": null,
       "status": "active",
       "source_url": "https://www.transportation.gov/individuals/aviation-consumer-protection/refunds",
-      "last_verified": "2026-10-22",
-      "interests": [],
-      "issuers": [],
-      "student_only": false
+      "last_verified": "2026-10-22"
     },
     {
       "id": "eu261",
@@ -455,19 +319,14 @@
       "window_days": null,
       "status": "active",
       "source_url": "https://eur-lex.europa.eu/eli/reg/2004/261/oj/eng",
-      "last_verified": "2026-10-22",
-      "interests": [],
-      "issuers": [],
-      "student_only": false
+      "last_verified": "2026-10-22"
     },
     {
       "id": "us_billing_errors",
       "kind": "refund_rule",
       "name": "Charged twice or for something you never got",
       "provider": "Consumer Financial Protection Bureau",
-      "countries": [
-        "US"
-      ],
+      "countries": ["US"],
       "summary": "US credit cards: dispute billing errors in writing within 60 days of the statement that first shows them. You don't have to pay the disputed amount while it's investigated.",
       "how_to": "Call your card issuer, then send a letter to its billing-inquiries address.",
       "url": "https://www.consumerfinance.gov/consumer-tools/credit-cards/how-to-fix-mistakes-in-your-credit-card-bill/",
@@ -475,19 +334,14 @@
       "window_days": null,
       "status": "active",
       "source_url": "https://www.consumerfinance.gov/rules-policy/regulations/1026/13/",
-      "last_verified": "2026-10-22",
-      "interests": [],
-      "issuers": [],
-      "student_only": false
+      "last_verified": "2026-10-22"
     },
     {
       "id": "us_health_fsa",
       "kind": "deadline_rule",
       "name": "Health FSA: use it or lose it",
       "provider": "IRS",
-      "countries": [
-        "US"
-      ],
+      "countries": ["US"],
       "summary": "Money left in a health FSA at the end of the plan year is lost, unless your plan has a grace period (up to 2½ months) or a carryover (up to $680 for 2026) — never both.",
       "how_to": "Check your plan's deadline and add your balance here so PerkScan reminds you.",
       "url": "https://www.irs.gov/publications/p969",
@@ -495,363 +349,7 @@
       "window_days": null,
       "status": "active",
       "source_url": "https://www.irs.gov/pub/irs-pdf/iw2w3.pdf",
-      "last_verified": "2026-10-22",
-      "interests": [],
-      "issuers": [],
-      "student_only": false
-    },
-    {
-      "id": "sephora_beauty_insider",
-      "kind": "free_perk",
-      "name": "Sephora Beauty Insider",
-      "provider": "Sephora",
-      "countries": [
-        "US"
-      ],
-      "summary": "Free to join. A birthday gift every year (no purchase in store; $25 minimum online), plus 1 point per $1.",
-      "how_to": "Join in the Sephora app or at sephora.com and add your birthday.",
-      "url": "https://www.sephora.com/beautyinsider",
-      "merchants": [
-        "sephora"
-      ],
-      "window_days": null,
-      "interests": [
-        "beauty"
-      ],
-      "issuers": [],
-      "student_only": false,
-      "status": "active",
-      "source_url": "https://www.sephora.com/beauty/terms-conditions-beauty-insider",
-      "last_verified": "2026-10-25"
-    },
-    {
-      "id": "ulta_beauty_rewards",
-      "kind": "free_perk",
-      "name": "Ulta Beauty Rewards",
-      "provider": "Ulta Beauty",
-      "countries": [
-        "US"
-      ],
-      "summary": "Free to join. A free birthday gift with a qualifying purchase and double points in your birthday month; 100 points = $3 off.",
-      "how_to": "Join at ulta.com, add your birthday and opt in to emails before your birthday month.",
-      "url": "https://www.ulta.com/rewards/all",
-      "merchants": [
-        "ulta"
-      ],
-      "window_days": null,
-      "interests": [
-        "beauty"
-      ],
-      "issuers": [],
-      "student_only": false,
-      "status": "active",
-      "source_url": "https://www.ulta.com/rewards/birthday-gift",
-      "last_verified": "2026-10-25"
-    },
-    {
-      "id": "chipotle_rewards",
-      "kind": "free_perk",
-      "name": "Chipotle Rewards",
-      "provider": "Chipotle",
-      "countries": [
-        "US"
-      ],
-      "summary": "Free to join. 10 points per $1 and a free birthday reward (guac, queso, chips or a drink).",
-      "how_to": "Join in the Chipotle app and add your birthday.",
-      "url": "https://www.chipotle.com/rewards",
-      "merchants": [
-        "chipotle"
-      ],
-      "window_days": null,
-      "interests": [
-        "dining",
-        "delivery"
-      ],
-      "issuers": [],
-      "student_only": false,
-      "status": "active",
-      "source_url": "https://www.chipotle.com/rewards-terms",
-      "last_verified": "2026-10-25"
-    },
-    {
-      "id": "mypanera",
-      "kind": "free_perk",
-      "name": "MyPanera",
-      "provider": "Panera Bread",
-      "countries": [
-        "US"
-      ],
-      "summary": "Free to join. A free bakery treat for your birthday, no purchase needed.",
-      "how_to": "Join MyPanera and add your birthday to your account.",
-      "url": "https://www.panerabread.com/en-us/mypanera/meet-mypanera.html",
-      "merchants": [
-        "panera"
-      ],
-      "window_days": null,
-      "interests": [
-        "dining"
-      ],
-      "issuers": [],
-      "student_only": false,
-      "status": "active",
-      "source_url": "https://www.panerabread.com/en-us/legal/terms-of-use.html",
-      "last_verified": "2026-10-25"
-    },
-    {
-      "id": "dunkin_rewards",
-      "kind": "free_perk",
-      "name": "Dunkin' Rewards",
-      "provider": "Dunkin'",
-      "countries": [
-        "US"
-      ],
-      "summary": "Free to join. 10 points per $1, rewards from 150 points, and 3X points around your birthday.",
-      "how_to": "Join in the Dunkin' app and add your birthday.",
-      "url": "https://www.dunkindonuts.com/en/dunkinrewards",
-      "merchants": [
-        "dunkin"
-      ],
-      "window_days": null,
-      "interests": [
-        "dining"
-      ],
-      "issuers": [],
-      "student_only": false,
-      "status": "active",
-      "source_url": "https://www.dunkindonuts.com/dunkin-rewards-terms-and-conditions/",
-      "last_verified": "2026-10-25"
-    },
-    {
-      "id": "amc_stubs_insider",
-      "kind": "free_perk",
-      "name": "AMC Stubs Insider",
-      "provider": "AMC Theatres",
-      "countries": [
-        "US"
-      ],
-      "summary": "Free to join. A free large popcorn in your birthday month (after a month of membership).",
-      "how_to": "Join at amctheatres.com/amcstubs and add your birthday.",
-      "url": "https://www.amctheatres.com/amcstubs",
-      "merchants": [
-        "amc"
-      ],
-      "window_days": null,
-      "interests": [
-        "entertainment"
-      ],
-      "issuers": [],
-      "student_only": false,
-      "status": "active",
-      "source_url": "https://www.amctheatres.com/amcstubs/terms-and-conditions",
-      "last_verified": "2026-10-25"
-    },
-    {
-      "id": "cvs_extracare",
-      "kind": "free_perk",
-      "name": "CVS ExtraCare",
-      "provider": "CVS",
-      "countries": [
-        "US"
-      ],
-      "summary": "Free. 2% back in ExtraBucks Rewards on qualifying purchases and a $3 birthday reward.",
-      "how_to": "Join at cvs.com/extracare, add your birthday and turn on notifications 4 weeks before.",
-      "url": "https://www.cvs.com/extracare/overview",
-      "merchants": [
-        "cvs"
-      ],
-      "window_days": null,
-      "interests": [
-        "beauty",
-        "shopping"
-      ],
-      "issuers": [],
-      "student_only": false,
-      "status": "active",
-      "source_url": "https://www.cvs.com/extracare/free/terms",
-      "last_verified": "2026-10-25"
-    },
-    {
-      "id": "target_circle",
-      "kind": "free_perk",
-      "name": "Target Circle",
-      "provider": "Target",
-      "countries": [
-        "US"
-      ],
-      "summary": "Free. Deals applied at checkout and 5% off a purchase for your birthday (use it within 30 days).",
-      "how_to": "Join Target Circle and add your birth date before your birthday.",
-      "url": "https://www.target.com/l/target-circle/-/N-pzno9",
-      "merchants": [
-        "target"
-      ],
-      "window_days": null,
-      "interests": [
-        "shopping",
-        "home",
-        "kids"
-      ],
-      "issuers": [],
-      "student_only": false,
-      "status": "active",
-      "source_url": "https://www.target.com/help/articles/target-circle/about-target-circle",
-      "last_verified": "2026-10-25"
-    },
-    {
-      "id": "bofa_museums_on_us",
-      "kind": "free_perk",
-      "name": "Museums on Us",
-      "provider": "Bank of America",
-      "countries": [
-        "US"
-      ],
-      "summary": "Free general admission at participating museums the first full weekend of every month for Bank of America cardholders.",
-      "how_to": "Show your Bank of America card and a photo ID at a participating museum.",
-      "url": "https://about.bankofamerica.com/en/making-an-impact/museums-on-us-partners",
-      "merchants": [],
-      "window_days": null,
-      "interests": [
-        "entertainment",
-        "education",
-        "kids"
-      ],
-      "issuers": [
-        "Bank of America"
-      ],
-      "student_only": false,
-      "status": "active",
-      "source_url": "https://about.bankofamerica.com/en/making-an-impact/museums-on-us-partners",
-      "last_verified": "2026-10-25"
-    },
-    {
-      "id": "amex_offers",
-      "kind": "free_perk",
-      "name": "Amex Offers",
-      "provider": "American Express",
-      "countries": [
-        "US"
-      ],
-      "summary": "Statement credits at stores and restaurants: add an offer to your card, then pay with that card.",
-      "how_to": "Open Offers in the Amex app and tap \"Add to Card\" before you buy.",
-      "url": "https://www.americanexpress.com/en-us/benefits/offers/",
-      "merchants": [],
-      "window_days": null,
-      "interests": [],
-      "issuers": [
-        "American Express"
-      ],
-      "student_only": false,
-      "status": "active",
-      "source_url": "https://www.americanexpress.com/us/customer-service/faq.find-add-amex-offers.html",
-      "last_verified": "2026-10-25"
-    },
-    {
-      "id": "chase_offers",
-      "kind": "free_perk",
-      "name": "Chase Offers",
-      "provider": "Chase",
-      "countries": [
-        "US"
-      ],
-      "summary": "Cash back at stores and restaurants: add an offer to your card in the Chase app, then pay with that card.",
-      "how_to": "Open Chase Offers in the Chase app and add offers before you buy.",
-      "url": "https://www.chase.com/personal/merchant-offers",
-      "merchants": [],
-      "window_days": null,
-      "interests": [],
-      "issuers": [
-        "Chase"
-      ],
-      "student_only": false,
-      "status": "active",
-      "source_url": "https://www.chase.com/personal/merchant-offers/faqs",
-      "last_verified": "2026-10-25"
-    },
-    {
-      "id": "capital_one_offers",
-      "kind": "free_perk",
-      "name": "Capital One Offers",
-      "provider": "Capital One",
-      "countries": [
-        "US"
-      ],
-      "summary": "Cash back or miles when you shop through an offer you activate with your Capital One card.",
-      "how_to": "Pick an offer in the Capital One app and shop from its link with the same card.",
-      "url": "https://www.capitalone.com/learn-grow/money-management/capital-one-offers/",
-      "merchants": [],
-      "window_days": null,
-      "interests": [],
-      "issuers": [
-        "Capital One"
-      ],
-      "student_only": false,
-      "status": "active",
-      "source_url": "https://www.capitalone.com/learn-grow/money-management/capital-one-offers/",
-      "last_verified": "2026-10-25"
-    },
-    {
-      "id": "citi_merchant_offers",
-      "kind": "free_perk",
-      "name": "Citi Merchant Offers",
-      "provider": "Citi",
-      "countries": [
-        "US"
-      ],
-      "summary": "Statement credits from offers you enroll in, plus Citi Shop for online stores.",
-      "how_to": "Enroll in offers in your Citi account, then pay with that card.",
-      "url": "https://www.citi.com/credit-cards/citishop/home",
-      "merchants": [],
-      "window_days": null,
-      "interests": [],
-      "issuers": [
-        "Citi"
-      ],
-      "student_only": false,
-      "status": "active",
-      "source_url": "https://www.citi.com/credit-cards/citishop/home",
-      "last_verified": "2026-10-25"
-    },
-    {
-      "id": "nps_fee_free_days",
-      "kind": "free_perk",
-      "name": "National park fee-free days",
-      "provider": "National Park Service",
-      "countries": [
-        "US"
-      ],
-      "summary": "Free entrance to national parks on 8 days a year for US residents (2026: Nov 11, Veterans Day, is next). Camping and other fees still apply.",
-      "how_to": "Check the dates and go: no sign-up needed.",
-      "url": "https://www.nps.gov/planyourvisit/passes.htm",
-      "merchants": [],
-      "window_days": null,
-      "interests": [
-        "travel",
-        "kids"
-      ],
-      "issuers": [],
-      "student_only": false,
-      "status": "active",
-      "source_url": "https://www.nps.gov/planyourvisit/passes.htm",
-      "last_verified": "2026-10-25"
-    },
-    {
-      "id": "irs_free_file",
-      "kind": "free_perk",
-      "name": "IRS Free File",
-      "provider": "IRS",
-      "countries": [
-        "US"
-      ],
-      "summary": "File your federal taxes free with guided software if your 2025 income (AGI) was $89,000 or less; free fillable forms for anyone.",
-      "how_to": "Start at irs.gov/freefile, not on a tax company’s own site.",
-      "url": "https://apps.irs.gov/app/freeFile",
-      "merchants": [],
-      "window_days": null,
-      "interests": [],
-      "issuers": [],
-      "student_only": false,
-      "status": "active",
-      "source_url": "https://www.irs.gov/newsroom/use-irs-free-file-to-conveniently-file-your-return-at-no-cost",
-      "last_verified": "2026-10-25"
+      "last_verified": "2026-10-22"
     }
   ]
 }

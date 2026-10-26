@@ -2,7 +2,7 @@ import { itemTitle, parseAmount, parseDay, programSections, type Program } from 
 
 const program = (p: Partial<Program> & { id: string }): Program => ({
   kind: 'loyalty', name: p.id, provider: 'X', countries: [], summary: 's', how_to: 'h', url: 'https://x.example', merchants: [],
-  window_days: null, interests: [], issuers: [], student_only: false, status: 'active', last_verified: '2026-10-22', sort_order: 0, ...p,
+  window_days: null, status: 'active', last_verified: '2026-10-22', sort_order: 0, ...p,
 });
 
 describe('programSections', () => {

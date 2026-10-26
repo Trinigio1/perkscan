@@ -123,10 +123,7 @@ export function settlementsToSql(f: SettlementFile): string[] {
   return f.settlements.map((s) => upsert('settlements', s, ['eligible_merchants', 'eligible_countries']));
 }
 
-export const PROGRAM_KINDS = ['loyalty', 'price_adjust', 'unclaimed', 'library', 'refund_rule', 'deadline_rule', 'free_perk'] as const;
-
-/** Interest ids (same as INTERESTS in deals.ts) a perk matters for. */
-const INTEREST_IDS = ['groceries', 'dining', 'delivery', 'electronics', 'fashion', 'home', 'travel', 'beauty', 'fitness', 'entertainment', 'fuel', 'kids', 'pets', 'education', 'shopping'] as const;
+export const PROGRAM_KINDS = ['loyalty', 'price_adjust', 'unclaimed', 'library', 'refund_rule', 'deadline_rule'] as const;
 
 export const programSchema = z
   .object({
@@ -143,12 +140,6 @@ export const programSchema = z
     merchants: z.array(z.string().min(2).regex(/^[a-z0-9 .&'-]+$/, 'Lowercase store names')),
     /** Days after purchase a price adjustment is allowed; null = during the return period. */
     window_days: z.number().int().min(1).max(365).nullable(),
-    /** What it matters for, to rank it for people into these. */
-    interests: z.array(z.enum(INTEREST_IDS)).default([]),
-    /** Card issuers whose cardholders get it (e.g. "Bank of America"); empty = anyone. */
-    issuers: z.array(z.string().min(2)).default([]),
-    /** Only for students. */
-    student_only: z.boolean().default(false),
     status: z.enum(['active', 'TODO_VERIFY']),
     source_url: https.nullable(),
     last_verified: isoDate.nullable(),
@@ -173,7 +164,7 @@ export const programFileSchema = z.object({
 export type ProgramFile = z.infer<typeof programFileSchema>;
 
 export function programsToSql(f: ProgramFile): string[] {
-  return f.programs.map((p, i) => upsert('perk_programs', { ...p, sort_order: i }, ['countries', 'merchants', 'interests', 'issuers']));
+  return f.programs.map((p, i) => upsert('perk_programs', { ...p, sort_order: i }, ['countries', 'merchants']));
 }
 
 export const EVENT_CATEGORIES = ['bank_promo', 'free_day', 'enrollment', 'deadline', 'sale', 'student'] as const;
