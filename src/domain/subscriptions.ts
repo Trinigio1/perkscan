@@ -16,6 +16,16 @@ export interface Service {
 
 export const SERVICES: Service[] = [
   { key: 'netflix', name: 'Netflix', match: /netflix/i },
+  { key: 'spotify', name: 'Spotify Premium', match: /spotify/i },
+  { key: 'apple_music', name: 'Apple Music', match: /apple music/i },
+  { key: 'icloud', name: 'iCloud+', match: /icloud/i },
+  { key: 'claude', name: 'Claude Pro', match: /anthropic|claude/i },
+  { key: 'chatgpt', name: 'ChatGPT Plus', match: /openai|chatgpt/i },
+  { key: 'adobe', name: 'Adobe Creative Cloud', match: /adobe/i },
+  { key: 'microsoft_365', name: 'Microsoft 365', match: /microsoft 365|office 365/i },
+  { key: 'dropbox', name: 'Dropbox', match: /dropbox/i },
+  { key: 'duolingo', name: 'Duolingo', match: /duolingo/i },
+  { key: 'capcut', name: 'CapCut', match: /capcut/i },
   { key: 'hulu', name: 'Hulu', match: /\bhulu\b/i },
   { key: 'disney', name: 'Disney+', match: /disney\s*(\+|plus)/i },
   { key: 'peacock', name: 'Peacock', match: /peacock/i },

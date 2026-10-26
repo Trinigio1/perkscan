@@ -1,5 +1,6 @@
 import { useMemo } from 'react';
 import { membershipHints, membershipsSeen, payingTwice, recentCharges, type MembershipHint, type PayingTwice } from '@/domain/subscriptions';
+import { mySubscriptions, type Subscription } from '@/domain/mySubscriptions';
 import { useData, useLookups } from './data';
 
 const daysAgo = (n: number) => new Date(Date.now() - n * 86_400_000).toISOString().slice(0, 10);
@@ -22,4 +23,11 @@ export function usePayingTwice(): PayingTwice[] {
     () => payingTwice(recentCharges(data.receipts, daysAgo(45)), data.userCards, data.benefits, userCardLabel),
     [data.receipts, data.userCards, data.benefits, userCardLabel],
   );
+}
+
+/** Subscriptions the receipts show, with student prices where they'd save. */
+export function useMySubscriptions(): Subscription[] {
+  const { data } = useData();
+  const student = !!data.profile?.is_student || !!data.school;
+  return useMemo(() => mySubscriptions(data.receipts, new Date(), student), [data.receipts, student]);
 }

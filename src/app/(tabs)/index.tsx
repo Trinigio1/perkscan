@@ -18,7 +18,8 @@ import { scoreByCurrency } from '@/domain/score';
 import { greeting } from '@/domain/visuals';
 import { useData, useLookups } from '@/lib/data';
 import { useDeals } from '@/lib/deals';
-import { useMembershipHints } from '@/lib/memberships';
+import { useMembershipHints, useMySubscriptions } from '@/lib/memberships';
+import { openStudentOffers } from '@/domain/suggestions';
 import { useDismissed } from '@/lib/suggestions';
 import { font, space, useColors } from '@/theme';
 
@@ -32,6 +33,7 @@ const others = (bag: MoneyBag, shown: string) => {
 const EXPLORE: { icon: IconName; label: string; href: Href }[] = [
   { icon: 'search', label: 'Hidden money', href: '/hidden-money' },
   { icon: 'mail-open', label: 'What PerkScan read', href: '/inbox' },
+  { icon: 'repeat', label: 'Subscriptions', href: '/subscriptions' },
   { icon: 'airplane', label: 'Card perks', href: '/perks' },
   { icon: 'card', label: 'Your cards', href: '/cards' },
   { icon: 'storefront', label: 'Before you pay', href: '/checkout' },
@@ -80,6 +82,10 @@ export default function Home() {
       discounts: discountSummary(data.opportunities, data.receipts, at),
     };
   }, [data, statusOf]);
+  // Student perks: free software, music and Prime prices that come with a school email.
+  const studentPerks = data.profile?.is_student || data.school ? openStudentOffers({ studentOffers: data.studentOffers, studentClaims: data.studentClaims, school: data.school, country: data.profile?.country ?? null }).length : 0;
+  // Subscriptions where a checked student price is cheaper than what the receipts show.
+  const studentSavings = useMySubscriptions().filter((x) => x.student);
   // Deals matched to you: stated amounts off, or a percent of your usual spend at that store.
   const dealsFor = useMemo(() => dealsWorth(deals.forYou, data.receipts, now, home), [deals.forYou, data.receipts, now, home]);
 
@@ -143,6 +149,7 @@ export default function Home() {
           text={nonZero(dealsFor.worth) ? `+ ≈ ${formatBag(dealsFor.worth, big)} in deals for you · ${dealsFor.total} deal${dealsFor.total === 1 ? '' : 's'}` : `+ ${dealsFor.total} deal${dealsFor.total === 1 ? '' : 's'} for you`}
           onPress={() => router.push('/deals')}
         />
+        <ExtraLine show={studentPerks > 0} text={`+ ${studentPerks} student perk${studentPerks === 1 ? '' : 's'} for you`} onPress={() => router.push('/student')} />
         {/* The three small numbers only once there's something in them. */}
         {quiet ? null : (
           <Row gap={0} style={{ marginTop: space.lg, borderTopWidth: 1, borderTopColor: c.heroTrack, paddingTop: space.md }}>
@@ -158,6 +165,15 @@ export default function Home() {
       {step ? <NextStep step={step} /> : null}
       {spotted[0] ? <SpottedCardPanel spotted={spotted[0]} more={spotted.length - 1} /> : null}
       <PayingTwicePanel />
+      {studentSavings.length ? (
+        <Panel onPress={() => router.push('/subscriptions')} style={{ gap: 4 }}>
+          <T variant="caption" color={c.accentStrong}>Your subscriptions</T>
+          <T variant="subheading">
+            Save {formatBag(studentSavings.reduce((b, x) => addToBag(b, x.student!.currency, x.student!.savesYearly), {} as MoneyBag))} a year with student prices
+          </T>
+          <T variant="caption" muted>{studentSavings.map((x) => x.name).join(', ')}: you pay the full price, and you qualify for the student plan.</T>
+        </Panel>
+      ) : null}
       {dismissedLoaded && showMembershipNudge && !dismissed.has(membershipNudgeKey) ? <MembershipNudge onHide={() => dismiss(membershipNudgeKey)} /> : null}
       {dismissedLoaded && celebrate && !dismissed.has('found') ? <Found found={found} home={home} onDone={() => dismiss('found')} /> : null}
 

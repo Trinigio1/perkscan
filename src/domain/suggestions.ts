@@ -50,6 +50,14 @@ export function usesProgram(p: Pick<Program, 'merchants'>, senderDomains: string
   });
 }
 
+/** Student offers for you not yet marked claimed: your school's own, and ones for where you live. */
+export function openStudentOffers(d: Pick<SuggestionInput, 'studentOffers' | 'studentClaims' | 'school' | 'country'>): StudentOffer[] {
+  return d.studentOffers.filter(
+    (o) => !d.studentClaims.includes(o.id) &&
+      (o.university_ids?.length ? !!d.school && o.university_ids.includes(d.school.id) : !o.countries.length || (!!d.country && o.countries.includes(d.country))),
+  );
+}
+
 export function suggestions(d: SuggestionInput): Suggestion[] {
   const out: Suggestion[] = [];
 
@@ -66,10 +74,7 @@ export function suggestions(d: SuggestionInput): Suggestion[] {
     });
   }
   if (d.isStudent) {
-    const open = d.studentOffers.filter(
-      (o) => !d.studentClaims.includes(o.id) &&
-        (o.university_ids?.length ? !!d.school && o.university_ids.includes(d.school.id) : !o.countries.length || (!!d.country && o.countries.includes(d.country))),
-    ).length;
+    const open = openStudentOffers(d).length;
     if (open) {
       out.push({
         id: 'student_offers',

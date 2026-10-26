@@ -4,7 +4,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { Pressable, RefreshControl, ScrollView, View } from 'react-native';
 import { OpportunityRow } from '@/components/OfferRow';
 import { Button, Chip, Empty, Panel, Row, Screen, Segmented, T } from '@/components/ui';
-import { formatBag, getHomeCurrency } from '@/domain/format';
+import { formatBag, formatMoney, getHomeCurrency } from '@/domain/format';
+import { includedWhenYouNeedIt } from '@/domain/included';
 import { KIND_LABELS, moneyList, type MoneyKind, type MoneyView } from '@/domain/money';
 import { useData, useLookups } from '@/lib/data';
 import { space, useColors } from '@/theme';
@@ -44,6 +45,8 @@ export default function Money() {
   };
 
   const hasTotal = Object.values(shown.total).some((v) => v > 0);
+  // Credits you get back when you pay for something, and what memberships include: real, never in the total.
+  const included = useMemo(() => includedWhenYouNeedIt(data.userCards, data.cards, data.benefits), [data.userCards, data.cards, data.benefits]);
 
   return (
     <Screen title="Money" refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={c.accent} />}>
@@ -125,6 +128,32 @@ export default function Money() {
           );
         })
       )}
+
+      {view === 'open' && (shownKind === 'all' || shownKind === 'credits') && included.length ? (
+        <View style={{ gap: space.sm }}>
+          <T variant="overline" muted>When you need it</T>
+          <Panel style={{ paddingVertical: space.xs }}>
+            {included.map((x, i) => (
+              <Pressable
+                key={x.key}
+                onPress={() => router.push({ pathname: '/card/[id]', params: { id: x.userCardId } })}
+                accessibilityRole="button"
+                style={({ pressed }) => [{ paddingVertical: space.md, gap: 2, opacity: pressed ? 0.6 : 1 }, i > 0 ? { borderTopWidth: 1, borderTopColor: c.border } : null]}
+              >
+                <Row gap={space.sm} style={{ alignItems: 'flex-start' }}>
+                  <View style={{ flex: 1, gap: 2 }}>
+                    <T variant="subheading">{x.title}</T>
+                    <T variant="caption" muted numberOfLines={1}>{x.from}</T>
+                    {x.terms ? <T variant="caption" numberOfLines={2}>{x.terms}</T> : null}
+                  </View>
+                  {x.amount !== null ? <T variant="label" color={c.textMuted}>up to {formatMoney(x.amount, { currency: x.currency ?? undefined })}</T> : null}
+                </Row>
+              </Pressable>
+            ))}
+          </Panel>
+          <T variant="caption" faint>Paid back or included when you use it, so not in your total.</T>
+        </View>
+      ) : null}
 
       {view === 'used' ? (
         <Row gap={space.lg} style={{ justifyContent: 'center' }}>
