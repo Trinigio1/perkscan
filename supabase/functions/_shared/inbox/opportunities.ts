@@ -36,6 +36,9 @@ export interface OpportunityRow {
   /** "20% off" as 20, and any minimum spend: kept so the app can estimate a percent-off code. */
   percent_off: number | null;
   min_spend: number | null;
+  /** A refund already on its way: tracked like a request sent, so PerkScan asks whether it arrived. */
+  claim_started_at?: string;
+  claim_check_after?: string;
 }
 
 export interface Rows {
@@ -71,7 +74,7 @@ export interface RefundRule {
   url: string;
 }
 
-function offerRow(o: Offer, merchant: string | null, currency: string, flightRefundRule: RefundRule | null, interest: string | null): OpportunityRow {
+function offerRow(o: Offer, merchant: string | null, currency: string, flightRefundRule: RefundRule | null, interest: string | null, today: string): OpportunityRow {
   const who = merchant ?? 'this store';
   const fmt = (n: number) => fmtMoney(n, currency);
   const steps: OpportunityRow['action_steps'] = [];
@@ -102,7 +105,12 @@ function offerRow(o: Offer, merchant: string | null, currency: string, flightRef
       if (o.amount) steps.push({ step: `Otherwise you'll be charged ${fmt(o.amount)}.` });
       break;
     case 'refund':
-      steps.push({ step: `Ask ${who} for it as the email describes — don't accept a voucher if you'd rather have the money back.` });
+      if (o.refund_issued) {
+        steps.push({ step: `${who} says this refund is on its way. Refunds usually reach your card or account within 3–10 business days.` });
+        steps.push({ step: 'PerkScan will ask whether it arrived. If it hasn’t after two weeks, contact the store with your order details.' });
+      } else {
+        steps.push({ step: `Ask ${who} for it as the email describes — don't accept a voucher if you'd rather have the money back.` });
+      }
       if (o.claim_url) steps.push({ step: 'Where to claim', url: o.claim_url });
       break;
     case 'travel_credit':
@@ -140,12 +148,82 @@ function offerRow(o: Offer, merchant: string | null, currency: string, flightRef
     value_estimate: value,
     currency,
     expires_at: o.expires_on ? endOfDay(o.expires_on) : null,
-    dedupe_key: `${type}:${slug(merchant)}:${slug(o.code ?? o.title)}:${o.expires_on ?? ''}`,
+    // A refund on its way is the same refund in the "return accepted" and "refund issued" emails: key it by amount.
+    dedupe_key: o.type === 'refund' && o.refund_issued && o.amount !== null
+      ? `refund:${slug(merchant)}:${o.amount}`
+      : `${type}:${slug(merchant)}:${o.code ? slug(o.code) : offerWords(o)}:${o.expires_on ?? ''}`,
     action_steps: steps,
     interest,
     percent_off: o.percent_off,
     min_spend: o.min_spend,
+    ...(o.type === 'refund' && o.refund_issued ? { claim_started_at: `${today}T12:00:00Z`, claim_check_after: `${addDays(today, 10)}T12:00:00Z` } : {}),
   };
+}
+
+/** At most this many in-app deals from one email: a newsletter can list a dozen. */
+const MAX_IN_APP = 3;
+/** How long an in-app deal seen in email is shown. Stores rotate these about weekly. */
+const IN_APP_DAYS = 7;
+
+/** A concrete deal with nothing to enter and no stated end: buy one get one, a free item, a set amount off. */
+export function inAppDeal(o: Pick<Offer, 'type' | 'title'>, merchant: string | null): boolean {
+  return o.type === 'promo' && !!merchant && /\b(buy (one|1),? get (one|1)|bogo|free (item|entr[ée]e|side|drink|dessert|delivery|appetizer|fries|chips|guac|cookie|coffee)|\$\d+(\.\d\d)? off)\b/i.test(o.title);
+}
+
+/** Monday of the week, so the same in-app deal seen again next week is shown again, not merged forever. */
+function weekOf(d: string): string {
+  const t = new Date(`${d}T00:00:00Z`);
+  t.setUTCDate(t.getUTCDate() - ((t.getUTCDay() + 6) % 7));
+  return t.toISOString().slice(0, 10);
+}
+
+function inAppRow(o: Offer, merchant: string, currency: string, today: string, interest: string | null): OpportunityRow {
+  return {
+    type: 'promo',
+    title: o.title,
+    description: o.details,
+    merchant,
+    code: null,
+    value_estimate: null, // never money: it may be gone by the time you look
+    currency,
+    // Not a real deadline: when PerkScan stops showing it. The app labels these "seen in your email".
+    expires_at: endOfDay(addDays(today, IN_APP_DAYS)),
+    dedupe_key: `inapp:${slug(merchant)}:${offerWords(o)}:${weekOf(today)}`,
+    action_steps: [
+      { step: `Seen in a ${merchant} email on ${today}. It's applied in the ${merchant} app or site, no code needed.` },
+      { step: 'Deals like this change about weekly, so check it is still there before you order.' },
+    ],
+    interest,
+    percent_off: o.percent_off,
+    min_spend: o.min_spend,
+  };
+}
+
+// Words that don't tell two offers from the same store apart.
+const SAME_OFFER_FILLER = new Set([
+  'off', 'your', 'next', 'order', 'orders', 'select', 'selected', 'every', 'on', 'the', 'a', 'an', 'for', 'with', 'of', 'at', 'to',
+  'and', 'or', 'get', 'save', 'savings', 'member', 'members', 'only', 'new', 'all', 'this', 'week', 'weekly', 'today', 'now', 'your',
+  'uber', 'one', 'eats', 'deal', 'deals', 'offer', 'promo', 'code', 'when', 'you', 'spend', 'up', 'more', 'than', 'over',
+  'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday', 'mondays', 'tuesdays', 'wednesdays', 'thursdays',
+  'fridays', 'saturdays', 'sundays', 'weekend', 'weekends',
+]);
+
+/**
+ * What an offer without a code is, for spotting the same offer worded differently in later emails:
+ * "30% off select fresh groceries every Tuesday (Uber One)" and "30% off select fresh groceries on
+ * Tuesdays" are one offer. Its amount or percent, plus its distinctive words. Exported for tests.
+ */
+export function offerWords(o: Pick<Offer, 'title' | 'amount' | 'percent_off'>): string {
+  const words = [...new Set(
+    o.title
+      .toLowerCase()
+      .replace(/[^a-z\s]/g, ' ')
+      .split(/\s+/)
+      .filter((w) => w.length > 1 && !SAME_OFFER_FILLER.has(w))
+      .map((w) => (w.length > 3 ? w.replace(/(ies|es|s)$/, '') : w)),
+  )].sort().slice(0, 5);
+  const value = o.amount !== null ? `${o.amount}` : o.percent_off !== null ? `${o.percent_off}pct` : '';
+  return slug([value, ...words].filter(Boolean).join('-'));
 }
 
 /**
@@ -179,6 +257,7 @@ export function toRows(p: ParsedEmail, today: string, defaultCurrency = 'USD', f
   const emailCurrency = p.receipt?.currency ?? defaultCurrency;
   const opportunities: OpportunityRow[] = [];
   const skipped = { expired: 0, noValue: 0, notMoney: 0 };
+  let inApp = 0;
 
   for (const o of p.offers) {
     if (isTradeIn(o)) {
@@ -186,14 +265,18 @@ export function toRows(p: ParsedEmail, today: string, defaultCurrency = 'USD', f
       continue;
     }
     if (!isActionable(o)) {
-      skipped.noValue += 1;
+      // "Buy 1, get 1 free at Shake Shack": real, but only in the app and only for a while.
+      if (inAppDeal(o, merchant) && inApp < MAX_IN_APP) {
+        inApp += 1;
+        opportunities.push(inAppRow(o, merchant!, o.currency ?? emailCurrency, today, p.interest ?? null));
+      } else skipped.noValue += 1;
       continue;
     }
     if (o.expires_on && o.expires_on < today) {
       skipped.expired += 1; // already expired when it arrived
       continue;
     }
-    opportunities.push(offerRow(o, merchant, o.currency ?? emailCurrency, flightRefundRule, p.interest ?? null));
+    opportunities.push(offerRow(o, merchant, o.currency ?? emailCurrency, flightRefundRule, p.interest ?? null, today));
   }
 
   let receipt: ReceiptRow | null = null;

@@ -1,0 +1,11 @@
+{
+  "origin": "synthetic",
+  "source": "email",
+  "input": {
+    "subject": "Your favourites, delivered with $0 fees",
+    "date": "2026-10-20T11:00:00-04:00",
+    "text": "As an Uber One member, you pay a $0 delivery fee on eligible restaurant orders over $15. Here are some spots near you: Chipotle, sweetgreen, Taco Rico.",
+    "from": "Uber Eats <uber@uber.example>"
+  },
+  "expected": { "kind": "promo", "merchant": "Uber Eats", "membership": "Uber One", "offers": [] }
+}

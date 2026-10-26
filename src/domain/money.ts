@@ -1,4 +1,5 @@
 import { confidenceOf, rankCompare, type BenefitStatusOf } from './confidence';
+import { isInAppDeal } from './inApp';
 import { addToBag, type MoneyBag } from './format';
 import { remainingValue } from './score';
 import type { Opportunity } from './types';
@@ -59,6 +60,8 @@ const t = (o: Opportunity) => (o.expires_at ? new Date(o.expires_at).getTime() :
 export function viewOf(o: Opportunity, now: Date): MoneyView | null {
   if (o.status === 'dismissed') return null;
   if (o.status === 'claimed') return 'used';
+  // An in-app deal that's no longer shown wasn't missed: it was never money.
+  if (isInAppDeal(o) && o.expires_at !== null && t(o) <= now.getTime()) return null;
   const past = o.expires_at !== null && t(o) <= now.getTime();
   if (o.status === 'expired' || past) return o.expires_at && new Date(o.expires_at).getFullYear() === now.getFullYear() ? 'missed' : null;
   return 'open';
@@ -100,7 +103,7 @@ export function moneyList(
 
   let sections: MoneySection[];
   if (view === 'open') {
-    const ranked = [...items].sort(rankCompare(now, statusOf));
+    const ranked = [...items].filter((o) => !isInAppDeal(o)).sort(rankCompare(now, statusOf));
     const sure = ranked.filter((o) => confidenceOf(o, statusOf) !== 'check');
     const end = now.getTime() + WEEK_MS;
     sections = [
@@ -109,6 +112,8 @@ export function moneyList(
       { title: 'No end date', items: sure.filter((o) => t(o) === Infinity) },
       // Guesses and unconfirmed rules: kept apart so they never look like money in hand.
       { title: 'Worth checking', items: ranked.filter((o) => confidenceOf(o, statusOf) === 'check') },
+      // In-app deals seen in email this week: real, but no code, no stated end and never money.
+      { title: 'In the app this week', items: items.filter(isInAppDeal).sort((a, b) => (b.created_at ?? '').localeCompare(a.created_at ?? '')) },
     ];
   } else {
     // Newest first: the last thing you used or missed is the one you remember.
@@ -123,7 +128,7 @@ export function moneyList(
  */
 export function nextToUse(opportunities: Opportunity[], now: Date, max = 4, statusOf?: BenefitStatusOf): Opportunity[] {
   const open = opportunities
-    .filter((o) => viewOf(o, now) === 'open' && o.expires_at !== null && o.type !== 'protection')
+    .filter((o) => viewOf(o, now) === 'open' && o.expires_at !== null && o.type !== 'protection' && !isInAppDeal(o))
     .sort(rankCompare(now, statusOf));
   const sure = open.filter((o) => confidenceOf(o, statusOf) !== 'check');
   return [...sure, ...open.filter((o) => !sure.includes(o))].slice(0, max);

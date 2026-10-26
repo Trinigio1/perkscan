@@ -103,8 +103,11 @@ export async function processMessages(db: SupabaseClient, ids: string[], call: M
         source_receipt_id: o.type === 'return_window' ? receiptId : null,
       });
       if (!error) created += 1;
-      else if (error.code === '23505') duplicates += 1; // already have this offer
-      else throw new Error(`opportunities: ${error.message}`);
+      else if (error.code === '23505') {
+        // Already have this offer. From this same email (it's being read again)? Then it's not a duplicate.
+        const { data: had } = await db.from('opportunities').select('source_message_id').eq('user_id', claimed.user_id).eq('dedupe_key', o.dedupe_key).maybeSingle();
+        if (had?.source_message_id !== id) duplicates += 1;
+      } else throw new Error(`opportunities: ${error.message}`);
     }
     const note = readNote({ created, duplicates, ...rows.skipped });
 
@@ -156,6 +159,7 @@ export async function processMessages(db: SupabaseClient, ids: string[], call: M
         kind: parsed.data.kind,
         summary: parsed.data.summary || null,
         read_note: note,
+        membership_seen: parsed.data.membership ?? null,
         parse_error: null,
         parsed_at: new Date().toISOString(),
         parser_version: `${opts.model}/${PROMPT_VERSION}`,

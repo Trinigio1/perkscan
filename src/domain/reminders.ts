@@ -1,4 +1,5 @@
 import { remainingValue } from './score';
+import { isInAppDeal } from './inApp';
 import type { Opportunity, Recovered } from './types';
 import { formatMoney } from './format';
 
@@ -42,7 +43,7 @@ export function planCreditReminders(opportunities: Opportunity[], recovered: Rec
 
   const out: PlannedReminder[] = [];
   for (const opp of opportunities) {
-    if (opp.status !== 'open' || !opp.expires_at) continue;
+    if (opp.status !== 'open' || !opp.expires_at || isInAppDeal(opp)) continue;
     const remaining = remainingValue(opp, recoveredByOpp);
     if (opp.value_estimate !== null && remaining <= 0) continue;
 

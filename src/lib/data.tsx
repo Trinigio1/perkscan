@@ -46,6 +46,8 @@ export interface AppData {
   dealFeedback: DealFeedback[];
   /** Cards the user's email shows they hold (not hidden with "Not mine"). */
   cardSightings: CardSighting[];
+  /** What the reader saw in each email lately, for memberships the user hasn't added. Never the email text. */
+  memberEmails: { membership: string | null; summary: string | null; date: string }[];
   /** How many official pages PerkScan checks for the user's country, and when it last did. */
   scout: { sources: number; lastChecked: string | null };
   /** "People like you": how many people (5+, opted in) use the stores you use, and what else they use. */
@@ -66,7 +68,7 @@ interface DataState {
   refresh: () => Promise<RefreshResult>;
 }
 
-const empty: AppData = { profile: null, cards: [], benefits: [], userCards: [], opportunities: [], recovered: [], usage: [], receipts: [], studentOffers: [], studentClaims: [], school: null, myPerks: [], programs: [], senderDomains: [], schoolHints: [], events: [], deals: [], dealFeedback: [], cardSightings: [], scout: { sources: 0, lastChecked: null }, storeStats: [], storePairs: [] };
+const empty: AppData = { profile: null, cards: [], benefits: [], userCards: [], opportunities: [], recovered: [], usage: [], receipts: [], studentOffers: [], studentClaims: [], school: null, myPerks: [], programs: [], senderDomains: [], schoolHints: [], events: [], deals: [], dealFeedback: [], cardSightings: [], memberEmails: [], scout: { sources: 0, lastChecked: null }, storeStats: [], storePairs: [] };
 const DataContext = createContext<DataState>({ data: empty, loading: true, error: null, refresh: async () => ({ data: null, error: null }) });
 
 function must<T>(what: string, res: { data: T | null; error: { message: string; code?: string } | null }): T {
@@ -112,7 +114,7 @@ async function load(userId: string): Promise<AppData> {
     supabase.from('student_offer_claims').select('offer_id'),
     supabase.from('user_perks').select('id, university_id, title, details, url, suggest, created_at').order('created_at'),
     supabase.from('perk_programs').select('id, kind, name, provider, countries, summary, how_to, url, merchants, window_days, status, last_verified, sort_order').order('sort_order'),
-    supabase.from('inbound_messages').select('from_domain').not('from_domain', 'is', null).gte('received_at', yearAgo).limit(1000),
+    supabase.from('inbound_messages').select('from_domain, summary, membership_seen, received_at').not('from_domain', 'is', null).gte('received_at', yearAgo).limit(1000),
     supabase
       .from('local_events')
       .select('id, title, summary, category, countries, regions, issuers, card_keywords, starts_on, ends_on, url, status, based_on, last_verified')
@@ -129,7 +131,10 @@ async function load(userId: string): Promise<AppData> {
   const school = prof.university_id
     ? ((await supabase.from('universities').select(SCHOOL_COLUMNS).eq('id', prof.university_id).maybeSingle()).data as University | null)
     : null;
-  const senderDomains = [...new Set(((senders.data ?? []) as { from_domain: string }[]).map((m) => m.from_domain))];
+  // Before the membership column exists (database not updated yet), read the senders without it.
+  const sent = (senders.error ? (await supabase.from('inbound_messages').select('from_domain, summary, received_at').not('from_domain', 'is', null).gte('received_at', yearAgo).limit(1000)).data : senders.data) ?? [];
+  const sentRows = sent as { from_domain: string; summary: string | null; membership_seen?: string | null; received_at: string }[];
+  const senderDomains = [...new Set(sentRows.map((m) => m.from_domain))];
   // A school emailing you hints you study there. Only looked up until a school is picked.
   const parents = domainsWithParents(senderDomains);
   const schoolHints =
@@ -197,6 +202,7 @@ async function load(userId: string): Promise<AppData> {
     dealFeedback: (dealFeedback.data ?? []) as DealFeedback[],
     // Optional: a database without this table yet just means no spotted cards.
     cardSightings: (cardSightings.data ?? []) as CardSighting[],
+    memberEmails: sentRows.map((m) => ({ membership: m.membership_seen ?? null, summary: m.summary, date: m.received_at })),
     scout: { sources: (sources.data ?? []).length, lastChecked: checked[checked.length - 1] ?? null },
     // Optional: a database without these yet just means no "people like you".
     storeStats: (storeStats.data ?? []) as StoreStat[],

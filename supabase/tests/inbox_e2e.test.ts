@@ -216,6 +216,15 @@ Deno.test('inbox pipeline end to end', async () => {
     assert(reread.data?.parse_status === 'parsed' && reread.data.raw_body === null, `read the second time: ${JSON.stringify(reread.data)}`);
     assert(reread.data?.read_note === 'Already found in an earlier email', `says why it gave nothing new: ${JSON.stringify(reread.data)}`);
 
+    // Read everything again with the current reader: nothing is added twice, and it isn't its own duplicate.
+    const oppsBefore = (await admin.from('opportunities').select('id').eq('user_id', alice.id)).data?.length ?? 0;
+    const readAgain = await (await post(ingest, { reread: true, messages: [{ id: 'g-1', from: 'Acme <deals@acme.com>', subject: 'Spring sale', date: '2026-04-01', html: PROMO_HTML }] }, token)).json();
+    assert(readAgain.accepted === 1, `read again: ${JSON.stringify(readAgain)}`);
+    const oppsAfter = (await admin.from('opportunities').select('id').eq('user_id', alice.id)).data?.length ?? 0;
+    assert(oppsAfter === oppsBefore, `nothing added twice: ${oppsBefore} -> ${oppsAfter}`);
+    const g1 = await admin.from('inbound_messages').select('parse_status, read_note').eq('external_id', 'g-1').single();
+    assert(g1.data?.parse_status === 'parsed' && g1.data.read_note === null, `not its own duplicate: ${JSON.stringify(g1.data)}`);
+
     // Test button
     const test = await (await post(proc, { action: 'test' })).json();
     assert(test.result?.status === 'parsed' && test.result.opportunities === 1, `test email: ${JSON.stringify(test)}`);

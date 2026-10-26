@@ -128,3 +128,19 @@ describe('setupSteps', () => {
     expect(setupSteps({ userCards: [{}], receipts: [{}], opportunities: [] }).every((s) => s.done)).toBe(true);
   });
 });
+
+describe('in-app deals seen in email', () => {
+  const inApp = (o: Parameters<typeof opp>[0]) =>
+    opp({ type: 'promo', category: 'promos', value_estimate: null, user_card_id: null, benefit_id: null, merchant: 'Uber Eats', dedupe_key: 'inapp:uber-eats:bogo-shack:2026-10-19', created_at: '2026-10-20T10:00:00Z', ...o });
+
+  it('sit in their own section, never in totals, Use soon, or Missed', () => {
+    const code = opp({ id: 'code', type: 'promo', category: 'promos', value_estimate: 10, expires_at: '2026-10-25T00:00:00Z', user_card_id: null, benefit_id: null });
+    const live = inApp({ id: 'live', expires_at: '2026-10-27T23:59:59Z' });
+    const gone = inApp({ id: 'gone', expires_at: '2026-10-21T23:59:59Z' });
+    const list = moneyList([code, live, gone], 'open', 'all', NOW, new Map());
+    expect(list.sections.map((s) => [s.title, s.items.map((o) => o.id)])).toEqual([['This week', ['code']], ['In the app this week', ['live']]]);
+    expect(list.total).toEqual({ USD: 10 });
+    expect(nextToUse([code, live], NOW).map((o) => o.id)).toEqual(['code']);
+    expect(viewOf(gone, NOW)).toBeNull();
+  });
+});

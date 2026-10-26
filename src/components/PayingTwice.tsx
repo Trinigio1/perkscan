@@ -60,7 +60,13 @@ export function MembershipNudge({ onHide }: { onHide: () => void }) {
         <IconBubble icon="ribbon" tone="purple" size={36} />
         <View style={{ flex: 1, gap: 2 }}>
           <T variant="caption" color={c.accentStrong}>{first ? 'Found in your email' : 'Your memberships'}</T>
-          <T variant="subheading">{first ? `You pay for ${first.name}. Add it to see what it includes.` : 'Prime, Costco, Walmart+ or a T-Mobile plan?'}</T>
+          <T variant="subheading">
+            {first
+              ? first.source === 'email'
+                ? `Your email shows you’re ${/^[aeiou]/i.test(first.name) ? 'an' : 'a'} ${first.name} member. Add it to see what it includes.`
+                : `You pay for ${first.name}. Add it to see what it includes.`
+              : 'Prime, Costco, Walmart+ or a T-Mobile plan?'}
+          </T>
           <T variant="caption" muted>Memberships come with perks and credits, and some include subscriptions you might be paying for twice.</T>
         </View>
         <Ionicons name="close" size={18} color={c.textFaint} onPress={onHide} accessibilityLabel="Hide" />

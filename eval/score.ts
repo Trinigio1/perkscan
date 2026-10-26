@@ -27,6 +27,8 @@ export interface Expected {
   offers?: ExpectedOffer[];
   /** What the email is about ("fitness"); null = none. */
   interest?: string | null;
+  /** A paid membership the email shows the reader has ("Uber One"); null = none. */
+  membership?: string | null;
   /** The payment card the email shows the reader holds; null = none. */
   card?: { issuer?: string; product?: string | null; last_four?: string | null } | null;
 }
@@ -78,6 +80,10 @@ export function scoreCase(expected: Expected, actual: ParsedEmail): Check[] {
   }
 
   if (expected.interest !== undefined) check('interest', expected.interest === (actual.interest ?? null), expected.interest, actual.interest ?? null);
+  if (expected.membership !== undefined) {
+    const a = actual.membership ?? null;
+    check('membership', expected.membership === null ? a === null : !!a && sameText(expected.membership, a), expected.membership, a);
+  }
 
   if (expected.card !== undefined) {
     const e = expected.card;

@@ -133,7 +133,7 @@ export default function Home() {
           show={nonZero(discounts.estimated) || discounts.otherCount > 0}
           text={
             nonZero(discounts.estimated)
-              ? `+ ≈ ${formatBag(discounts.estimated, big)} in discounts · ${discounts.estimatedCount + discounts.otherCount} code${discounts.estimatedCount + discounts.otherCount === 1 ? '' : 's'}`
+              ? `+ ≈ ${formatBag(discounts.estimated, big)} in discounts · ${discounts.estimatedCount + discounts.otherCount} offer${discounts.estimatedCount + discounts.otherCount === 1 ? '' : 's'}`
               : `+ ${discounts.otherCount} discount${discounts.otherCount === 1 ? '' : 's'}${discounts.bestPercent ? ` · up to ${discounts.bestPercent}% off` : ''}`
           }
           onPress={() => router.push('/money')}

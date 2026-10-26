@@ -139,9 +139,9 @@ describe('the shape the model is asked for', () => {
     // eslint-disable-next-line @typescript-eslint/no-require-imports
     const { ModelOutputSchema, ParsedEmailSchema } = require('../schema.ts');
     const reply = {
-      kind: 'promo', merchant: 'Acme', summary: 's', interest: 'fitness', card: null,
+      kind: 'promo', merchant: 'Acme', summary: 's', interest: 'fitness', membership: null, card: null,
       receipt: null,
-      offers: [{ type: 'promo', currency: null, title: 't', amount: null, percent_off: 20, code: null, expires_on: null, min_spend: null, points: null, claim_url: null, details: null, after_cancellation: null }],
+      offers: [{ type: 'promo', currency: null, title: 't', amount: null, percent_off: 20, code: null, expires_on: null, min_spend: null, points: null, claim_url: null, details: null, refund_issued: null, after_cancellation: null }],
     };
     expect(ModelOutputSchema.safeParse(reply).success).toBe(true);
     expect(ParsedEmailSchema.safeParse(reply).success).toBe(true);

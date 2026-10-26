@@ -114,6 +114,7 @@ function syncPerkScan() {
   if (recentDone && props.getProperty('PERKSCAN_BACKFILL') === 'on') {
     if (sendMatching_(query_('365d'))) {
       props.deleteProperty('PERKSCAN_BACKFILL');
+      props.deleteProperty('PERKSCAN_REREAD');
       console.log('PerkScan: finished looking through the last 12 months.');
     }
   }
@@ -143,6 +144,16 @@ function resendUnread() {
     } while (threads.length === 100);
   }
   scanPastYear();
+}
+
+/**
+ * Run once after PerkScan's reader improves: sends the last 12 months again and PerkScan reads every
+ * one with its current rules (offers it already had aren't added twice). Costs a little AI time per
+ * email. Continues by itself every 10 minutes until done.
+ */
+function rereadAll() {
+  PropertiesService.getUserProperties().setProperty('PERKSCAN_REREAD', 'on');
+  resendUnread();
 }
 
 /** Sends matching emails in batches. Returns true when nothing is left, false when it had to stop early. */
@@ -243,7 +254,7 @@ function send_(messages) {
     method: 'post',
     contentType: 'application/json',
     headers: { Authorization: 'Bearer ' + PERKSCAN_TOKEN },
-    payload: JSON.stringify({ source: 'email', messages: messages }),
+    payload: JSON.stringify({ source: 'email', messages: messages, reread: PropertiesService.getUserProperties().getProperty('PERKSCAN_REREAD') === 'on' }),
     muteHttpExceptions: true,
   });
   return { code: response.getResponseCode(), body: response.getContentText().slice(0, 300) };

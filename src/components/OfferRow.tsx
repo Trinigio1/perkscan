@@ -3,6 +3,7 @@ import { Pressable, View } from 'react-native';
 import { claimTarget, followUpQuestion } from '@/domain/claimTarget';
 import { confidenceOf } from '@/domain/confidence';
 import { offerEstimate } from '@/domain/estimate';
+import { isInAppDeal } from '@/domain/inApp';
 import { formatMoney, lastDayLabel, relativeDays } from '@/domain/format';
 import type { CardBenefit, Opportunity } from '@/domain/types';
 import { offerIcon, OFFER_TYPE_LABELS } from '@/domain/visuals';
@@ -37,8 +38,14 @@ export function OfferRow({ opp, now }: { opp: Opportunity; now: Date }) {
   } else if (opp.claim_started_at) {
     // Asked for money back: waiting on the store, bank or settlement. Otherwise: opened to use.
     const asked = followUpQuestion(opp) === 'Did it arrive?';
-    status = `${asked ? 'Requested' : 'Opened'} ${relativeDays(new Date(opp.claim_started_at), now)}${asked ? ' · waiting' : ''}`;
+    // A refund the store already issued ("refund:" key from the reader) is on its way, not requested.
+    const issued = opp.type === 'refund' && !!opp.dedupe_key?.startsWith('refund:');
+    status = issued
+      ? `Refund on its way · issued ${relativeDays(new Date(opp.claim_started_at), now)}`
+      : `${asked ? 'Requested' : 'Opened'} ${relativeDays(new Date(opp.claim_started_at), now)}${asked ? ' · waiting' : ''}`;
     statusColor = c.accentStrong;
+  } else if (isInAppDeal(opp)) {
+    status = `In the ${opp.merchant ?? 'store'} app · seen ${relativeDays(new Date(opp.created_at), now)}`;
   } else if (expires) {
     status = `${opp.type === 'free_trial' ? 'Ends' : 'Expires'} ${relativeDays(expires, now)}`;
     if (soon) statusColor = c.warn;

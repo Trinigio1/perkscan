@@ -1,4 +1,4 @@
-import { readNote, toRows } from '../opportunities.ts';
+import { offerWords, readNote, toRows } from '../opportunities.ts';
 import type { Offer, ParsedEmail } from '../schema.ts';
 
 const TODAY = '2026-04-10';
@@ -20,6 +20,40 @@ describe('toRows', () => {
     const { opportunities } = toRows(email({ merchant: 'Sephora', interest: 'beauty', offers: [offer({ type: 'promo', title: 'Free birthday gift', expires_on: '2026-04-30' })] }), TODAY);
     expect(opportunities[0]).toMatchObject({ interest: 'beauty', value_estimate: null });
     expect(toRows(email({ offers: [offer({ amount: 5, expires_on: '2026-04-30' })] }), TODAY).opportunities[0]!.interest).toBeNull();
+  });
+
+  it('tracks a refund already on its way until it arrives, once per refund', () => {
+    const issued = offer({ type: 'refund', title: 'Refund on its way: $34.66', amount: 34.66, currency: 'USD', refund_issued: true });
+    const a = toRows(email({ merchant: 'Amazon', kind: 'other', offers: [issued] }), TODAY).opportunities[0]!;
+    expect(a).toMatchObject({ type: 'refund', value_estimate: 34.66, dedupe_key: 'refund:amazon:34.66', claim_started_at: '2026-04-10T12:00:00Z', claim_check_after: '2026-04-20T12:00:00Z' });
+    expect(a.action_steps[0]!.step).toMatch(/on its way/);
+    // The "refund processed" email for the same return: same refund.
+    const b = toRows(email({ merchant: 'Amazon', offers: [{ ...issued, title: 'Refund issued' }] }), TODAY).opportunities[0]!;
+    expect(b.dedupe_key).toBe(a.dedupe_key);
+    // One the reader must still ask for isn't tracked as on its way.
+    const owed = toRows(email({ offers: [offer({ type: 'refund', title: 'Late delivery credit', amount: 5, refund_issued: false, expires_on: '2026-05-01' })] }), TODAY).opportunities[0]!;
+    expect(owed.claim_started_at).toBeUndefined();
+  });
+
+  it('keeps up to 3 in-app deals per email for a week, never as money', () => {
+    const { opportunities, skipped } = toRows(
+      email({
+        merchant: 'Uber Eats',
+        interest: 'delivery',
+        offers: [
+          offer({ title: 'Buy 1, Get 1 Free at Shake Shack' }),
+          offer({ title: 'Free item over $15 at Taco Rico' }),
+          offer({ title: 'BOGO at Burger King' }),
+          offer({ title: 'Buy one get one at Cuban Guys' }),
+          offer({ title: 'Popular restaurants near you' }),
+        ],
+      }),
+      TODAY,
+    );
+    expect(opportunities.map((o) => o.title)).toEqual(['Buy 1, Get 1 Free at Shake Shack', 'Free item over $15 at Taco Rico', 'BOGO at Burger King']);
+    expect(opportunities[0]).toMatchObject({ value_estimate: null, code: null, expires_at: '2026-04-17T23:59:59Z', interest: 'delivery' });
+    expect(opportunities[0]!.dedupe_key).toMatch(/^inapp:uber-eats:.*shack.*:2026-04-06$/);
+    expect(skipped.noValue).toBe(2);
   });
 
   it('keeps a percent off as a number, never as money', () => {
@@ -170,5 +204,19 @@ describe('readNote', () => {
     expect(readNote({ created: 0, duplicates: 0, expired: 0, noValue: 0, notMoney: 1 })).toMatch(/trade-in/);
     expect(readNote({ created: 1, duplicates: 2, expired: 1, noValue: 0, notMoney: 0 })).toBe('2 already found in earlier emails · 1 expired before it arrived');
     expect(readNote({ created: 2, duplicates: 0, expired: 0, noValue: 0, notMoney: 0 })).toBeNull();
+  });
+});
+
+describe('offerWords', () => {
+  const o = (title: string, percent_off: number | null = null, amount: number | null = null) => ({ title, percent_off, amount });
+  it('sees the same offer worded differently as one', () => {
+    const a = offerWords(o('30% off select fresh groceries every Tuesday (Uber One)', 30));
+    expect(offerWords(o('30% off select fresh groceries on Tuesdays', 30))).toBe(a);
+    expect(offerWords(o('Weekly 30% off select fresh groceries for Uber One members', 30))).toBe(a);
+  });
+  it('keeps different offers apart', () => {
+    expect(offerWords(o('30% off sweetgreen items', 30))).not.toBe(offerWords(o('30% off Hershey’s Halloween candy', 30)));
+    expect(offerWords(o('$5 off at Burger King', null, 5))).not.toBe(offerWords(o('$5 off at Shake Shack', null, 5)));
+    expect(offerWords(o('$5 off at Burger King', null, 5))).not.toBe(offerWords(o('$7 off at Burger King', null, 7)));
   });
 });

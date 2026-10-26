@@ -35,7 +35,7 @@ export async function textId(source: Source, text: string, day = new Date().toIS
   return `${source}-${day}-${(await sha256Hex(text.trim())).slice(0, 32)}`;
 }
 
-export async function storeMessages(db: SupabaseClient, userId: string, source: Source, messages: IncomingMessage[]): Promise<StoreResult> {
+export async function storeMessages(db: SupabaseClient, userId: string, source: Source, messages: IncomingMessage[], opts: { reread?: boolean } = {}): Promise<StoreResult> {
   const result: StoreResult = { ids: [], duplicates: 0, securityCodes: 0 };
 
   const since = new Date(Date.now() - 3600_000).toISOString();
@@ -64,7 +64,7 @@ export async function storeMessages(db: SupabaseClient, userId: string, source: 
       .single();
     if (error?.code === '23505') {
       // Sent before. If PerkScan couldn't read it then (its text is deleted within 24 hours), read it again now.
-      const again = await requeueUnread(db, userId, source, externalId, raw);
+      const again = await requeueUnread(db, userId, source, externalId, raw, opts.reread ?? false);
       if (again) result.ids.push(again);
       else result.duplicates += 1;
     } else if (error) return { ...result, error: 'store_failed' };
@@ -75,9 +75,11 @@ export async function storeMessages(db: SupabaseClient, userId: string, source: 
 
 /**
  * A message sent again that failed to be read the first time: put its text back and queue it.
- * Messages already read stay duplicates. Returns the message id if it was queued again.
+ * Messages already read stay duplicates, unless `reread` asks for everything to be read again with
+ * the current reader (offers it finds again are duplicates and aren't added twice). Returns the
+ * message id if it was queued again.
  */
-async function requeueUnread(db: SupabaseClient, userId: string, source: Source, externalId: string | null, raw: string): Promise<string | null> {
+async function requeueUnread(db: SupabaseClient, userId: string, source: Source, externalId: string | null, raw: string, reread: boolean): Promise<string | null> {
   if (!externalId) return null;
   const { data } = await db
     .from('inbound_messages')
@@ -85,7 +87,7 @@ async function requeueUnread(db: SupabaseClient, userId: string, source: Source,
     .eq('user_id', userId)
     .eq('source', source)
     .eq('external_id', externalId)
-    .eq('parse_status', 'failed')
+    .in('parse_status', reread ? ['failed', 'parsed', 'ignored'] : ['failed'])
     .select('id')
     .maybeSingle();
   return (data?.id as string | undefined) ?? null;

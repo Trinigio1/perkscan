@@ -1,0 +1,11 @@
+{
+  "origin": "synthetic",
+  "source": "email",
+  "input": {
+    "subject": "Game day deals",
+    "date": "2026-10-24T12:00:00-04:00",
+    "text": "Game day deals on Uber Eats: Buy 1, Get 1 Free at Shake Shack. Buy 1, Get 1 Free at Burger King. Order now.",
+    "from": "Uber Eats <uber@uber.example>"
+  },
+  "expected": { "kind": "promo", "merchant": "Uber Eats", "offers": [{ "type": "promo", "amount": null, "code": null }, { "type": "promo", "amount": null, "code": null }] }
+}

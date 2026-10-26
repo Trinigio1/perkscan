@@ -1,4 +1,5 @@
 import { confidenceOf } from './confidence';
+import { isInAppDeal } from './inApp';
 import { CATEGORY_ORDER, type Opportunity, type OpportunityCategory, type Recovered } from './types';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -90,7 +91,7 @@ export function computeScore(opportunities: Opportunity[], recovered: Recovered[
   const atRiskItems: Opportunity[] = [];
 
   for (const opp of opportunities) {
-    if (opp.status === 'dismissed' || opp.status === 'claimed') continue;
+    if (opp.status === 'dismissed' || opp.status === 'claimed' || isInAppDeal(opp)) continue;
     const cat = cats.get(opp.category)!;
     // Guesses ("charged twice?", unconfirmed rules) never count as money available or missed.
     const remaining = confidenceOf(opp) === 'check' ? 0 : remainingValue(opp, recoveredByOpp);

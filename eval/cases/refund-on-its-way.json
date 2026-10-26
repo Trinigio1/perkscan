@@ -1,0 +1,11 @@
+{
+  "origin": "synthetic",
+  "source": "email",
+  "input": {
+    "subject": "Your return is complete",
+    "date": "2026-10-21T09:00:00-04:00",
+    "text": "We received your return of Faux Fur Throw Blanket. Your refund of $34.66 has been issued to your original payment method. Refunds can take 3-5 business days to appear.",
+    "from": "Amazon <return@amazon.example>"
+  },
+  "expected": { "kind": "other", "merchant": "Amazon", "offers": [{ "type": "refund", "amount": 34.66, "currency": "USD" }] }
+}

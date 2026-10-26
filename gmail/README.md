@@ -62,3 +62,7 @@ Only the issuer, the card's name and its last 4 digits are kept.
 If **What PerkScan read** in the app lists emails it couldn't read, open the script, choose **resendUnread** and click
 Run once. It sends the last 12 months again; PerkScan reads only the ones it missed and skips the rest. Large
 mailboxes take a few hours — it continues by itself every 10 minutes.
+
+## After PerkScan's reader improves
+Run **rereadAll** once. It sends the last 12 months again and PerkScan reads every email with its current rules —
+offers it already had aren't added twice. It costs a little AI time per email and continues by itself every 10 minutes.

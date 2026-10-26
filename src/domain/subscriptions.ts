@@ -123,7 +123,10 @@ export function payingTwice(
 export interface MembershipHint {
   membershipId: string;
   name: string;
+  /** The latest charge, or the latest email that showed it. */
   lastCharged: string;
+  /** Seen as a charge on a receipt, or as member-only emails ("as an Uber One member…"). */
+  source: 'charge' | 'email';
 }
 
 /** Memberships the user's receipts show they pay for but haven't added. */
@@ -131,5 +134,47 @@ export function membershipHints(charges: Charge[], userCards: Pick<UserCard, 'ca
   const have = new Set(userCards.map((u) => u.card_id));
   return charges
     .filter((c) => c.service.membership && !have.has(c.service.membership) && catalog.some((k) => k.id === c.service.membership && k.kind === 'membership'))
-    .map((c) => ({ membershipId: c.service.membership!, name: c.service.name, lastCharged: c.date }));
+    .map((c) => ({ membershipId: c.service.membership!, name: c.service.name, lastCharged: c.date, source: 'charge' as const }));
+}
+
+/** Words in an email that only a member gets: "for Uber One members", "your Prime benefits". */
+const MEMBER_WORDS: Record<string, RegExp> = {
+  uber_one: /\buber one\b[^.]{0,40}\bmembers?\b|\bmembers?\b[^.]{0,20}\buber one\b|\byour uber one\b/i,
+  amazon_prime: /\bprime members?\b|\byour prime (benefits|membership)\b/i,
+  walmart_plus: /\bwalmart\s*(\+|plus) members?\b|\byour walmart\s*(\+|plus)\b/i,
+  dashpass: /\bdashpass members?\b|\byour dashpass\b/i,
+  instacart_plus: /\binstacart\s*(\+|plus) members?\b|\byour instacart\s*(\+|plus)\b/i,
+  target_circle_360: /\bcircle 360\b[^.]{0,20}\bmembers?\b|\byour (target )?circle 360\b/i,
+  costco_executive: /\bcostco executive members?\b|\byour executive membership\b/i,
+  sams_club_plus: /\bsam'?s club plus members?\b|\bplus members?\b[^.]{0,20}\bsam'?s club\b/i,
+};
+
+/**
+ * Memberships the user's email shows they have but haven't added: the reader's own reading
+ * ("membership"), or member-only wording in what it read. At least two emails, so one "join Uber
+ * One" ad doesn't count. It's a suggestion: the user confirms by adding it.
+ */
+export function membershipsSeen(
+  emails: { membership?: string | null; summary?: string | null; date: string }[],
+  userCards: Pick<UserCard, 'card_id'>[],
+  catalog: Pick<Card, 'id' | 'kind' | 'product_name'>[],
+): MembershipHint[] {
+  const have = new Set(userCards.map((u) => u.card_id));
+  const seen = new Map<string, { count: number; last: string }>();
+  for (const e of emails) {
+    const ids = new Set<string>();
+    for (const [id, re] of Object.entries(MEMBER_WORDS)) {
+      if (re.test(e.summary ?? '')) ids.add(id);
+      const named = e.membership ? SERVICES.find((x) => x.membership === id && x.match.test(e.membership!)) : null;
+      if (named) ids.add(id);
+    }
+    for (const id of ids) {
+      const s = seen.get(id) ?? { count: 0, last: '' };
+      seen.set(id, { count: s.count + 1, last: e.date > s.last ? e.date : s.last });
+    }
+  }
+  return [...seen]
+    .filter(([id, s]) => s.count >= 2 && !have.has(id) && catalog.some((c) => c.id === id && c.kind === 'membership'))
+    .sort((a, b) => b[1].count - a[1].count)
+    .map(([id, s]) => ({ membershipId: id, name: SERVICES.find((x) => x.membership === id)?.name ?? catalog.find((c) => c.id === id)!.product_name, lastCharged: s.last.slice(0, 10), source: 'email' as const }));
 }

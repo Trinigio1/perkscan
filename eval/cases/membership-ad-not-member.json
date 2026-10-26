@@ -1,0 +1,11 @@
+{
+  "origin": "synthetic",
+  "source": "email",
+  "input": {
+    "subject": "Try Uber One free for 4 weeks",
+    "date": "2026-10-20T11:00:00-04:00",
+    "text": "Join Uber One and get $0 delivery fees on eligible orders. Start your free trial today.",
+    "from": "Uber Eats <uber@uber.example>"
+  },
+  "expected": { "kind": "promo", "membership": null }
+}

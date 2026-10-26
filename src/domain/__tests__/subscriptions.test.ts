@@ -64,3 +64,24 @@ describe('membershipHints', () => {
     expect(membershipHints(charges, [{ card_id: 'uber_one' }], cards).map((h) => h.membershipId)).toEqual(['walmart_plus']);
   });
 });
+
+describe('membershipsSeen', () => {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const { membershipsSeen } = require('../subscriptions');
+  const catalog = [
+    { id: 'uber_one', kind: 'membership', product_name: 'Uber One' },
+    { id: 'amazon_prime', kind: 'membership', product_name: 'Amazon Prime' },
+    { id: 'dashpass', kind: 'membership', product_name: 'DashPass' },
+  ];
+  it('suggests a membership the email keeps treating you as a member of', () => {
+    const emails = [
+      { summary: 'Uber Eats marketing: $0 delivery fee for Uber One members', date: '2026-10-20T10:00:00Z' },
+      { summary: '30% off select fresh groceries every Tuesday', membership: 'Uber One', date: '2026-10-22T10:00:00Z' },
+      { summary: 'Try DashPass free for 30 days', date: '2026-10-21T10:00:00Z' },
+      { summary: 'Join Prime today', date: '2026-10-21T10:00:00Z' },
+      { summary: 'Your Prime benefits this month', date: '2026-10-23T10:00:00Z' },
+    ];
+    expect(membershipsSeen(emails, [], catalog)).toEqual([{ membershipId: 'uber_one', name: 'Uber One', lastCharged: '2026-10-22', source: 'email' }]);
+    expect(membershipsSeen(emails, [{ card_id: 'uber_one' }], catalog)).toEqual([]);
+  });
+});

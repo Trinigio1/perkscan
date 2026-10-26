@@ -2,6 +2,7 @@
 // schedules the digest; the recap screen shows the recap.
 
 import type { LocalEvent } from './events';
+import { isInAppDeal } from './inApp';
 import { addToBag, formatBag, type MoneyBag } from './format';
 import { isMissed, remainingValue } from './score';
 import type { Opportunity, Recovered } from './types';
@@ -47,7 +48,7 @@ export function planWeeklyDigest(
   const end = fireAt.getTime() + 7 * DAY_MS;
   const byOpp = recoveredMap(recovered);
   const items = opportunities
-    .filter((o) => o.status === 'open' && o.type !== 'protection' && o.expires_at)
+    .filter((o) => o.status === 'open' && o.type !== 'protection' && o.expires_at && !isInAppDeal(o))
     .filter((o) => {
       const t = new Date(o.expires_at!).getTime();
       return t > fireAt.getTime() && t <= end && (o.value_estimate === null || remainingValue(o, byOpp) > 0);
@@ -114,7 +115,7 @@ export function monthlyRecap(opportunities: Opportunity[], recovered: Recovered[
   const missed: MoneyBag = {};
   let missedCount = 0;
   for (const o of opportunities) {
-    if (!o.expires_at || !sameMonth(o.expires_at, start) || !isMissed(o, now)) continue;
+    if (!o.expires_at || isInAppDeal(o) || !sameMonth(o.expires_at, start) || !isMissed(o, now)) continue;
     const left = remainingValue(o, byOpp);
     if (left <= 0) continue;
     addToBag(missed, o.currency, left);

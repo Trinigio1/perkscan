@@ -23,6 +23,8 @@ const Message = z.object({
 const Batch = z.object({
   source: z.enum(['email', 'sms', 'share']).optional(),
   messages: z.array(Message).min(1).max(20),
+  /** Read emails sent before again with the current reader (Gmail script: rereadAll). */
+  reread: z.boolean().optional(),
 });
 /** What a Shortcut sends: one text, kept small. */
 const SingleText = z.object({ text: z.string().trim().min(1).max(5_000) });
@@ -49,6 +51,7 @@ export function ingestHandler(deps: IngestDeps) {
     const smsPath = /\/sms\/?$/.test(new URL(req.url).pathname);
     let source: 'email' | 'sms' | 'share';
     let messages: IncomingMessage[];
+    let reread = false;
     try {
       const raw = await req.json();
       const single = SingleText.safeParse(raw);
@@ -56,6 +59,7 @@ export function ingestHandler(deps: IngestDeps) {
       if (batch.success) {
         source = batch.data.source ?? (smsPath ? 'sms' : 'email');
         messages = batch.data.messages;
+        reread = batch.data.reread === true;
       } else if (single.success) {
         source = 'sms';
         messages = [{ text: single.data.text }];
@@ -66,7 +70,7 @@ export function ingestHandler(deps: IngestDeps) {
       return json({ error: 'Body must be JSON' }, 400);
     }
 
-    const stored = await storeMessages(deps.db, userId as string, source, messages);
+    const stored = await storeMessages(deps.db, userId as string, source, messages, { reread });
     if (stored.error === 'rate_limited') return json({ error: 'Too many messages this hour' }, 429);
     if (stored.error) return json({ error: 'Could not store message' }, 500);
 
