@@ -47,7 +47,8 @@ export function usualSpend(
 export interface Estimate {
   value: number;
   currency: string;
-  percent: number;
+  /** The percent off it was worked out from; null for a set amount off ("$15 off $75"). */
+  percent: number | null;
   basis: UsualSpend;
 }
 
@@ -71,10 +72,29 @@ export function estimateDiscount(
   return value >= 0.5 ? { value: Math.round(value * 100) / 100, currency: basis.currency, percent, basis } : null;
 }
 
-/** An email offer's estimate, if it's an open percent-off code or promo with no stated value. */
+/**
+ * A set amount off that needs a minimum spend ("$15 off $75"): worth its amount if you usually spend
+ * at least that much there, otherwise nothing (you'd have to spend more than usual to get it).
+ */
+export function estimateAmountOff(
+  amount: number,
+  merchant: string | null | undefined,
+  minSpend: number | null | undefined,
+  receipts: Pick<Receipt, 'merchant' | 'total' | 'currency' | 'purchase_date'>[],
+  now: Date,
+  currency?: string | null,
+): Estimate | null {
+  if (!merchant || amount <= 0) return null;
+  const basis = usualSpend(merchant, receipts, now, currency);
+  if (!basis || (minSpend && minSpend > basis.amount)) return null;
+  return { value: amount, currency: basis.currency, percent: null, basis };
+}
+
+/** An email offer's estimate, if it's an open discount with no stated value in hand. */
 export function offerEstimate(o: Opportunity, receipts: Receipt[], now: Date): Estimate | null {
   if (o.type !== 'promo' || o.value_estimate !== null || o.status !== 'open') return null;
   if (o.expires_at && new Date(o.expires_at) <= now) return null;
+  if (o.discount_amount) return estimateAmountOff(o.discount_amount, o.merchant, o.min_spend, receipts, now, o.currency);
   const percent = o.percent_off ?? percentOff(`${o.title} ${o.description ?? ''}`);
   return estimateDiscount(percent, o.merchant, o.min_spend, receipts, now, o.currency);
 }

@@ -216,7 +216,7 @@ function testPerkScan() {
     date: new Date().toISOString(),
     text: 'This is a PerkScan connection test. Here is $10 off your next order of $50+ with code GMAILTEST10. Expires ' + expires + '.',
   }]);
-  if (res.code === 200) console.log('It works! Open PerkScan → Money in a minute to see the test coupon. ' + res.body);
+  if (res.code === 200) console.log('It works! In PerkScan, open What PerkScan read: the test email shows as read (its code is not added to your money). ' + res.body);
   else console.error('Something is off. HTTP ' + res.code + ': ' + res.body);
 }
 

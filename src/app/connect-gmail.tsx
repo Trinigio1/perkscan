@@ -54,7 +54,7 @@ export default function ConnectGmail() {
     try {
       const r = await sendTestEmail();
       if (r.result?.status === 'parsed') {
-        toast('It works — check Offers');
+        toast('It works — see What PerkScan read');
         refresh();
       } else setError(r.result?.error ?? `Test finished with status “${r.result?.status ?? 'unknown'}”.`);
     } catch (e) {

@@ -58,13 +58,14 @@ export async function storeMessages(db: SupabaseClient, userId: string, source: 
         source,
         external_id: externalId,
         from_domain: fromDomain(m.from),
+        sent_at: sentAt(m.date),
         raw_body: raw,
       })
       .select('id')
       .single();
     if (error?.code === '23505') {
       // Sent before. If PerkScan couldn't read it then (its text is deleted within 24 hours), read it again now.
-      const again = await requeueUnread(db, userId, source, externalId, raw, opts.reread ?? false);
+      const again = await requeueUnread(db, userId, source, externalId, raw, opts.reread ?? false, sentAt(m.date));
       if (again) result.ids.push(again);
       else result.duplicates += 1;
     } else if (error) return { ...result, error: 'store_failed' };
@@ -79,11 +80,11 @@ export async function storeMessages(db: SupabaseClient, userId: string, source: 
  * the current reader (offers it finds again are duplicates and aren't added twice). Returns the
  * message id if it was queued again.
  */
-async function requeueUnread(db: SupabaseClient, userId: string, source: Source, externalId: string | null, raw: string, reread: boolean): Promise<string | null> {
+async function requeueUnread(db: SupabaseClient, userId: string, source: Source, externalId: string | null, raw: string, reread: boolean, sent: string | null): Promise<string | null> {
   if (!externalId) return null;
   const { data } = await db
     .from('inbound_messages')
-    .update({ raw_body: raw, parse_status: 'pending', parse_error: null, attempts: 0 })
+    .update({ raw_body: raw, parse_status: 'pending', parse_error: null, attempts: 0, ...(sent ? { sent_at: sent } : {}) })
     .eq('user_id', userId)
     .eq('source', source)
     .eq('external_id', externalId)
@@ -91,4 +92,10 @@ async function requeueUnread(db: SupabaseClient, userId: string, source: Source,
     .select('id')
     .maybeSingle();
   return (data?.id as string | undefined) ?? null;
+}
+
+/** When the email was sent, from its Date, if it's a real date not in the future. */
+function sentAt(date: string | null | undefined): string | null {
+  const t = date ? new Date(date) : null;
+  return t && !Number.isNaN(t.getTime()) && t.getTime() <= Date.now() + 86_400_000 ? t.toISOString() : null;
 }

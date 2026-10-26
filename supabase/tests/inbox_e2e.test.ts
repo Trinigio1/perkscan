@@ -127,7 +127,7 @@ Deno.test('inbox pipeline end to end', async () => {
     const promo = opps.data?.find((o) => o.code === 'SPRING20');
     assert(promo?.category === 'promos', `promo opportunity: ${JSON.stringify(opps.data)}`);
     assert(promo?.interest === 'fashion', `offer tagged with what it's about: ${JSON.stringify(promo)}`);
-    assert(opps.data?.some((o) => o.type === 'return_window' && o.value_estimate === null), 'return window created with no dollar value');
+    assert(!opps.data?.some((o) => o.type === 'return_window'), 'no return-window reminders: not PerkScan’s value');
 
     const receipts = await alice.client.from('receipts').select('merchant, total, last_four, matched_user_card_id');
     assert(receipts.data?.[0]?.matched_user_card_id === card.data!.id, `receipt matched to the card ending 4242: ${JSON.stringify(receipts.data)}`);

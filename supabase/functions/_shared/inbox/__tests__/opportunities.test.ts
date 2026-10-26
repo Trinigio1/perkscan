@@ -12,7 +12,7 @@ describe('toRows', () => {
   it('turns a promo code into an opportunity with steps', () => {
     const { opportunities } = toRows(email({ offers: [offer({ title: '$20 off $100', amount: 20, code: 'SAVE20', min_spend: 100, expires_on: '2026-04-30' })] }), TODAY);
     expect(opportunities).toHaveLength(1);
-    expect(opportunities[0]).toMatchObject({ type: 'promo', value_estimate: 20, code: 'SAVE20', expires_at: '2026-04-30T23:59:59Z', dedupe_key: 'promo:acme:save20:2026-04-30', min_spend: 100 });
+    expect(opportunities[0]).toMatchObject({ type: 'promo', value_estimate: null, discount_amount: 20, code: 'SAVE20', expires_at: '2026-04-30T23:59:59Z', dedupe_key: 'promo:acme:save20:2026-04-30', min_spend: 100 });
     expect(opportunities[0]!.action_steps.map((s) => s.step).join(' ')).toContain('SAVE20');
   });
 
@@ -22,17 +22,34 @@ describe('toRows', () => {
     expect(toRows(email({ offers: [offer({ amount: 5, expires_on: '2026-04-30' })] }), TODAY).opportunities[0]!.interest).toBeNull();
   });
 
-  it('tracks a refund already on its way until it arrives, once per refund', () => {
-    const issued = offer({ type: 'refund', title: 'Refund on its way: $34.66', amount: 34.66, currency: 'USD', refund_issued: true });
-    const a = toRows(email({ merchant: 'Amazon', kind: 'other', offers: [issued] }), TODAY).opportunities[0]!;
-    expect(a).toMatchObject({ type: 'refund', value_estimate: 34.66, dedupe_key: 'refund:amazon:34.66', claim_started_at: '2026-04-10T12:00:00Z', claim_check_after: '2026-04-20T12:00:00Z' });
-    expect(a.action_steps[0]!.step).toMatch(/on its way/);
-    // The "refund processed" email for the same return: same refund.
-    const b = toRows(email({ merchant: 'Amazon', offers: [{ ...issued, title: 'Refund issued' }] }), TODAY).opportunities[0]!;
-    expect(b.dedupe_key).toBe(a.dedupe_key);
-    // One the reader must still ask for isn't tracked as on its way.
-    const owed = toRows(email({ offers: [offer({ type: 'refund', title: 'Late delivery credit', amount: 5, refund_issued: false, expires_on: '2026-05-01' })] }), TODAY).opportunities[0]!;
-    expect(owed.claim_started_at).toBeUndefined();
+  it('treats "spend $X, save $Y" as a discount, not money you have', () => {
+    const { opportunities } = toRows(
+      email({ merchant: 'Uber Eats', offers: [offer({ title: 'Spend $75, save $15 at Pura Vida Miami', amount: 15 }), offer({ title: '$7 off your next order', amount: 7, code: 'EATS7' })] }),
+      TODAY,
+    );
+    expect(opportunities.map((o) => [o.value_estimate, o.discount_amount, o.min_spend])).toEqual([[null, 15, 75], [7, null, null]]);
+  });
+
+  it('uses the currency an offer states', () => {
+    const { opportunities } = toRows(email({ merchant: 'Trip.com', offers: [offer({ title: '60 EUR off European hotels', amount: 60, code: 'EU60' })] }), TODAY);
+    expect(opportunities[0]!.currency).toBe('EUR');
+  });
+
+  it('keys offers by the store that sent them, however it names itself', () => {
+    const a = toRows(email({ merchant: 'Uber Eats', offers: [offer({ title: '$15.87 off select items at Domino’s', amount: 15.87 })] }), TODAY, 'USD', null, { fromDomain: 'uber.com' });
+    const b = toRows(email({ merchant: 'Uber', offers: [offer({ title: '$15.87 off select items at Domino’s', amount: 15.87 })] }), TODAY, 'USD', null, { fromDomain: 'email.uber.com' });
+    expect(a.opportunities[0]!.dedupe_key).toBe(b.opportunities[0]!.dedupe_key);
+    expect(a.opportunities[0]!.dedupe_key).toMatch(/^promo:uber:/);
+  });
+
+  it('shows in-app deals for a week from when the email was sent', () => {
+    const deal = offer({ title: 'Buy 1, Get 1 Free at Shake Shack' });
+    const old = toRows(email({ merchant: 'Uber Eats', offers: [deal] }), TODAY, 'USD', null, { sentOn: '2026-03-20', fromDomain: 'uber.com' });
+    expect(old.opportunities).toEqual([]);
+    expect(old.skipped.expired).toBe(1);
+    const recent = toRows(email({ merchant: 'Uber Eats', offers: [deal] }), TODAY, 'USD', null, { sentOn: '2026-04-08', fromDomain: 'uber.com' });
+    expect(recent.opportunities[0]).toMatchObject({ expires_at: '2026-04-15T23:59:59Z' });
+    expect(recent.opportunities[0]!.dedupe_key).toMatch(/^inapp:uber:.*:2026-04-06$/);
   });
 
   it('keeps up to 3 in-app deals per email for a week, never as money', () => {
@@ -83,7 +100,7 @@ describe('toRows', () => {
     expect(opportunities[0]!.action_steps[0]!.step).toContain('never files');
   });
 
-  it('builds a receipt and a return-window reminder from a window in days', () => {
+  it('builds a receipt with its return date, but no return-window reminder', () => {
     const rows = toRows(
       email({
         kind: 'receipt',
@@ -92,7 +109,7 @@ describe('toRows', () => {
       TODAY,
     );
     expect(rows.receipt).toMatchObject({ merchant: 'Acme', total: 101.99, last_four: '4242', return_by: '2026-05-05' });
-    expect(rows.opportunities[0]).toMatchObject({ type: 'return_window', value_estimate: null, expires_at: '2026-05-05T23:59:59Z' });
+    expect(rows.opportunities).toEqual([]);
   });
 
   it('uses the offer currency, then the receipt currency, then the home currency', () => {

@@ -36,9 +36,8 @@ export interface OpportunityRow {
   /** "20% off" as 20, and any minimum spend: kept so the app can estimate a percent-off code. */
   percent_off: number | null;
   min_spend: number | null;
-  /** A refund already on its way: tracked like a request sent, so PerkScan asks whether it arrived. */
-  claim_started_at?: string;
-  claim_check_after?: string;
+  /** "$15 off $75": the amount off when it needs a minimum spend, so it's a discount, not money you have. */
+  discount_amount: number | null;
 }
 
 export interface Rows {
@@ -74,7 +73,7 @@ export interface RefundRule {
   url: string;
 }
 
-function offerRow(o: Offer, merchant: string | null, currency: string, flightRefundRule: RefundRule | null, interest: string | null, today: string): OpportunityRow {
+function offerRow(o: Offer, merchant: string | null, currency: string, flightRefundRule: RefundRule | null, interest: string | null, store: string): OpportunityRow {
   const who = merchant ?? 'this store';
   const fmt = (n: number) => fmtMoney(n, currency);
   const steps: OpportunityRow['action_steps'] = [];
@@ -105,12 +104,7 @@ function offerRow(o: Offer, merchant: string | null, currency: string, flightRef
       if (o.amount) steps.push({ step: `Otherwise you'll be charged ${fmt(o.amount)}.` });
       break;
     case 'refund':
-      if (o.refund_issued) {
-        steps.push({ step: `${who} says this refund is on its way. Refunds usually reach your card or account within 3–10 business days.` });
-        steps.push({ step: 'PerkScan will ask whether it arrived. If it hasn’t after two weeks, contact the store with your order details.' });
-      } else {
-        steps.push({ step: `Ask ${who} for it as the email describes — don't accept a voucher if you'd rather have the money back.` });
-      }
+      steps.push({ step: `Ask ${who} for it as the email describes — don't accept a voucher if you'd rather have the money back.` });
       if (o.claim_url) steps.push({ step: 'Where to claim', url: o.claim_url });
       break;
     case 'travel_credit':
@@ -138,6 +132,11 @@ function offerRow(o: Offer, merchant: string | null, currency: string, flightRef
 
   // A ceiling or a trade-in isn't money owed: keep the item if it has a code or deadline, never its amount.
   if (notMoneyOwed(o)) value = null;
+  // "Spend $75, save $15": a discount on spending more, not money you have. Kept as a discount (the
+  // app estimates it against what you usually spend there), never in Ready to use.
+  const minSpend = o.min_spend ?? spendFloor(o);
+  const discount = o.type === 'promo' && value !== null && minSpend !== null ? value : null;
+  if (discount !== null) value = null;
   const description = [o.percent_off ? `${o.percent_off}% off` : null, o.details].filter(Boolean).join(' · ') || null;
   return {
     type,
@@ -148,16 +147,44 @@ function offerRow(o: Offer, merchant: string | null, currency: string, flightRef
     value_estimate: value,
     currency,
     expires_at: o.expires_on ? endOfDay(o.expires_on) : null,
-    // A refund on its way is the same refund in the "return accepted" and "refund issued" emails: key it by amount.
-    dedupe_key: o.type === 'refund' && o.refund_issued && o.amount !== null
-      ? `refund:${slug(merchant)}:${o.amount}`
-      : `${type}:${slug(merchant)}:${o.code ? slug(o.code) : offerWords(o)}:${o.expires_on ?? ''}`,
+    dedupe_key: `${type}:${store}:${o.code ? slug(o.code) : offerWords(o)}:${o.expires_on ?? ''}`,
     action_steps: steps,
     interest,
     percent_off: o.percent_off,
-    min_spend: o.min_spend,
-    ...(o.type === 'refund' && o.refund_issued ? { claim_started_at: `${today}T12:00:00Z`, claim_check_after: `${addDays(today, 10)}T12:00:00Z` } : {}),
+    min_spend: minSpend,
+    discount_amount: discount,
   };
+}
+
+/** "Spend $75, save $15", "$5 off orders over $20": the minimum spend written in the title. */
+export function spendFloor(o: Pick<Offer, 'title' | 'details'>): number | null {
+  const m = /\b(?:spend|orders? (?:of|over)|on|minimum(?: purchase)?(?: of)?)\s*(?:[A-Z]{3}\s?)?[$€£]?\s?(\d+(?:\.\d\d)?)\s*\+?/i.exec(`${o.title} ${o.details ?? ''}`);
+  const n = m ? Number(m[1]) : NaN;
+  return n > 0 ? n : null;
+}
+
+/** "60 EUR off", "€30 off", "£10": a currency the offer itself states, over the email's default. */
+export function currencyIn(o: Pick<Offer, 'title' | 'details'>): string | null {
+  const t = `${o.title} ${o.details ?? ''}`;
+  if (/€|\bEUR\b/.test(t)) return 'EUR';
+  if (/£|\bGBP\b/.test(t)) return 'GBP';
+  if (/\bTT\$|\bTTD\b/.test(t)) return 'TTD';
+  if (/\bCA\$|\bCAD\b/.test(t)) return 'CAD';
+  return null;
+}
+
+/** Mail services and inboxes that send for many stores: their domain says nothing about the store. */
+const SHARED_SENDERS = new Set(['gmail', 'yahoo', 'outlook', 'hotmail', 'icloud', 'klaviyomail', 'klaviyo', 'mailchimp', 'sendgrid', 'amazonses', 'shopify', 'shopifyemail', 'zendesk', 'example']);
+
+/** One key per store: from the sender's domain ("email.uber.com" -> "uber"), else the merchant's name. */
+export function storeOf(fromDomain: string | null, merchant: string | null): string {
+  const parts = (fromDomain ?? '').toLowerCase().split('.').filter(Boolean);
+  if (parts.length >= 2) {
+    const cc = parts.length >= 3 && parts[parts.length - 1]!.length === 2 && ['co', 'com', 'net', 'org'].includes(parts[parts.length - 2]!);
+    const name = parts[parts.length - (cc ? 3 : 2)]!.replace(/-mail$|mail$/, '');
+    if (name.length >= 3 && !SHARED_SENDERS.has(name)) return slug(name);
+  }
+  return slug(merchant);
 }
 
 /** At most this many in-app deals from one email: a newsletter can list a dozen. */
@@ -177,7 +204,7 @@ function weekOf(d: string): string {
   return t.toISOString().slice(0, 10);
 }
 
-function inAppRow(o: Offer, merchant: string, currency: string, today: string, interest: string | null): OpportunityRow {
+function inAppRow(o: Offer, merchant: string, currency: string, sentOn: string, interest: string | null, store: string): OpportunityRow {
   return {
     type: 'promo',
     title: o.title,
@@ -187,15 +214,16 @@ function inAppRow(o: Offer, merchant: string, currency: string, today: string, i
     value_estimate: null, // never money: it may be gone by the time you look
     currency,
     // Not a real deadline: when PerkScan stops showing it. The app labels these "seen in your email".
-    expires_at: endOfDay(addDays(today, IN_APP_DAYS)),
-    dedupe_key: `inapp:${slug(merchant)}:${offerWords(o)}:${weekOf(today)}`,
+    expires_at: endOfDay(addDays(sentOn, IN_APP_DAYS)),
+    dedupe_key: `inapp:${store}:${offerWords(o)}:${weekOf(sentOn)}`,
     action_steps: [
-      { step: `Seen in a ${merchant} email on ${today}. It's applied in the ${merchant} app or site, no code needed.` },
+      { step: `Seen in a ${merchant} email on ${sentOn}. It's applied in the ${merchant} app or site, no code needed.` },
       { step: 'Deals like this change about weekly, so check it is still there before you order.' },
     ],
     interest,
     percent_off: o.percent_off,
     min_spend: o.min_spend,
+    discount_amount: null,
   };
 }
 
@@ -252,8 +280,17 @@ function isActionable(o: Offer): boolean {
  * @param defaultCurrency used when the email doesn't say (the user's home currency).
  * @param flightRefundRule the US DOT refund rule, for travel credits issued after a cancellation (US users).
  */
-export function toRows(p: ParsedEmail, today: string, defaultCurrency = 'USD', flightRefundRule: RefundRule | null = null): Rows {
+export interface EmailContext {
+  /** When the email was sent (YYYY-MM-DD), for in-app deals; defaults to today. */
+  sentOn?: string | null;
+  /** Who sent it ("email.uber.com"): one store however its emails name it ("Uber", "Uber Eats"). */
+  fromDomain?: string | null;
+}
+
+export function toRows(p: ParsedEmail, today: string, defaultCurrency = 'USD', flightRefundRule: RefundRule | null = null, ctx: EmailContext = {}): Rows {
   const merchant = p.merchant;
+  const store = storeOf(ctx.fromDomain ?? null, merchant);
+  const sentOn = ctx.sentOn && ctx.sentOn <= today ? ctx.sentOn : today;
   const emailCurrency = p.receipt?.currency ?? defaultCurrency;
   const opportunities: OpportunityRow[] = [];
   const skipped = { expired: 0, noValue: 0, notMoney: 0 };
@@ -267,8 +304,12 @@ export function toRows(p: ParsedEmail, today: string, defaultCurrency = 'USD', f
     if (!isActionable(o)) {
       // "Buy 1, get 1 free at Shake Shack": real, but only in the app and only for a while.
       if (inAppDeal(o, merchant) && inApp < MAX_IN_APP) {
-        inApp += 1;
-        opportunities.push(inAppRow(o, merchant!, o.currency ?? emailCurrency, today, p.interest ?? null));
+        // Shown for a week from when the email was sent: an old newsletter's deals are long gone.
+        if (addDays(sentOn, IN_APP_DAYS) < today) skipped.expired += 1;
+        else {
+          inApp += 1;
+          opportunities.push(inAppRow(o, merchant!, o.currency ?? emailCurrency, sentOn, p.interest ?? null, store));
+        }
       } else skipped.noValue += 1;
       continue;
     }
@@ -276,7 +317,7 @@ export function toRows(p: ParsedEmail, today: string, defaultCurrency = 'USD', f
       skipped.expired += 1; // already expired when it arrived
       continue;
     }
-    opportunities.push(offerRow(o, merchant, o.currency ?? emailCurrency, flightRefundRule, p.interest ?? null, today));
+    opportunities.push(offerRow(o, merchant, currencyIn(o) ?? o.currency ?? emailCurrency, flightRefundRule, p.interest ?? null, store));
   }
 
   let receipt: ReceiptRow | null = null;
@@ -318,26 +359,8 @@ export function toRows(p: ParsedEmail, today: string, defaultCurrency = 'USD', f
       return_by: returnBy,
       category: null,
     };
-    if (returnBy && returnBy >= today) {
-      opportunities.push({
-        type: 'return_window',
-        title: `Return window: ${merchant ?? 'recent order'}`,
-        description: r.total !== null ? `Order total ${fmtMoney(r.total, r.currency ?? defaultCurrency)}` : null,
-        merchant,
-        code: null,
-        value_estimate: null, // a return is a choice, not money owed
-        currency: r.currency ?? defaultCurrency,
-        expires_at: endOfDay(returnBy),
-        dedupe_key: `return_window:${slug(merchant)}:${slug(r.order_number ?? r.purchase_date ?? String(r.total))}`,
-        action_steps: [
-          { step: 'Not happy with it? Start a return from your order page or the store.' },
-          { step: `Last day to return: ${returnBy}.` },
-        ],
-        interest: p.interest ?? null,
-        percent_off: null,
-        min_spend: null,
-      });
-    }
+    // Return windows aren't PerkScan's value (the store's own order page shows them): the receipt is kept for
+    // card protections and price drops, but no reminder is created.
   }
 
   // The same offer can appear twice in one email.

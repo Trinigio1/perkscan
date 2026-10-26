@@ -104,3 +104,12 @@ describe('dealsWorth', () => {
     expect(w).toEqual({ worth: { USD: 74, TTD: 300 }, counted: 3, total: 5 });
   });
 });
+
+describe('amount off with a minimum spend', () => {
+  const promo = (o: Parameters<typeof opp>[0]) => opp({ type: 'promo', category: 'promos', value_estimate: null, user_card_id: null, benefit_id: null, ...o });
+  it('counts only when you usually spend the minimum there', () => {
+    expect(offerEstimate(promo({ merchant: 'Nike', discount_amount: 15, min_spend: 75 }), receipts, NOW)).toMatchObject({ value: 15, percent: null });
+    expect(offerEstimate(promo({ merchant: 'Nike', discount_amount: 15, min_spend: 150 }), receipts, NOW)).toBeNull();
+    expect(offerEstimate(promo({ merchant: 'Pura Vida', discount_amount: 15, min_spend: 75 }), receipts, NOW)).toBeNull();
+  });
+});

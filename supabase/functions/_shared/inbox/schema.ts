@@ -33,11 +33,6 @@ export const OfferSchema = z.object({
   points: z.number().nullable().describe('Points/miles quantity for loyalty offers'),
   claim_url: z.string().nullable().describe('Official claim site for settlements, or the refund request page, only if present in the email'),
   details: z.string().nullable().describe('One short sentence of important conditions'),
-  refund_issued: z
-    .boolean()
-    .nullable()
-    .optional() // replies stored before refunds-on-their-way were read leave it out
-    .describe('refund only: true if the store says the refund has been issued or approved and is on its way (return accepted, refund processed, order cancelled); false if the reader still has to ask for it'),
   after_cancellation: z
     .boolean()
     .nullable()
@@ -117,7 +112,6 @@ export const ModelOutputSchema = ParsedEmailSchema.extend({
   offers: z
     .array(
       OfferSchema.extend({
-        refund_issued: z.boolean().nullable().describe('refund only: true if the store says the refund has been issued or approved and is on its way; false if the reader still has to ask for it'),
         after_cancellation: z.boolean().nullable().describe('travel_credit only: true if the email says the credit was issued because the airline cancelled or significantly changed the flight'),
       }),
     )
@@ -205,7 +199,6 @@ export function normalizeParsed(p: ParsedEmail): ParsedEmail {
       claim_url: o.claim_url && /^https:\/\/[^\s]+$/i.test(o.claim_url) ? o.claim_url.slice(0, 300) : null,
       details: text(o.details, 200),
       after_cancellation: o.type === 'travel_credit' ? o.after_cancellation ?? null : null,
-      refund_issued: o.type === 'refund' ? o.refund_issued ?? null : null,
     })),
     card: normalizeCard(p.card ?? null),
     interest: p.interest && (INTEREST_IDS as readonly string[]).includes(p.interest) ? p.interest : null,

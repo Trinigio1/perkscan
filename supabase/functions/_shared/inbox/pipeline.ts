@@ -58,7 +58,7 @@ export async function processMessages(db: SupabaseClient, ids: string[], call: M
       .eq('id', id)
       .in('parse_status', ['pending', 'failed'])
       .not('raw_body', 'is', null)
-      .select('id, user_id, raw_body, attempts, from_domain')
+      .select('id, user_id, raw_body, attempts, from_domain, sent_at')
       .maybeSingle();
     if (!claimed) {
       results.push({ id, status: 'skipped' });
@@ -90,12 +90,24 @@ export async function processMessages(db: SupabaseClient, ids: string[], call: M
     const home = (profile?.home_currency as string | undefined) ?? 'USD';
     // US users get pointed to the DOT refund rule when an airline cancels and hands out a credit.
     const flightRule = parsed.data.offers.some((o) => o.after_cancellation) && (home === 'USD' || profile?.country === 'US') ? await refundRule(db, 'us_dot_flight_refunds') : null;
-    const rows = toRows(parsed.data, today, home, flightRule);
+    const fromDomainOf = (claimed.from_domain as string | null) ?? null;
+    const rows = toRows(parsed.data, today, home, flightRule, { sentOn: (claimed.sent_at as string | null)?.slice(0, 10) ?? null, fromDomain: fromDomainOf });
+    // The connection test's fictional shop: confirm it was read, but never add its code to the user's money.
+    const isTest = fromDomainOf === 'test-shop.example' || /perkscan test shop/i.test(parsed.data.merchant ?? '');
+    // Read again (rereadAll): this email's earlier results are replaced by what the current reader finds.
+    // Anything the user acted on (used, asked about, dismissed) is kept.
+    await db
+      .from('opportunities')
+      .delete()
+      .eq('source_message_id', id)
+      .eq('status', 'open')
+      .is('claim_started_at', null)
+      .not('dedupe_key', 'like', 'manual:%');
     const receiptId = rows.receipt ? await saveReceipt(db, claimed.user_id as string, id, rows.receipt) : null;
 
     let created = 0;
     let duplicates = 0;
-    for (const o of rows.opportunities) {
+    for (const o of isTest ? [] : rows.opportunities) {
       const { error } = await db.from('opportunities').insert({
         ...o,
         user_id: claimed.user_id,
@@ -109,7 +121,10 @@ export async function processMessages(db: SupabaseClient, ids: string[], call: M
         if (had?.source_message_id !== id) duplicates += 1;
       } else throw new Error(`opportunities: ${error.message}`);
     }
-    const note = readNote({ created, duplicates, ...rows.skipped });
+    const note = isTest
+      ? `Connection test worked: found ${rows.opportunities.map((o) => `“${o.title}”`).join(', ') || 'the test email'} (not added to your money)`
+      : readNote({ created, duplicates, ...rows.skipped });
+    if (isTest) created = rows.opportunities.length;
 
     // A card the user holds, as the email shows it (issuer, name, last 4): suggested if not added yet.
     const card = cardSighting(parsed.data, (claimed.from_domain as string | null) ?? null);

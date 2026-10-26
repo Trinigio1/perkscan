@@ -241,6 +241,7 @@ export function rankDeals(deals: Deal[], who: DealsFor): { forYou: RankedDeal[];
     if (d.ends_on && d.ends_on < who.today) continue;
     if (d.starts_on && d.starts_on > addDays(who.today, 14)) continue;
     if (hiddenIds.has(d.id)) continue;
+    if (isVague(d)) continue;
     // Already in Money from your own email: not new to you.
     const saved = inMoney.savedDeals.has(d.id);
     if (!saved && ((d.code && inMoney.codes.has(d.code.toUpperCase())) || (d.amount !== null && inMoney.offers.has(`${storeKey(d.merchant)}|${d.amount}`)))) continue;
@@ -249,7 +250,8 @@ export function rankDeals(deals: Deal[], who: DealsFor): { forYou: RankedDeal[];
     const shop = followed ? null : matchStore(d, shops);
     const like = [...d.merchant_keys, storeKey(d.merchant)].map((k) => who.likeYou?.get(k)).filter((x) => !!x && x.share >= LIKE_YOU_MIN_SHARE).sort((a, b) => b!.share - a!.share)[0];
     const tags = interestsFor({ category: d.category, merchant: d.merchant, title: d.title, summary: d.summary });
-    const pickedTag = tags.find((t) => picked.has(t));
+    // "Everything else" is too broad to be a match: picking it would make every deal "for you".
+    const pickedTag = tags.find((t) => t !== 'shopping' && picked.has(t));
     const spentTag = [...tags].sort((a, b) => (inferred.get(b) ?? 0) - (inferred.get(a) ?? 0))[0];
     const spend = spentTag ? inferred.get(spentTag) ?? 0 : 0;
 
@@ -281,7 +283,23 @@ export function rankDeals(deals: Deal[], who: DealsFor): { forYou: RankedDeal[];
     else if (!followed) popular.push({ ...ranked, why: null });
   }
   const order = (a: RankedDeal, b: RankedDeal) => b.score - a.score || (a.deal.ends_on ?? '9999').localeCompare(b.deal.ends_on ?? '9999');
-  return { forYou: forYou.sort(order), popular: popular.sort(order) };
+  // The same deal read from two pages, or worded twice: shown once, its best-ranked copy.
+  const seen = new Set<string>();
+  const once = (list: RankedDeal[]) => list.sort(order).filter((x) => !seen.has(sameDealKey(x.deal)) && !!seen.add(sameDealKey(x.deal)));
+  return { forYou: once(forYou), popular: once(popular) };
+}
+
+/** "Up to 50% off rugs", no code, no end date: a banner, not a deal you can count on. */
+export function isVague(d: Pick<Deal, 'title' | 'code' | 'ends_on' | 'amount'>): boolean {
+  return /^\s*up to\b/i.test(d.title) && !d.code && !d.ends_on && d.amount === null;
+}
+
+const DEAL_FILLER = new Set(['off', 'get', 'buy', 'with', 'the', 'a', 'an', 'on', 'of', 'and', 'or', 'for', 'your', 'select', 'selected', 'when', 'you', 'spend', 'save', 'any', 'all', 'online', 'only', 'in', 'at', 'to', 'up', 'more', 'reward', 'rewards', 'deal', 'offer']);
+
+/** One key for the same deal however it's worded: store, value, and its distinctive words. Exported for tests. */
+export function sameDealKey(d: Pick<Deal, 'merchant' | 'title' | 'amount' | 'percent_off' | 'code'>): string {
+  const words = [...new Set(d.title.toLowerCase().replace(/[^a-z\s]/g, ' ').split(/\s+/).filter((w) => w.length > 1 && !DEAL_FILLER.has(w)).map((w) => (w.length > 3 ? w.replace(/(ies|es|s)$/, '') : w)))].sort().slice(0, 5);
+  return [storeKey(d.merchant), d.code ?? '', d.amount ?? '', d.percent_off ?? '', ...words].join('|');
 }
 
 export interface InterestGroup {

@@ -115,6 +115,8 @@ export interface Opportunity {
   percent_off?: number | null;
   /** Minimum spend to use it, if stated. */
   min_spend?: number | null;
+  /** "$15 off $75": the amount off when it needs a minimum spend: a discount, not money in hand. */
+  discount_amount?: number | null;
   created_at: string;
 }
 

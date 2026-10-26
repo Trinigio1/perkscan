@@ -179,6 +179,7 @@ async function load(userId: string): Promise<AppData> {
       value_estimate: num(o.value_estimate),
       percent_off: num(o.percent_off),
       min_spend: num(o.min_spend),
+      discount_amount: num(o.discount_amount),
       // Where the email came from: the store a code or gift card gets used at.
       sender_domain: msg?.from_domain ?? null,
     })),

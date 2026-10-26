@@ -110,10 +110,17 @@ export default function OfferDetail() {
           <View style={{ alignItems: 'center', gap: 2 }}>
             <T variant="heading">≈ {formatMoney(estimate.value, { currency: estimate.currency })}</T>
             <T variant="caption" muted center>
-              Estimate: {estimate.percent}% of the {formatMoney(estimate.basis.amount, { currency: estimate.currency })} you usually spend at {opp.merchant}
+              {estimate.percent !== null
+                ? `Estimate: ${estimate.percent}% of the ${formatMoney(estimate.basis.amount, { currency: estimate.currency })} you usually spend at ${opp.merchant}`
+                : `Estimate: you usually spend about ${formatMoney(estimate.basis.amount, { currency: estimate.currency })} at ${opp.merchant}${opp.min_spend ? `, enough for its ${formatMoney(opp.min_spend, { currency: estimate.currency })} minimum` : ''}`}
               {estimate.basis.orders > 1 ? ` (${estimate.basis.orders} orders this year)` : ' (your last order there)'}. Not added to Ready to use.
             </T>
           </View>
+        ) : null}
+        {!estimate && opp.discount_amount ? (
+          <T variant="heading">
+            {formatMoney(opp.discount_amount, { currency: opp.currency })} off{opp.min_spend ? ` when you spend ${formatMoney(opp.min_spend, { currency: opp.currency })}` : ''}
+          </T>
         ) : null}
         {opp.description ? <T muted center>{opp.description}</T> : null}
         {opp.code ? (

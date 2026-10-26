@@ -45,7 +45,9 @@ export function OfferRow({ opp, now }: { opp: Opportunity; now: Date }) {
       : `${asked ? 'Requested' : 'Opened'} ${relativeDays(new Date(opp.claim_started_at), now)}${asked ? ' · waiting' : ''}`;
     statusColor = c.accentStrong;
   } else if (isInAppDeal(opp)) {
-    status = `In the ${opp.merchant ?? 'store'} app · seen ${relativeDays(new Date(opp.created_at), now)}`;
+    // Shown for 7 days from the email: when it was seen is a week before PerkScan stops showing it.
+    const seen = expires ? new Date(expires.getTime() - 7 * 86_400_000) : new Date(opp.created_at);
+    status = `In the ${opp.merchant ?? 'store'} app · seen ${relativeDays(seen, now)}`;
   } else if (expires) {
     status = `${opp.type === 'free_trial' ? 'Ends' : 'Expires'} ${relativeDays(expires, now)}`;
     if (soon) statusColor = c.warn;
@@ -73,6 +75,11 @@ export function OfferRow({ opp, now }: { opp: Opportunity; now: Date }) {
           ) : estimate ? (
             <T variant="subheading" color={c.textMuted} style={{ fontVariant: ['tabular-nums'] }}>
               ≈ {formatMoney(estimate.value, { currency: estimate.currency })}
+            </T>
+          ) : opp.discount_amount ? (
+            // A discount on a minimum spend PerkScan can't relate to your spending: shown, never counted.
+            <T variant="caption" muted style={{ fontVariant: ['tabular-nums'] }}>
+              {formatMoney(opp.discount_amount, { currency: opp.currency })} off{opp.min_spend ? ` ${formatMoney(opp.min_spend, { currency: opp.currency })}+` : ''}
             </T>
           ) : null}
           {opp.code && !done ? <Badge label={opp.code} /> : null}

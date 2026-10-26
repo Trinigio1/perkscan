@@ -7,7 +7,7 @@ function assert(cond: unknown, msg: string): asserts cond {
 
 const REPLY = JSON.stringify({
   kind: 'promo', merchant: 'Uber Eats', summary: '$7 off', interest: 'delivery', membership: 'Uber One', card: null, receipt: null,
-  offers: [{ type: 'promo', currency: 'USD', title: '$7 off', amount: 7, percent_off: null, code: 'EATS7', expires_on: '2099-01-01', min_spend: null, points: null, claim_url: null, details: null, refund_issued: null, after_cancellation: null }],
+  offers: [{ type: 'promo', currency: 'USD', title: '$7 off', amount: 7, percent_off: null, code: 'EATS7', expires_on: '2099-01-01', min_spend: null, points: null, claim_url: null, details: null, after_cancellation: null }],
 });
 
 Deno.test('falls back to plain JSON when the API refuses the schema, and stays there', async () => {

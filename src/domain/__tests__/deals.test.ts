@@ -183,3 +183,24 @@ describe('groupByInterest', () => {
     expect(rest.map((d) => d.deal.id)).toEqual(['courts']);
   });
 });
+
+describe('cleaner deals', () => {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const { sameDealKey, isVague } = require('../deals');
+  it('sees the same deal worded twice as one', () => {
+    expect(sameDealKey(deal({ id: 'a', merchant: 'Walgreens', title: '$10 Walgreens Cash rewards on $40+', amount: 10 })))
+      .toBe(sameDealKey(deal({ id: 'b', merchant: 'Walgreens', title: '$10 Walgreens Cash on $40+', amount: 10 })));
+    expect(sameDealKey(deal({ id: 'a', merchant: 'Target', title: 'Buy 1 get 1 50% off Wasa crispbreads', percent_off: 50 })))
+      .toBe(sameDealKey(deal({ id: 'b', merchant: 'Target', title: '50% off Wasa crispbreads, buy 1 get 1', percent_off: 50 })));
+    expect(sameDealKey(deal({ id: 'a', merchant: 'Target', title: '50% off rugs', percent_off: 50 }))).not.toBe(sameDealKey(deal({ id: 'b', merchant: 'Target', title: '50% off lamps', percent_off: 50 })));
+  });
+  it('drops banners with nothing to hold onto', () => {
+    expect(isVague(deal({ id: 'r', title: 'Up to 50% off rugs', percent_off: 50 }))).toBe(true);
+    expect(isVague(deal({ id: 'r', title: 'Up to 50% off rugs', percent_off: 50, ends_on: '2026-11-01' }))).toBe(false);
+    expect(isVague(deal({ id: 'r', title: '50% off everything', percent_off: 50 }))).toBe(false);
+  });
+  it('never counts "Everything else" as a match', () => {
+    const p = interestProfile({ ...input, picked: ['shopping'], receipts: [] });
+    expect(rankDeals([deal({ id: 'w', merchant: 'Walgreens', category: 'shopping', amount: 10 })], who({ profile: p })).forYou).toEqual([]);
+  });
+});
