@@ -28,7 +28,10 @@ function validate(text: string | null): { ok: true; data: ParsedEmail } | { ok: 
   if (!text) return { ok: false, error: 'Empty response' };
   let json: unknown;
   try {
-    json = JSON.parse(text);
+    // Plain-JSON replies may come wrapped in a code fence or with a word before; take the object.
+    const body = text.trim().replace(/^```(?:json)?\s*|\s*```$/g, '');
+    const start = body.indexOf('{');
+    json = JSON.parse(start > 0 ? body.slice(start, body.lastIndexOf('}') + 1) : body);
   } catch {
     return { ok: false, error: 'Response was not valid JSON' };
   }
