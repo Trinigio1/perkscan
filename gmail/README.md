@@ -57,3 +57,8 @@ When PerkScan learns to find something new, the script's search list grows too:
 **2026-10-25 update:** it now also finds airline and travel credits, free-night and companion certificates, and
 statements and payment notices from card issuers, so PerkScan can spot cards you have but haven't added.
 Only the issuer, the card's name and its last 4 digits are kept.
+
+## Emails PerkScan couldn't read
+If **What PerkScan read** in the app lists emails it couldn't read, open the script, choose **resendUnread** and click
+Run once. It sends the last 12 months again; PerkScan reads only the ones it missed and skips the rest. Large
+mailboxes take a few hours — it continues by itself every 10 minutes.

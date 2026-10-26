@@ -49,6 +49,8 @@ export async function storeMessages(db: SupabaseClient, userId: string, source: 
       continue;
     }
     const externalId = m.id ?? (source === 'email' ? null : await textId(source, m.text ?? m.html ?? ''));
+    // Store only the cleaned text the model needs (links removed, card numbers masked).
+    const raw = buildModelInput({ subject: m.subject, from: m.from, date: m.date ?? new Date().toISOString(), text: m.text, html: m.html });
     const { data, error } = await db
       .from('inbound_messages')
       .insert({
@@ -56,14 +58,35 @@ export async function storeMessages(db: SupabaseClient, userId: string, source: 
         source,
         external_id: externalId,
         from_domain: fromDomain(m.from),
-        // Store only the cleaned text the model needs (links removed, card numbers masked).
-        raw_body: buildModelInput({ subject: m.subject, from: m.from, date: m.date ?? new Date().toISOString(), text: m.text, html: m.html }),
+        raw_body: raw,
       })
       .select('id')
       .single();
-    if (error?.code === '23505') result.duplicates += 1;
-    else if (error) return { ...result, error: 'store_failed' };
+    if (error?.code === '23505') {
+      // Sent before. If PerkScan couldn't read it then (its text is deleted within 24 hours), read it again now.
+      const again = await requeueUnread(db, userId, source, externalId, raw);
+      if (again) result.ids.push(again);
+      else result.duplicates += 1;
+    } else if (error) return { ...result, error: 'store_failed' };
     else result.ids.push(data.id as string);
   }
   return result;
+}
+
+/**
+ * A message sent again that failed to be read the first time: put its text back and queue it.
+ * Messages already read stay duplicates. Returns the message id if it was queued again.
+ */
+async function requeueUnread(db: SupabaseClient, userId: string, source: Source, externalId: string | null, raw: string): Promise<string | null> {
+  if (!externalId) return null;
+  const { data } = await db
+    .from('inbound_messages')
+    .update({ raw_body: raw, parse_status: 'pending', parse_error: null, attempts: 0 })
+    .eq('user_id', userId)
+    .eq('source', source)
+    .eq('external_id', externalId)
+    .eq('parse_status', 'failed')
+    .select('id')
+    .maybeSingle();
+  return (data?.id as string | undefined) ?? null;
 }

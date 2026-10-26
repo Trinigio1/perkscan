@@ -38,6 +38,15 @@ function offerLine(o: Opportunity): string {
   return o.title + (pct && !o.title.includes('%') ? ` (${pct})` : '');
 }
 
+/** A reader error in plain words: the raw API message means nothing to people. */
+export function failureText(error: string | null): string {
+  if (!error) return 'Couldn’t read this one';
+  if (/^Model request failed/i.test(error)) return 'PerkScan couldn’t read this one because of a problem on our side. Its text has been deleted, so it needs to be sent again (Gmail script: resendUnread).';
+  if (/cut off/i.test(error)) return 'Too long to read in one go';
+  if (/declined/i.test(error)) return 'The reader declined to process this one';
+  return 'Couldn’t read this one';
+}
+
 export function readReport(messages: InboundMessage[], opportunities: Opportunity[]): ReadReport {
   const byMessage = new Map<string, Opportunity[]>();
   for (const o of opportunities) {
@@ -53,13 +62,13 @@ export function readReport(messages: InboundMessage[], opportunities: Opportunit
     let detail: string;
     if (m.parse_status === 'failed') {
       outcome = 'failed';
-      detail = m.parse_error ?? 'Couldn’t read this one';
+      detail = failureText(m.parse_error);
     } else if (m.parse_status === 'pending' || m.parse_status === 'parsing') {
       outcome = 'waiting';
       detail = m.parse_error ?? 'Waiting to be read';
     } else if (found.length) {
       outcome = 'found';
-      detail = found.map(offerLine).join(' · ');
+      detail = found.map(offerLine).join(' · ') + (m.read_note ? ` (also: ${m.read_note.charAt(0).toLowerCase()}${m.read_note.slice(1)})` : '');
       offers += found.length;
       for (const o of found) if (o.value_estimate !== null) money = addToBag(money, o.currency, o.value_estimate);
     } else if (m.kind === 'receipt' || m.kind === 'card_alert') {
@@ -67,7 +76,7 @@ export function readReport(messages: InboundMessage[], opportunities: Opportunit
       detail = m.kind === 'receipt' ? 'Receipt saved: checked against your card’s protections and price drops' : 'Card purchase saved: checked against your card’s credits';
     } else {
       outcome = 'nothing';
-      detail = m.parse_status === 'ignored' ? 'Nothing to use: no offer, receipt or card found' : NOTHING[m.kind ?? 'other'] ?? NOTHING.other!;
+      detail = m.read_note ?? (m.parse_status === 'ignored' ? 'Nothing to use: no offer, receipt or card found' : NOTHING[m.kind ?? 'other'] ?? NOTHING.other!);
     }
     counts[outcome] += 1;
     return { message: m, outcome, detail, offers: found };

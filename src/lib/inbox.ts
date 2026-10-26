@@ -14,7 +14,7 @@ export const GMAIL_SCRIPT_URL = 'https://github.com/Trinigio1/perkscan/blob/phas
 export async function listMessages(limit = 50): Promise<InboundMessage[]> {
   const { data, error } = await supabase
     .from('inbound_messages')
-    .select('id, source, received_at, parse_status, parse_error, kind, summary, from_domain')
+    .select('id, source, received_at, parse_status, parse_error, kind, summary, from_domain, read_note')
     .order('received_at', { ascending: false })
     .limit(limit);
   if (error) throw new Error(error.message);

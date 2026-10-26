@@ -66,7 +66,7 @@ export const ReceiptSchema = z.object({
     .describe('Warranty length in months, only if the receipt states one (e.g. "2-year warranty" -> 24)'),
   items: z.array(z.object({ name: z.string(), price: z.number().nullable(), quantity: z.number().nullable() })),
   alert_status: z
-    .enum(ALERT_STATUSES)
+    .string()
     .nullable()
     .optional() // older stored replies and store receipts may leave it out
     .describe('Only for bank card alerts: approved, pending (an authorization), declined, or reversed (refund/reversal). Null for store receipts'),
@@ -83,11 +83,39 @@ export const ParsedEmailSchema = z.object({
   card: CardSeenSchema.nullable()
     .optional() // replies stored before cards were read leave it out
     .describe('Only when the email is from a bank or card issuer about the reader\'s own credit or charge card'),
+  // A plain string, not an enum: checked against INTEREST_IDS in normalizeParsed (see ModelOutputSchema).
   interest: z
-    .enum(INTEREST_IDS)
+    .string()
     .nullable()
     .optional() // replies stored before interests were read leave it out
     .describe('What the store or offer is mainly about, e.g. a gym -> fitness, Sephora -> beauty. Null for banks, bills and anything that fits none'),
+});
+
+/**
+ * The shape the model is asked to produce: the same fields, all required (nullable instead of
+ * optional) and with as few enums as possible. Optional fields and long enums make the compiled
+ * structured-output grammar too large for the API ("The compiled grammar is too large"). Replies
+ * are still validated with ParsedEmailSchema, which this always satisfies.
+ */
+export const ModelOutputSchema = ParsedEmailSchema.extend({
+  receipt: ReceiptSchema.extend({
+    warranty_months: z.number().nullable().describe('Warranty length in months, only if the receipt states one (e.g. "2-year warranty" -> 24)'),
+    alert_status: z.string().nullable().describe('Only for bank card alerts: approved, pending (an authorization), declined, or reversed (refund/reversal). Null for store receipts'),
+  })
+    .nullable()
+    .describe('For purchase receipts, order confirmations and bank card purchase alerts'),
+  offers: z
+    .array(
+      OfferSchema.extend({
+        after_cancellation: z.boolean().nullable().describe('travel_credit only: true if the email says the credit was issued because the airline cancelled or significantly changed the flight'),
+      }),
+    )
+    .describe('Every distinct offer, credit, code, trial or settlement in the email; empty if none'),
+  card: CardSeenSchema.nullable().describe('Only when the email is from a bank or card issuer about the reader\'s own credit or charge card'),
+  interest: z
+    .string()
+    .nullable()
+    .describe(`What the store or offer is mainly about, one of: ${INTEREST_IDS.join(', ')}. Null for banks, bills and anything that fits none`),
 });
 
 export type ParsedEmail = z.infer<typeof ParsedEmailSchema>;
@@ -140,7 +168,7 @@ export function normalizeParsed(p: ParsedEmail): ParsedEmail {
             p.receipt.return_window_days !== null && p.receipt.return_window_days > 0 && p.receipt.return_window_days <= 365
               ? Math.round(p.receipt.return_window_days)
               : null,
-          alert_status: p.receipt.alert_status ?? null,
+          alert_status: (ALERT_STATUSES as readonly string[]).includes(p.receipt.alert_status ?? '') ? (p.receipt.alert_status as (typeof ALERT_STATUSES)[number]) : null,
           warranty_months:
             p.receipt.warranty_months != null && p.receipt.warranty_months > 0 && p.receipt.warranty_months <= 120
               ? Math.round(p.receipt.warranty_months)

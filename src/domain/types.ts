@@ -147,6 +147,8 @@ export interface InboundMessage {
   kind: string | null;
   summary: string | null;
   from_domain: string | null;
+  /** Why it gave what it gave ("Already found in an earlier email"), from the reader. */
+  read_note?: string | null;
 }
 
 export interface IngestToken {

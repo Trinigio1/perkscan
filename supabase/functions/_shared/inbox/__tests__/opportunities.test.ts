@@ -1,4 +1,4 @@
-import { toRows } from '../opportunities.ts';
+import { readNote, toRows } from '../opportunities.ts';
 import type { Offer, ParsedEmail } from '../schema.ts';
 
 const TODAY = '2026-04-10';
@@ -137,18 +137,38 @@ describe('travel credits and certificates', () => {
 });
 
 describe('offers that are not money owed', () => {
-  it('never counts a trade-in or an "up to" amount', () => {
-    const { opportunities } = toRows(
+  it('leaves out trade-ins, and never counts "up to" amounts or rewards for doing something', () => {
+    const { opportunities, skipped } = toRows(
       email({
         merchant: 'Apple',
         offers: [
           offer({ title: 'Get up to $1,200 in credit when you trade in your iPhone', amount: 1200, expires_on: '2026-12-31' }),
           offer({ title: 'Trade-in credit', amount: 650, details: 'With an eligible trade-in', expires_on: '2026-12-31' }),
+          offer({ title: 'Up to 40% off your next order', percent_off: 40, expires_on: '2026-12-31' }),
+          offer({ type: 'gift_card', title: '$100 Visa gift card for a case study interview', amount: 100, expires_on: '2026-12-31' }),
+          offer({ title: '$20 off your next order', amount: 20, details: 'Unlock by completing 5 tasks', expires_on: '2026-12-31' }),
           offer({ title: '$20 off your order', amount: 20, code: 'SAVE20' }),
         ],
       }),
       TODAY,
     );
-    expect(opportunities.map((o) => o.value_estimate)).toEqual([null, null, 20]);
+    expect(opportunities.map((o) => [o.title, o.value_estimate])).toEqual([
+      ['Up to 40% off your next order', null],
+      ['$100 Visa gift card for a case study interview', null],
+      ['$20 off your next order', null],
+      ['$20 off your order', 20],
+    ]);
+    expect(skipped).toEqual({ expired: 0, noValue: 0, notMoney: 2 });
+  });
+});
+
+describe('readNote', () => {
+  it('says why an email gave nothing new', () => {
+    expect(readNote({ created: 0, duplicates: 1, expired: 0, noValue: 0, notMoney: 0 })).toBe('Already found in an earlier email');
+    expect(readNote({ created: 0, duplicates: 0, expired: 1, noValue: 0, notMoney: 0 })).toBe('Expired before it arrived');
+    expect(readNote({ created: 0, duplicates: 0, expired: 0, noValue: 1, notMoney: 0 })).toBe('An offer with no code, amount or end date to act on');
+    expect(readNote({ created: 0, duplicates: 0, expired: 0, noValue: 0, notMoney: 1 })).toMatch(/trade-in/);
+    expect(readNote({ created: 1, duplicates: 2, expired: 1, noValue: 0, notMoney: 0 })).toBe('2 already found in earlier emails · 1 expired before it arrived');
+    expect(readNote({ created: 2, duplicates: 0, expired: 0, noValue: 0, notMoney: 0 })).toBeNull();
   });
 });

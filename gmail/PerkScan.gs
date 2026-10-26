@@ -127,6 +127,24 @@ function scanPastYear() {
   console.log('PerkScan: scanning the last 12 months. Large mailboxes take a few hours — it continues by itself every 10 minutes.');
 }
 
+/**
+ * Run once if PerkScan → "What PerkScan read" shows emails it couldn't read. Sends the last 12 months
+ * again: PerkScan reads only the ones it couldn't read before and skips the rest (no extra cost).
+ * It continues by itself every 10 minutes until done.
+ */
+function resendUnread() {
+  checkConfig_();
+  const sent = GmailApp.getUserLabelByName(SENT_LABEL);
+  if (sent) {
+    let threads;
+    do {
+      threads = GmailApp.search('label:' + SENT_LABEL + ' newer_than:365d', 0, 100);
+      if (threads.length) sent.removeFromThreads(threads);
+    } while (threads.length === 100);
+  }
+  scanPastYear();
+}
+
 /** Sends matching emails in batches. Returns true when nothing is left, false when it had to stop early. */
 function sendMatching_(q) {
   const started = Date.now();

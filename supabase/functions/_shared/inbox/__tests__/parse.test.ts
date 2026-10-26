@@ -113,3 +113,37 @@ describe('what an email is about', () => {
     expect(normalizeParsed(base).interest).toBeNull();
   });
 });
+
+describe('the shape the model is asked for', () => {
+  it('has no optional fields: each one makes the API’s compiled grammar bigger, and 5 was too many', () => {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const { z } = require('zod');
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const { ModelOutputSchema } = require('../schema.ts');
+    const optional: string[] = [];
+    const walk = (s: Record<string, unknown> | undefined, path: string) => {
+      if (!s || typeof s !== 'object') return;
+      const props = s.properties as Record<string, Record<string, unknown>> | undefined;
+      if (props) for (const [k, v] of Object.entries(props)) {
+        if (!((s.required as string[] | undefined) ?? []).includes(k)) optional.push(`${path}.${k}`);
+        walk(v, `${path}.${k}`);
+      }
+      for (const key of ['anyOf', 'oneOf'] as const) (s[key] as Record<string, unknown>[] | undefined)?.forEach((x) => walk(x, path));
+      walk(s.items as Record<string, unknown> | undefined, `${path}[]`);
+    };
+    walk(z.toJSONSchema(ModelOutputSchema, { io: 'input' }), '');
+    expect(optional).toEqual([]);
+  });
+
+  it('is always accepted by the validation schema', () => {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const { ModelOutputSchema, ParsedEmailSchema } = require('../schema.ts');
+    const reply = {
+      kind: 'promo', merchant: 'Acme', summary: 's', interest: 'fitness', card: null,
+      receipt: null,
+      offers: [{ type: 'promo', currency: null, title: 't', amount: null, percent_off: 20, code: null, expires_on: null, min_spend: null, points: null, claim_url: null, details: null, after_cancellation: null }],
+    };
+    expect(ModelOutputSchema.safeParse(reply).success).toBe(true);
+    expect(ParsedEmailSchema.safeParse(reply).success).toBe(true);
+  });
+});

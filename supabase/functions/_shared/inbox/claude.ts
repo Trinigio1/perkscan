@@ -2,7 +2,7 @@ import Anthropic from '@anthropic-ai/sdk';
 import { zodOutputFormat } from '@anthropic-ai/sdk/helpers/zod';
 import type { ModelCall } from './parse.ts';
 import { SYSTEM_PROMPT, userMessage } from './prompt.ts';
-import { ParsedEmailSchema } from './schema.ts';
+import { ModelOutputSchema } from './schema.ts';
 
 /** Cheap and fast; extraction doesn't need a larger model. */
 export const MODEL = 'claude-haiku-5-5';
@@ -16,7 +16,7 @@ export function claudeModelCall(apiKey: string, today: () => string = () => new 
       max_tokens: 8000,
       system: SYSTEM_PROMPT,
       // Low effort: this is extraction, not reasoning. Structured output keeps the JSON schema-valid.
-      output_config: { effort: 'low', format: zodOutputFormat(ParsedEmailSchema) },
+      output_config: { effort: 'low', format: zodOutputFormat(ModelOutputSchema) },
       messages: [{ role: 'user', content: userMessage(input, today()) }],
     });
     const text = res.content

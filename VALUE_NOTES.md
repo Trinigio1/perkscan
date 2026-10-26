@@ -37,3 +37,16 @@
 1. `npx supabase db push` (migrations 000015 and 000016). Run it before deploying the functions.
 2. `npx supabase functions deploy ingest process-inbox scout`
 3. Paste the updated `gmail/PerkScan.gs` into Apps Script, then run `previewPerkScan` to see your store list.
+
+## Fix: emails failing with "The compiled grammar is too large"
+- **What happened.** Adding the interest tag made the reader's answer format have 5 optional fields, up from 4. The API compiles that format into a grammar, and each optional field makes the grammar much larger. 5 was over the limit, so every email failed until this fix (98 of 166 in the first real report).
+- **The fix.** The model is now asked for `ModelOutputSchema`: the same fields, all required (null when missing), with interest and alert status as plain strings. These are checked afterwards in `normalizeParsed`. A test fails if an optional field is ever added again.
+- **Re-reading what failed.** A failed email's text is deleted within 24 hours, so it has to be sent again. Ingest now re-queues a re-sent email that failed before; ones already read stay duplicates, at no AI cost. The Gmail script's new `resendUnread` sends the last 12 months again.
+- **Why an email gave nothing.** The reader writes a note on each message (`inbound_messages.read_note`, migration `20261102000017`): already found in an earlier email, expired before it arrived, no code/amount/end date, or a trade-in/reward for doing something. "What PerkScan read" shows the note, and shows failures in plain words.
+- **Trade-in offers** are left out entirely. Existing ones are dismissed.
+- **Rewards for doing something** (an interview, a survey, "unlock by completing 5 tasks") never count as money. Existing ones lose their amount.
+
+To ship:
+1. `npx supabase db push`
+2. `npx supabase functions deploy ingest process-inbox`
+3. Paste the new script into Apps Script and run `resendUnread`.

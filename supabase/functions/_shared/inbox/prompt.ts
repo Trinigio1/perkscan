@@ -1,5 +1,5 @@
 /** Change this whenever SYSTEM_PROMPT or the parsing rules change, so accuracy can be compared per version. */
-export const PROMPT_VERSION = '2026-11-03';
+export const PROMPT_VERSION = '2026-11-04';
 
 // Instructions for the extraction model. Kept stable (no dates or ids) so the
 // request prefix is identical across emails.
@@ -16,6 +16,7 @@ Rules:
 - Not money owed: trade-in offers ("get up to $1,200 when you trade in your phone"), "up to" amounts, financing, sweepstakes and offers that need a new account or a big purchase to unlock. If you include one as an offer, amount is null; put the condition in details.
 - Card-linked offers ("add this offer to your card", Amex Offers, Chase Offers) are type "promo"; put "Activate it in your card app first" in details.
 - Rewards ready to use: a reward the store has issued to the reader and they can spend now is an offer even without a code — "You've earned $10 Kohl's Cash", "$5 ExtraBucks Rewards", "Your $10 reward is ready", "Bonus cash", a rewards certificate. Type "store_credit" with the amount and its use-by date in expires_on. A reward for a free item ("free birthday drink", "free entrée", "free birthday gift") is type "promo" with amount null, a title like "Free birthday drink" and its use-by date in expires_on.
+- Paid for doing something is not money owed: a gift card for an interview or survey, a discount unlocked by completing tasks, orders or referrals. If you include one, amount is null and the condition goes in details.
 - Running totals are not rewards issued: a monthly points or cash-back balance ("You have 12,450 points", "$45.20 cash back available") is not an offer unless the email says some of it will expire, and then only the expiring part counts. Rewards the reader could earn by spending more ("spend $50, get $10") are not rewards issued.
 - Points expiring: a loyalty email saying points or miles will expire is type "points" with the quantity in points and the date in expires_on.
 - Travel credits: a credit or voucher already in the reader's account for future travel (airline "eCredit", "future flight credit", "trip credit", "travel bank" funds, a travel voucher, a cruise or hotel credit) is type "travel_credit": amount and currency as stated, the use-by date in expires_on, any credit/voucher number in code (letters, digits and dashes only), and after_cancellation true only if the email says it was issued because the airline cancelled or significantly changed the flight. A cash refund the reader can still ask for is "refund", not "travel_credit".

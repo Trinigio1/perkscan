@@ -30,8 +30,26 @@ describe('readReport', () => {
     expect(r.lines[0]!.detail).toBe('Sitewide sale (20% off) · $10 reward');
     expect(r.lines[1]!.detail).toMatch(/no code, amount or end date/);
     expect(r.lines[3]!.detail).toMatch(/nothing expiring/);
-    expect(r.lines[5]!.detail).toBe('Timed out');
+    expect(r.lines[5]!.detail).toBe('Couldn’t read this one');
     expect(r.counts).toEqual({ found: 1, receipt: 1, nothing: 3, failed: 1, waiting: 1 });
     expect(r).toMatchObject({ offers: 2, money: { USD: 10 } });
+  });
+});
+
+describe('readReport reasons', () => {
+  it('uses the reader’s own reason, and explains failures in plain words', () => {
+    const r = readReport(
+      [
+        msg({ id: 'a', read_note: 'Already found in an earlier email' }),
+        msg({ id: 'b', parse_status: 'failed', parse_error: 'Model request failed: 400 {"type":"error"}' }),
+        msg({ id: 'c', read_note: '1 expired before it arrived' }),
+      ],
+      [opp({ source_message_id: 'c', title: '$7 off' })],
+    );
+    expect(r.lines.map((l) => l.detail)).toEqual([
+      'Already found in an earlier email',
+      expect.stringMatching(/problem on our side.*resendUnread/),
+      '$7 off (also: 1 expired before it arrived)',
+    ]);
   });
 });

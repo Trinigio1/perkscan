@@ -3,7 +3,7 @@ import { matchAndApply } from '../matching/apply.ts';
 import { doubleChargeRow, isDoubleCharge, priceAdjustment, statedWarranty, type ExtraRow, type PriceProgramIn, type PurchaseIn } from '../matching/programs.ts';
 import { findDuplicate, mergeFields, MERGE_WINDOW_DAYS, type ExistingReceipt } from './merge.ts';
 import { cardSighting } from './cards.ts';
-import { toRows, type ReceiptRow, type RefundRule } from './opportunities.ts';
+import { readNote, toRows, type ReceiptRow, type RefundRule } from './opportunities.ts';
 import { costUsd, parseEmail, type ModelCall } from './parse.ts';
 import { PROMPT_VERSION } from './prompt.ts';
 import { sightingsFrom } from './sightings.ts';
@@ -94,6 +94,7 @@ export async function processMessages(db: SupabaseClient, ids: string[], call: M
     const receiptId = rows.receipt ? await saveReceipt(db, claimed.user_id as string, id, rows.receipt) : null;
 
     let created = 0;
+    let duplicates = 0;
     for (const o of rows.opportunities) {
       const { error } = await db.from('opportunities').insert({
         ...o,
@@ -102,8 +103,10 @@ export async function processMessages(db: SupabaseClient, ids: string[], call: M
         source_receipt_id: o.type === 'return_window' ? receiptId : null,
       });
       if (!error) created += 1;
-      else if (error.code !== '23505') throw new Error(`opportunities: ${error.message}`); // 23505 = already have this offer
+      else if (error.code === '23505') duplicates += 1; // already have this offer
+      else throw new Error(`opportunities: ${error.message}`);
     }
+    const note = readNote({ created, duplicates, ...rows.skipped });
 
     // A card the user holds, as the email shows it (issuer, name, last 4): suggested if not added yet.
     const card = cardSighting(parsed.data, (claimed.from_domain as string | null) ?? null);
@@ -152,6 +155,7 @@ export async function processMessages(db: SupabaseClient, ids: string[], call: M
         parse_status: parsed.data.kind === 'other' && created === 0 && !rows.receipt && !card ? 'ignored' : 'parsed',
         kind: parsed.data.kind,
         summary: parsed.data.summary || null,
+        read_note: note,
         parse_error: null,
         parsed_at: new Date().toISOString(),
         parser_version: `${opts.model}/${PROMPT_VERSION}`,

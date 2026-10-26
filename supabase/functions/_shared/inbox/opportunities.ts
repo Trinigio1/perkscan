@@ -41,6 +41,8 @@ export interface OpportunityRow {
 export interface Rows {
   receipt: ReceiptRow | null;
   opportunities: OpportunityRow[];
+  /** Offers the email had that were left out, and why: for "What PerkScan read". */
+  skipped: { expired: number; noValue: number; notMoney: number };
 }
 
 const slug = (s: string | null | undefined) =>
@@ -152,8 +154,16 @@ function offerRow(o: Offer, merchant: string | null, currency: string, flightRef
  */
 export function notMoneyOwed(o: Pick<Offer, 'title' | 'details'>): boolean {
   const text = `${o.title} ${o.details ?? ''}`;
-  return /\btrade[- ]?in\b|\bup to\b|\bfinanc(e|ing)\b|\bsweepstakes\b|\bchance to win\b/i.test(text);
+  return /\btrade[- ]?in\b|\bup to\b|\bfinanc(e|ing)\b|\bsweepstakes\b|\bchance to win\b/i.test(text) || earnedByDoing(o);
 }
+
+/** "$100 gift card for a case study interview", "$20 off after 5 tasks": paid for doing something, not owed. */
+export function earnedByDoing(o: Pick<Offer, 'title' | 'details'>): boolean {
+  return /\b(interview|survey|focus group|research study|complet(e|ing) \d+ (tasks?|orders?|trips?|rides?)|unlock by|refer(ral)? (a )?friends?)\b/i.test(`${o.title} ${o.details ?? ''}`);
+}
+
+/** A trade-in offer: never money the user has, and not worth showing. */
+const isTradeIn = (o: Pick<Offer, 'title' | 'details'>) => /\btrade[- ]?in\b/i.test(`${o.title} ${o.details ?? ''}`);
 
 /** Offers with no value, code, points or deadline are marketing noise. */
 function isActionable(o: Offer): boolean {
@@ -168,10 +178,21 @@ export function toRows(p: ParsedEmail, today: string, defaultCurrency = 'USD', f
   const merchant = p.merchant;
   const emailCurrency = p.receipt?.currency ?? defaultCurrency;
   const opportunities: OpportunityRow[] = [];
+  const skipped = { expired: 0, noValue: 0, notMoney: 0 };
 
   for (const o of p.offers) {
-    if (!isActionable(o)) continue;
-    if (o.expires_on && o.expires_on < today) continue; // already expired when it arrived
+    if (isTradeIn(o)) {
+      skipped.notMoney += 1;
+      continue;
+    }
+    if (!isActionable(o)) {
+      skipped.noValue += 1;
+      continue;
+    }
+    if (o.expires_on && o.expires_on < today) {
+      skipped.expired += 1; // already expired when it arrived
+      continue;
+    }
     opportunities.push(offerRow(o, merchant, o.currency ?? emailCurrency, flightRefundRule, p.interest ?? null));
   }
 
@@ -238,5 +259,18 @@ export function toRows(p: ParsedEmail, today: string, defaultCurrency = 'USD', f
 
   // The same offer can appear twice in one email.
   const seen = new Set<string>();
-  return { receipt, opportunities: opportunities.filter((o) => !seen.has(o.dedupe_key) && seen.add(o.dedupe_key)) };
+  return { receipt, opportunities: opportunities.filter((o) => !seen.has(o.dedupe_key) && seen.add(o.dedupe_key)), skipped };
+}
+
+/**
+ * Why an email gave what it gave, in a few words, for "What PerkScan read". Null when it simply
+ * found something new (the found offers say enough) or the email had nothing offer-like.
+ */
+export function readNote(r: { created: number; duplicates: number } & Rows['skipped']): string | null {
+  const parts: string[] = [];
+  if (r.duplicates) parts.push(r.duplicates === 1 && !r.created ? 'Already found in an earlier email' : `${r.duplicates} already found in earlier emails`);
+  if (r.expired) parts.push(r.expired === 1 && !r.created && !r.duplicates ? 'Expired before it arrived' : `${r.expired} expired before it arrived`);
+  if (r.notMoney) parts.push('A trade-in, prize draw or reward for doing something, not money you have');
+  if (r.noValue) parts.push(r.noValue === 1 && !parts.length ? 'An offer with no code, amount or end date to act on' : `${r.noValue} with no code, amount or end date`);
+  return parts.length ? parts.join(' · ') : null;
 }

@@ -206,6 +206,16 @@ Deno.test('inbox pipeline end to end', async () => {
     const ignored = await admin.from('inbound_messages').select('parse_status').eq('external_id', 'g-3').single();
     assert(ignored.data?.parse_status === 'ignored', 'emails with nothing useful are marked ignored');
 
+    // Failed, and its text purged after 24h: sending it again from Gmail reads it again.
+    failNext = 2;
+    await post(ingest, { messages: [{ id: 'g-5', subject: 'Spring sale', text: PROMO_HTML }] }, token);
+    await admin.from('inbound_messages').update({ raw_body: null, attempts: 3 }).eq('external_id', 'g-5');
+    const resent = await (await post(ingest, { messages: [{ id: 'g-5', subject: 'Spring sale', text: PROMO_HTML }, { id: 'g-2', text: RECEIPT_TEXT }] }, token)).json();
+    assert(resent.accepted === 1 && resent.duplicates === 1, `only the unread one is read again: ${JSON.stringify(resent)}`);
+    const reread = await admin.from('inbound_messages').select('parse_status, raw_body, read_note').eq('external_id', 'g-5').single();
+    assert(reread.data?.parse_status === 'parsed' && reread.data.raw_body === null, `read the second time: ${JSON.stringify(reread.data)}`);
+    assert(reread.data?.read_note === 'Already found in an earlier email', `says why it gave nothing new: ${JSON.stringify(reread.data)}`);
+
     // Test button
     const test = await (await post(proc, { action: 'test' })).json();
     assert(test.result?.status === 'parsed' && test.result.opportunities === 1, `test email: ${JSON.stringify(test)}`);
