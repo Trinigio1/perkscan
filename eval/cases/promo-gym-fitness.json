@@ -1,0 +1,16 @@
+{
+  "origin": "synthetic",
+  "source": "email",
+  "input": {
+    "subject": "Bring a friend free this week",
+    "date": "2026-10-20T12:00:00-04:00",
+    "text": "Members: bring a friend free any day this week, and get 50% off your first personal training session with code PT50. Offer ends October 26, 2026.",
+    "from": "Iron Gym <hello@irongym.example>"
+  },
+  "expected": {
+    "kind": "promo",
+    "merchant": "Iron Gym",
+    "interest": "fitness",
+    "offers": [{ "type": "promo", "code": "PT50", "expires_on": "2026-10-26" }]
+  }
+}

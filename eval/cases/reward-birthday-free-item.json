@@ -1,0 +1,16 @@
+{
+  "origin": "synthetic",
+  "source": "email",
+  "input": {
+    "subject": "Happy birthday! A treat is waiting",
+    "date": "2026-10-12T07:30:00-04:00",
+    "text": "Happy birthday, Sam! Your free birthday drink is in the app now. Any size, any handcrafted drink. Redeem by October 19, 2026.",
+    "from": "Starbucks Rewards <rewards@starbucks.example>"
+  },
+  "expected": {
+    "kind": "loyalty",
+    "merchant": "Starbucks",
+    "interest": "dining",
+    "offers": [{ "type": "promo", "amount": null, "expires_on": "2026-10-19" }]
+  }
+}

@@ -104,3 +104,12 @@ describe('cards read from email', () => {
     expect(normalizeParsed(base).card).toBeNull();
   });
 });
+
+describe('what an email is about', () => {
+  it('keeps a known interest and drops anything else', () => {
+    const base = { kind: 'promo' as const, merchant: 'Planet Fitness', summary: '', receipt: null, offers: [] };
+    expect(normalizeParsed({ ...base, interest: 'fitness' }).interest).toBe('fitness');
+    expect(normalizeParsed({ ...base, interest: 'gyms' as never }).interest).toBeNull();
+    expect(normalizeParsed(base).interest).toBeNull();
+  });
+});

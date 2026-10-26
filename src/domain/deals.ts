@@ -1,4 +1,5 @@
 import type { Confidence } from './confidence';
+import { interestsFor, storeInterests } from './interests';
 import type { Opportunity, Receipt } from './types';
 import type { IconTone } from './visuals';
 
@@ -113,8 +114,12 @@ export function interestProfile(d: InterestInput): InterestProfile {
     if (name && !names.has(key)) names.set(key, name);
   };
   for (const r of d.receipts) {
-    const i = r.purchase_type ? PURCHASE_INTEREST[r.purchase_type] : undefined;
-    if (i) inferred.set(i, (inferred.get(i) ?? 0) + 1);
+    // What the store is known for ("Planet Fitness" -> fitness) beats the kind of purchase ("subscription").
+    // A store known for several things (Courts: electronics and home) follows what was bought.
+    const known: Interest[] = storeInterests(r.merchant).filter((i) => i !== 'shopping');
+    const bought = r.purchase_type ? PURCHASE_INTEREST[r.purchase_type] : undefined;
+    const kinds = bought && (known.includes(bought) || !known.length) ? [bought] : known;
+    for (const i of kinds) inferred.set(i, (inferred.get(i) ?? 0) + 1);
     add(shops, r.merchant);
   }
   for (const dom of d.senderDomains) {
@@ -187,6 +192,8 @@ export interface DealsFor {
 
 export interface RankedDeal {
   deal: Deal;
+  /** What it's about, most certain first: its category, what the store is known for, its wording. */
+  tags: Interest[];
   score: number;
   /** One short line: why you're seeing it. Null for popular deals that don't match you. */
   why: string | null;
@@ -241,7 +248,10 @@ export function rankDeals(deals: Deal[], who: DealsFor): { forYou: RankedDeal[];
     const followed = !!matchStore(d, follows);
     const shop = followed ? null : matchStore(d, shops);
     const like = [...d.merchant_keys, storeKey(d.merchant)].map((k) => who.likeYou?.get(k)).filter((x) => !!x && x.share >= LIKE_YOU_MIN_SHARE).sort((a, b) => b!.share - a!.share)[0];
-    const spend = inferred.get(d.category) ?? 0;
+    const tags = interestsFor({ category: d.category, merchant: d.merchant, title: d.title, summary: d.summary });
+    const pickedTag = tags.find((t) => picked.has(t));
+    const spentTag = [...tags].sort((a, b) => (inferred.get(b) ?? 0) - (inferred.get(a) ?? 0))[0];
+    const spend = spentTag ? inferred.get(spentTag) ?? 0 : 0;
 
     let match = 0;
     let why: string | null = null;
@@ -249,9 +259,9 @@ export function rankDeals(deals: Deal[], who: DealsFor): { forYou: RankedDeal[];
       match += 30;
       why = `You shop at ${d.merchant}`;
     }
-    if (picked.has(d.category)) {
+    if (pickedTag) {
       match += 25;
-      why ??= `Matches ${interestLabel(d.category)}`;
+      why ??= `Matches ${interestLabel(pickedTag)}`;
     }
     if (like) {
       match += 10 + Math.round(20 * like.share);
@@ -259,19 +269,36 @@ export function rankDeals(deals: Deal[], who: DealsFor): { forYou: RankedDeal[];
     }
     if (spend > 0) {
       match += Math.min(15, spend * 5);
-      why ??= `You spend on ${interestLabel(d.category).toLowerCase()}`;
+      why ??= `You spend on ${interestLabel(spentTag!).toLowerCase()}`;
     }
     let penalty = 0;
     if (followed) penalty += 15;
     if (dismissedStores.has(storeKey(d.merchant))) penalty += 20;
 
-    const ranked = { deal: d, score: match - penalty + baseScore(d, who.today), why };
+    const ranked = { deal: d, tags, score: match - penalty + baseScore(d, who.today), why };
     if (match > 0 && match > penalty) forYou.push(ranked);
     // A store that already emails you, with nothing else going for it, isn't news.
     else if (!followed) popular.push({ ...ranked, why: null });
   }
   const order = (a: RankedDeal, b: RankedDeal) => b.score - a.score || (a.deal.ends_on ?? '9999').localeCompare(b.deal.ends_on ?? '9999');
   return { forYou: forYou.sort(order), popular: popular.sort(order) };
+}
+
+export interface InterestGroup {
+  interest: Interest;
+  deals: RankedDeal[];
+}
+
+/**
+ * Deals for you, under each interest you picked (in your order). A deal about two of them shows in
+ * both. `rest` is what's for you for another reason (a store you shop at, people like you).
+ */
+export function groupByInterest(forYou: RankedDeal[], picked: string[]): { groups: InterestGroup[]; rest: RankedDeal[] } {
+  const groups = picked
+    .filter((i): i is Interest => INTERESTS.some((x) => x.id === i))
+    .map((interest) => ({ interest, deals: forYou.filter((d) => d.tags.includes(interest)) }));
+  const rest = forYou.filter((d) => !d.tags.some((t) => picked.includes(t)));
+  return { groups, rest };
 }
 
 /** "TT$300 off", "20% off", "Code SAVE10" — the deal's headline number, only if it was stated. */

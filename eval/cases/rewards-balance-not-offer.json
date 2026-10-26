@@ -1,0 +1,15 @@
+{
+  "origin": "synthetic",
+  "source": "email",
+  "input": {
+    "subject": "Your October rewards summary",
+    "date": "2026-10-05T10:00:00-04:00",
+    "text": "Your rewards summary\n\nCash back available: $45.20\nEarned this month: $6.85\n\nSpend $500 more this quarter to earn a $50 bonus. Redeem any time for a statement credit or deposit.",
+    "from": "Bank Rewards <rewards@bank.example>"
+  },
+  "expected": {
+    "kind": "loyalty",
+    "interest": null,
+    "offers": []
+  }
+}

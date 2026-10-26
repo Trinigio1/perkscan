@@ -31,7 +31,7 @@ const fakeModel: ModelCall = async (input) => {
   const base = { receipt: null, offers: [] as unknown[] };
   let out: Record<string, unknown>;
   if (input.includes('SPRING20')) {
-    out = { ...base, kind: 'promo', merchant: 'Acme Outfitters', summary: '20% off code from Acme', offers: [{ type: 'promo', currency: null, title: '20% off your next order', amount: null, percent_off: 20, code: 'SPRING20', expires_on: '2099-04-30', min_spend: null, points: null, claim_url: null, details: null }] };
+    out = { ...base, kind: 'promo', merchant: 'Acme Outfitters', summary: '20% off code from Acme', interest: 'fashion', offers: [{ type: 'promo', currency: null, title: '20% off your next order', amount: null, percent_off: 20, code: 'SPRING20', expires_on: '2099-04-30', min_spend: null, points: null, claim_url: null, details: null }] };
   } else if (input.includes('Thanks for your order')) {
     out = { ...base, kind: 'receipt', merchant: 'Acme Outfitters', summary: 'Order from Acme, $101.99', receipt: { total: 101.99, currency: 'USD', purchase_type: 'electronics', travel_date: null, purchase_date: new Date().toISOString().slice(0, 10), card_last_four: '4242', order_number: 'A-1', return_by: null, return_window_days: 30, items: [{ name: 'Trail Runner Shoes', price: 89.99, quantity: 1 }] } };
   } else if (input.includes('authorization made outside')) {
@@ -123,9 +123,10 @@ Deno.test('inbox pipeline end to end', async () => {
     assert(msgs.data.every((m) => /^fake\/\d{4}-\d{2}-\d{2}$/.test(m.parser_version ?? '')), `reader version recorded: ${JSON.stringify(msgs.data)}`);
     assert(msgs.data.some((m) => m.from_domain === 'acme.com'), 'only the sender domain is stored');
 
-    const opps = await alice.client.from('opportunities').select('type, title, code, category, value_estimate').neq('type', 'card_credit');
+    const opps = await alice.client.from('opportunities').select('type, title, code, category, value_estimate, interest').neq('type', 'card_credit');
     const promo = opps.data?.find((o) => o.code === 'SPRING20');
     assert(promo?.category === 'promos', `promo opportunity: ${JSON.stringify(opps.data)}`);
+    assert(promo?.interest === 'fashion', `offer tagged with what it's about: ${JSON.stringify(promo)}`);
     assert(opps.data?.some((o) => o.type === 'return_window' && o.value_estimate === null), 'return window created with no dollar value');
 
     const receipts = await alice.client.from('receipts').select('merchant, total, last_four, matched_user_card_id');

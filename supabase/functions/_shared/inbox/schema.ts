@@ -4,6 +4,12 @@ import { z } from 'zod';
 // structured-output JSON schema doesn't support numeric/string limits, so ranges
 // and formats are enforced afterwards in normalizeParsed().
 
+/** What an email's store or offer is about. The same ids as the app's interests (src/domain/deals.ts). */
+export const INTEREST_IDS = [
+  'groceries', 'dining', 'delivery', 'electronics', 'fashion', 'home', 'travel', 'beauty', 'fitness', 'entertainment', 'fuel', 'kids',
+  'pets', 'education', 'shopping',
+] as const;
+
 export const OFFER_TYPES = ['promo', 'gift_card', 'store_credit', 'points', 'free_trial', 'settlement', 'refund', 'travel_credit', 'certificate'] as const;
 
 export const PURCHASE_TYPES = [
@@ -77,6 +83,11 @@ export const ParsedEmailSchema = z.object({
   card: CardSeenSchema.nullable()
     .optional() // replies stored before cards were read leave it out
     .describe('Only when the email is from a bank or card issuer about the reader\'s own credit or charge card'),
+  interest: z
+    .enum(INTEREST_IDS)
+    .nullable()
+    .optional() // replies stored before interests were read leave it out
+    .describe('What the store or offer is mainly about, e.g. a gym -> fitness, Sephora -> beauty. Null for banks, bills and anything that fits none'),
 });
 
 export type ParsedEmail = z.infer<typeof ParsedEmailSchema>;
@@ -156,6 +167,7 @@ export function normalizeParsed(p: ParsedEmail): ParsedEmail {
       after_cancellation: o.type === 'travel_credit' ? o.after_cancellation ?? null : null,
     })),
     card: normalizeCard(p.card ?? null),
+    interest: p.interest && (INTEREST_IDS as readonly string[]).includes(p.interest) ? p.interest : null,
   };
 }
 

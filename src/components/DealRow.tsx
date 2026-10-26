@@ -2,7 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import * as Clipboard from 'expo-clipboard';
 import { useState } from 'react';
 import { Linking, Pressable, View } from 'react-native';
-import { INTERESTS, dealValue, type RankedDeal } from '@/domain/deals';
+import { INTERESTS, dealValue, interestLabel, type RankedDeal } from '@/domain/deals';
 import { eventWhen } from '@/domain/events';
 import { formatMoney } from '@/domain/format';
 import { track } from '@/lib/analytics';
@@ -15,15 +15,17 @@ import { Badge, Button, IconBubble, Row, T, type IconName } from './ui';
 
 const today = () => new Date().toISOString().slice(0, 10);
 
-/** A store deal: what, where, until when, why it's for you — and Save, Hide, Details. */
-export function DealRow({ item }: { item: RankedDeal }) {
+/** A store deal: what, where, until when, why it's for you — and Save, Hide, Details. Under an interest's heading, "Matches <it>" goes without saying. */
+export function DealRow({ item, inInterest }: { item: RankedDeal; inInterest?: string }) {
   const c = useColors();
   const toast = useToast();
   const { data, refresh } = useData();
   const [busy, setBusy] = useState(false);
   const [menu, setMenu] = useState(false);
   const d = item.deal;
-  const interest = INTERESTS.find((i) => i.id === d.category) ?? INTERESTS[INTERESTS.length - 1]!;
+  const interest = INTERESTS.find((i) => i.id === (item.tags[0] ?? d.category)) ?? INTERESTS[INTERESTS.length - 1]!;
+  // What it's about, as tags ("Fitness", "Clothes & shoes"); "Everything else" isn't worth a tag.
+  const tags = item.tags.filter((t) => t !== 'shopping').map((t) => INTERESTS.find((i) => i.id === t)).filter((i) => !!i);
   const saved = data.dealFeedback.some((f) => f.deal_id === d.id && f.action === 'saved');
   const money = (n: number) => formatMoney(n, { currency: d.currency ?? undefined });
   const value = dealValue(d, money);
@@ -64,7 +66,7 @@ export function DealRow({ item }: { item: RankedDeal }) {
             {d.merchant} · <T variant="caption" color={soon ? c.warn : c.textMuted}>{when}</T>
           </T>
           {d.summary ? <T variant="caption" numberOfLines={2}>{d.summary}</T> : null}
-          {item.why ? (
+          {item.why && !(inInterest && item.why === `Matches ${interestLabel(inInterest)}`) ? (
             <Row gap={4}>
               <Ionicons name="sparkles" size={12} color={c.accentStrong} />
               <T variant="caption" color={c.accentStrong}>{item.why}</T>
@@ -74,6 +76,9 @@ export function DealRow({ item }: { item: RankedDeal }) {
 
           <Row gap={6} style={{ flexWrap: 'wrap', marginTop: 4, alignItems: 'center' }}>
             {value ? <Badge label={value} tone="good" /> : null}
+            {tags.map((t) => (
+              <Badge key={t.id} label={t.label} icon={t.icon} />
+            ))}
             {d.min_spend !== null ? <Badge label={`On ${money(d.min_spend)}+`} /> : null}
             {d.code ? (
               <Pressable

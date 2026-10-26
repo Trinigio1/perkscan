@@ -31,6 +31,8 @@ export interface OpportunityRow {
   expires_at: string | null;
   dedupe_key: string;
   action_steps: { step: string; url?: string }[];
+  /** What it's about ("fitness", "beauty"), so it can sit under the interests the user picked. */
+  interest: string | null;
 }
 
 export interface Rows {
@@ -64,7 +66,7 @@ export interface RefundRule {
   url: string;
 }
 
-function offerRow(o: Offer, merchant: string | null, currency: string, flightRefundRule: RefundRule | null): OpportunityRow {
+function offerRow(o: Offer, merchant: string | null, currency: string, flightRefundRule: RefundRule | null, interest: string | null): OpportunityRow {
   const who = merchant ?? 'this store';
   const fmt = (n: number) => fmtMoney(n, currency);
   const steps: OpportunityRow['action_steps'] = [];
@@ -135,6 +137,7 @@ function offerRow(o: Offer, merchant: string | null, currency: string, flightRef
     expires_at: o.expires_on ? endOfDay(o.expires_on) : null,
     dedupe_key: `${type}:${slug(merchant)}:${slug(o.code ?? o.title)}:${o.expires_on ?? ''}`,
     action_steps: steps,
+    interest,
   };
 }
 
@@ -164,7 +167,7 @@ export function toRows(p: ParsedEmail, today: string, defaultCurrency = 'USD', f
   for (const o of p.offers) {
     if (!isActionable(o)) continue;
     if (o.expires_on && o.expires_on < today) continue; // already expired when it arrived
-    opportunities.push(offerRow(o, merchant, o.currency ?? emailCurrency, flightRefundRule));
+    opportunities.push(offerRow(o, merchant, o.currency ?? emailCurrency, flightRefundRule, p.interest ?? null));
   }
 
   let receipt: ReceiptRow | null = null;
@@ -221,6 +224,7 @@ export function toRows(p: ParsedEmail, today: string, defaultCurrency = 'USD', f
           { step: 'Not happy with it? Start a return from your order page or the store.' },
           { step: `Last day to return: ${returnBy}.` },
         ],
+        interest: p.interest ?? null,
       });
     }
   }

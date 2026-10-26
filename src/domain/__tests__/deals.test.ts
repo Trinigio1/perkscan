@@ -1,4 +1,4 @@
-import { dealValue, domainStoreKey, interestProfile, matchStore, peopleLikeYou, rankDeals, storeKey, suggestedInterests, type Deal, type DealsFor, type InterestInput } from '../deals';
+import { dealValue, domainStoreKey, groupByInterest, interestProfile, matchStore, peopleLikeYou, rankDeals, storeKey, suggestedInterests, type Deal, type DealsFor, type InterestInput } from '../deals';
 
 const TODAY = '2026-10-23';
 const deal = (d: Partial<Deal> & { id: string }): Deal => ({
@@ -60,7 +60,7 @@ describe('rankDeals: what your inbox won’t show you', () => {
     deal({ id: 'pizza', merchant: 'Pizza Boys', category: 'delivery', amount: 25 }),
     deal({ id: 'pricesmart', merchant: 'PriceSmart', merchant_keys: ['pricesmart'], category: 'electronics', percent_off: 15 }),
     deal({ id: 'massy_same', merchant: 'Massy Stores', merchant_keys: ['massystores'], category: 'groceries', code: 'MASSY10', amount: 10 }),
-    deal({ id: 'nike', category: 'fashion', percent_off: 40 }),
+    deal({ id: 'zara', category: 'fashion', percent_off: 40 }),
     deal({ id: 'us_only', countries: ['US'], category: 'home' }),
     deal({ id: 'ended', category: 'home', ends_on: '2026-10-20' }),
     deal({ id: 'florida', regions: ['FL'], category: 'home' }),
@@ -79,7 +79,15 @@ describe('rankDeals: what your inbox won’t show you', () => {
     const ids = [...rankDeals(deals, who()).forYou, ...rankDeals(deals, who()).popular].map((x) => x.deal.id);
     expect(ids).not.toContain('massy_same');
     expect(ids).not.toContain('pricesmart');
-    expect(rankDeals(deals, who()).popular.map((x) => [x.deal.id, x.why])).toEqual([['nike', null]]);
+    expect(rankDeals(deals, who()).popular.map((x) => [x.deal.id, x.why])).toEqual([['zara', null]]);
+  });
+
+  it('tags each deal with what it’s about, not just its category', () => {
+    const r = rankDeals([deal({ id: 'nike', merchant: 'Nike', category: 'fashion', percent_off: 25 }), deal({ id: 'yoga', merchant: 'Corner Studio', title: 'First yoga class free' })], who());
+    expect(r.forYou.map((x) => [x.deal.id, x.tags, x.why])).toEqual([
+      ['nike', ['fashion', 'fitness'], 'Matches Fitness'],
+      ['yoga', ['fitness'], 'Matches Fitness'],
+    ]);
   });
 
   it('still shows an emailing store’s deal when it matches you strongly', () => {
@@ -160,5 +168,18 @@ describe('dealValue', () => {
     expect(dealValue({ amount: null, percent_off: 20 }, fmt)).toBe('20% off');
     expect(dealValue({ amount: null, percent_off: null }, fmt)).toBeNull();
     expect(dealValue({ amount: 0, percent_off: null }, fmt)).toBeNull();
+  });
+});
+
+describe('groupByInterest', () => {
+  const ranked = (id: string, tags: string[]) => ({ deal: deal({ id }), tags, score: 1, why: null }) as Parameters<typeof groupByInterest>[0][number];
+  it('puts each deal under every interest you picked that it’s about, in your order', () => {
+    const forYou = [ranked('nike', ['fashion', 'fitness']), ranked('gym', ['fitness']), ranked('courts', ['home']), ranked('sephora', ['beauty'])];
+    const { groups, rest } = groupByInterest(forYou, ['fitness', 'beauty', 'nonsense']);
+    expect(groups.map((g) => [g.interest, g.deals.map((d) => d.deal.id)])).toEqual([
+      ['fitness', ['nike', 'gym']],
+      ['beauty', ['sephora']],
+    ]);
+    expect(rest.map((d) => d.deal.id)).toEqual(['courts']);
   });
 });

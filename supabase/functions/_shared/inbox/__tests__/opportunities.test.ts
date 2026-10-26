@@ -16,6 +16,17 @@ describe('toRows', () => {
     expect(opportunities[0]!.action_steps.map((s) => s.step).join(' ')).toContain('SAVE20');
   });
 
+  it('tags every offer with what the email is about', () => {
+    const { opportunities } = toRows(email({ merchant: 'Sephora', interest: 'beauty', offers: [offer({ type: 'promo', title: 'Free birthday gift', expires_on: '2026-04-30' })] }), TODAY);
+    expect(opportunities[0]).toMatchObject({ interest: 'beauty', value_estimate: null });
+    expect(toRows(email({ offers: [offer({ amount: 5, expires_on: '2026-04-30' })] }), TODAY).opportunities[0]!.interest).toBeNull();
+  });
+
+  it('counts an issued reward like store credit', () => {
+    const { opportunities } = toRows(email({ merchant: "Kohl's", interest: 'fashion', offers: [offer({ type: 'store_credit', title: "$10 Kohl's Cash", amount: 10, expires_on: '2026-04-25' })] }), TODAY);
+    expect(opportunities[0]).toMatchObject({ type: 'store_credit', value_estimate: 10, interest: 'fashion' });
+  });
+
   it('skips offers that already expired or carry no value, code or deadline', () => {
     const { opportunities } = toRows(email({ offers: [offer({ amount: 10, expires_on: '2026-04-01' }), offer({ title: 'Big sale!' })] }), TODAY);
     expect(opportunities).toHaveLength(0);

@@ -109,6 +109,8 @@ export interface Opportunity {
   claim_check_after?: string | null;
   /** The domain of the email it came from ("target.com"), where codes and gift cards get used. */
   sender_domain?: string | null;
+  /** What the email's offer is about ("fitness"), as the reader saw it. Older offers have none. */
+  interest?: string | null;
   created_at: string;
 }
 

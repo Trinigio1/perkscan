@@ -1,5 +1,5 @@
 /**
- * PerkScan for Gmail — finds receipts, bank alerts, codes, gift cards, travel credits, expiring points,
+ * PerkScan for Gmail — finds receipts, bank alerts, codes, gift cards, store rewards, birthday treats, travel credits, expiring points,
  * free-night certificates, refunds, trials and card statements in your Gmail and sends them to your PerkScan account.
  *
  * Setup (about 5 minutes, on a computer):
@@ -37,6 +37,10 @@ const WANTED = [
   'subject:("gift card" OR "e-gift" OR "store credit" OR voucher OR refund OR "price adjustment" OR warranty)',
   '("promo code" OR "coupon code" OR "use code" OR "discount code" OR "add this offer")',
   '((points OR miles OR stars OR rewards) (expire OR expiring OR expiration))',
+  // Rewards a store has already issued: store cash, reward certificates, birthday treats.
+  '("reward is ready" OR "rewards are ready" OR "reward is waiting" OR "you\'ve earned" OR "you earned" OR "reward certificate" OR "rewards certificate")',
+  '("Kohl\'s Cash" OR ExtraBucks OR "bonus cash" OR "reward dollars" OR "store cash" OR "rewards cash")',
+  '(birthday (reward OR treat OR gift OR free OR offer))',
   '("free trial" OR "trial ends" OR "will renew" OR "renews on")',
   '((authorization OR "card ending" OR transaction OR purchase) (alert OR notification OR approved OR pending))',
   '((settlement OR "class action") claim)',

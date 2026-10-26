@@ -1,0 +1,16 @@
+{
+  "origin": "synthetic",
+  "source": "email",
+  "input": {
+    "subject": "You've earned $10 Kohl's Cash!",
+    "date": "2026-10-18T09:12:00-04:00",
+    "text": "Thanks for shopping with us! You earned $10 Kohl's Cash with your purchase.\n\nRedeem it in store or online October 20 - November 2, 2026. Kohl's Cash can't be redeemed for cash.",
+    "from": "Kohl's <kohls@s.kohls.example>"
+  },
+  "expected": {
+    "kind": "gift_card_or_store_credit",
+    "merchant": "Kohl's",
+    "interest": "fashion",
+    "offers": [{ "type": "store_credit", "amount": 10, "currency": "USD", "expires_on": "2026-11-02" }]
+  }
+}

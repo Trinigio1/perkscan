@@ -25,6 +25,8 @@ export interface Expected {
     warranty_months?: number | null;
   } | null;
   offers?: ExpectedOffer[];
+  /** What the email is about ("fitness"); null = none. */
+  interest?: string | null;
   /** The payment card the email shows the reader holds; null = none. */
   card?: { issuer?: string; product?: string | null; last_four?: string | null } | null;
 }
@@ -74,6 +76,8 @@ export function scoreCase(expected: Expected, actual: ParsedEmail): Check[] {
       if (e.warranty_months !== undefined) check('receipt.warranty', e.warranty_months === (a.warranty_months ?? null), e.warranty_months, a.warranty_months ?? null);
     }
   }
+
+  if (expected.interest !== undefined) check('interest', expected.interest === (actual.interest ?? null), expected.interest, actual.interest ?? null);
 
   if (expected.card !== undefined) {
     const e = expected.card;
