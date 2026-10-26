@@ -1,4 +1,4 @@
-import { bestPromoUrl, findPromoPage, sitemapLocs } from '../discover.ts';
+import { bestPromoUrl, findPromoPage, knownDomain, sitemapLocs } from '../discover.ts';
 
 const html = (body: string) => `<html><body><h1>Store</h1><p>${body}</p></body></html>`;
 const PROMO = html('Weekend deals: save 20% off fridges. Special offer on TVs. Free delivery this week on all sale items, see the in-store promo.');
@@ -69,5 +69,16 @@ describe('findPromoPage', () => {
       'https://www.store.example/deals': { body: html('Our company history and opening hours. Visit our branches across the country for more information about us.') },
     });
     expect(await findPromoPage('store.example', f)).toEqual({ url: null, reason: 'no promotions page found' });
+  });
+});
+
+describe('knownDomain', () => {
+  it('finds the official site for a store name seen on a receipt', () => {
+    expect(knownDomain('chipotlemexicangrill')).toBe('chipotle.com');
+    expect(knownDomain('sweetgreen')).toBe('sweetgreen.com');
+    expect(knownDomain('panerabread')).toBe('panerabread.com');
+    expect(knownDomain('ricemediterraneankitchen')).toBeNull();
+    expect(knownDomain('gap')).toBe('gap.com');
+    expect(knownDomain('gapkids')).toBeNull(); // short names only match exactly
   });
 });

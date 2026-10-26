@@ -107,12 +107,71 @@ export interface DiscoverReport {
   result: string;
 }
 
+/**
+ * Official sites of well-known stores and restaurants, by store key, for store names that reach
+ * PerkScan without a domain of their own (a Chipotle order through Uber Eats, a card alert).
+ */
+export const KNOWN_DOMAINS: Record<string, string> = {
+  chipotle: 'chipotle.com', sweetgreen: 'sweetgreen.com', starbucks: 'starbucks.com', mcdonalds: 'mcdonalds.com', dominos: 'dominos.com',
+  panerabread: 'panerabread.com', panera: 'panerabread.com', dunkin: 'dunkindonuts.com', tacobell: 'tacobell.com', wingstop: 'wingstop.com',
+  chickfila: 'chick-fil-a.com', shakeshack: 'shakeshack.com', burgerking: 'bk.com', papajohns: 'papajohns.com', pizzahut: 'pizzahut.com',
+  subway: 'subway.com', cava: 'cava.com', wendys: 'wendys.com', popeyes: 'popeyes.com', kfc: 'kfc.com', dennys: 'dennys.com', ihop: 'ihop.com',
+  pollotropical: 'pollotropical.com', joethejuice: 'joejuice.com', fiveguys: 'fiveguys.com', pandaexpress: 'pandaexpress.com',
+  amazon: 'amazon.com', walmart: 'walmart.com', target: 'target.com', bestbuy: 'bestbuy.com', dell: 'dell.com', nike: 'nike.com',
+  sephora: 'sephora.com', ulta: 'ulta.com', cvs: 'cvs.com', walgreens: 'walgreens.com', costco: 'costco.com', homedepot: 'homedepot.com',
+  lowes: 'lowes.com', kohls: 'kohls.com', macys: 'macys.com', oldnavy: 'oldnavy.com', gap: 'gap.com', zara: 'zara.com', uniqlo: 'uniqlo.com',
+  wholefoods: 'wholefoodsmarket.com', kroger: 'kroger.com', publix: 'publix.com', wayfair: 'wayfair.com', ikea: 'ikea.com',
+  newegg: 'newegg.com', samsung: 'samsung.com', lenovo: 'lenovo.com', adidas: 'adidas.com', lululemon: 'lululemon.com', trip: 'trip.com',
+};
+
+/** A store key's official domain from KNOWN_DOMAINS: exact, or the store name starting with a known one ("chipotlemexicangrill"). */
+export function knownDomain(storeKey: string): string | null {
+  const k = Object.keys(KNOWN_DOMAINS).sort((a, b) => b.length - a.length).find((x) => storeKey === x || (x.length >= 4 && storeKey.startsWith(x)));
+  return k ? KNOWN_DOMAINS[k]! : null;
+}
+
+interface Candidate {
+  country: string;
+  domain: string;
+  store_key: string;
+  name: string;
+  users: number;
+}
+
+/**
+ * Stores to look up: first the ones on people's receipts (where they actually buy), then stores that
+ * email several users. Store names without a domain are matched to known official sites.
+ */
+async function candidates(db: SupabaseClient, perRun: number, minUsers: number): Promise<Candidate[]> {
+  const out: Candidate[] = [];
+  const seen = new Set<string>();
+  const push = (c: Candidate) => {
+    const k = `${c.country}|${c.domain}`;
+    if (!seen.has(k)) seen.add(k) && out.push(c);
+  };
+  const bought = await db.rpc('_purchase_store_candidates', { p_limit: perRun * 4 });
+  if (bought.error) console.warn('_purchase_store_candidates', bought.error.message);
+  for (const b of (bought.data ?? []) as { country: string; domain: string | null; store_key: string; name: string; purchases: number }[]) {
+    const domain = b.domain ?? knownDomain(b.store_key);
+    if (!domain) continue;
+    if (!b.domain) {
+      // Name-only candidates skip the SQL checks: look them up here.
+      const listed = await db.from('deal_sources').select('id', { count: 'exact', head: true }).contains('countries', [b.country]).ilike('url', `%${domain}%`);
+      const checked = await db.from('store_domain_checks').select('domain').eq('domain', domain).eq('country', b.country).gt('checked_at', new Date(Date.now() - 30 * 86_400_000).toISOString()).maybeSingle();
+      if ((listed.count ?? 0) > 0 || checked.data) continue;
+    }
+    push({ country: b.country, domain, store_key: b.store_key, name: b.name, users: b.purchases });
+  }
+  const { data, error } = await db.rpc('_store_candidates', { p_min_users: minUsers, p_limit: perRun });
+  if (error) throw new Error(`_store_candidates: ${error.message}`);
+  for (const c of (data ?? []) as Candidate[]) push(c);
+  return out.slice(0, perRun);
+}
+
 /** Looks up a few new stores per run and adds the promotions pages it finds. */
 export async function discoverStores(db: SupabaseClient, opts: { fetch?: Fetch; perRun?: number; minUsers?: number } = {}): Promise<DiscoverReport[]> {
-  const { data, error } = await db.rpc('_store_candidates', { p_min_users: opts.minUsers ?? 3, p_limit: opts.perRun ?? 2 });
-  if (error) throw new Error(`_store_candidates: ${error.message}`);
   const reports: DiscoverReport[] = [];
-  for (const c of (data ?? []) as { country: string; domain: string; store_key: string; name: string; users: number }[]) {
+  for (const c of await candidates(db, opts.perRun ?? 4, opts.minUsers ?? 3)) {
     const { count } = await db.from('deal_sources').select('id', { count: 'exact', head: true }).eq('origin', 'discovered').eq('active', true).contains('countries', [c.country]);
     if ((count ?? 0) >= MAX_ACTIVE_PER_COUNTRY) {
       reports.push({ domain: c.domain, country: c.country, result: 'list full' });
