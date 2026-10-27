@@ -225,6 +225,13 @@ Deno.test('inbox pipeline end to end', async () => {
     const g1 = await admin.from('inbound_messages').select('parse_status, read_note').eq('external_id', 'g-1').single();
     assert(g1.data?.parse_status === 'parsed' && g1.data.read_note === null, `not its own duplicate: ${JSON.stringify(g1.data)}`);
 
+    // One purchase, one receipt: reading the order again, or its shipped update, adds no second receipt.
+    const acmeReceipts = async () => (await admin.from('receipts').select('id').eq('user_id', alice.id).eq('order_number', 'A-1')).data?.length ?? 0;
+    assert((await acmeReceipts()) === 1, `one receipt to start: ${await acmeReceipts()}`);
+    await post(ingest, { reread: true, messages: [{ id: 'g-2', from: 'Acme <orders@acme.com>', subject: 'Your order', date: '2026-04-05', text: RECEIPT_TEXT }] }, token);
+    await post(ingest, { messages: [{ id: 'g-ship', from: 'Acme <orders@acme.com>', subject: 'Shipped: Trail Runner Shoes', date: '2026-04-06', text: RECEIPT_TEXT }] }, token);
+    assert((await acmeReceipts()) === 1, `still one receipt after a re-read and a shipped email: ${await acmeReceipts()}`);
+
     // A store the user hid: its marketing isn't stored or read, but its receipts are.
     await alice.client.from('store_mutes').insert({ store_key: 'promoshop', name: 'Promo Shop' });
     const muted = await (await post(ingest, { messages: [
@@ -343,6 +350,33 @@ Deno.test('finds cards you hold and travel credits', async () => {
     }
   } finally {
     await admin.auth.admin.deleteUser(dan.id);
+  }
+});
+
+Deno.test('the one-time catch-up may send faster, within its own limit', async () => {
+  const u = await makeUser('catchup');
+  try {
+    const tok = await u.client.rpc('create_ingest_token', { p_label: 'Gmail' });
+    const token = tok.data as string;
+    const noModel = ingestHandler({ db: admin, model: null, pipeline }); // store only: nothing to read here
+    const fill = async (n: number, from: number) => {
+      const rows = Array.from({ length: n }, (_, i) => ({ user_id: u.id, source: 'email', external_id: `fill-${from + i}`, parse_status: 'parsed' }));
+      const { error } = await admin.from('inbound_messages').insert(rows);
+      assert(!error, `fill: ${error?.message}`);
+    };
+    const batch = (prefix: string, catchup: boolean) => ({
+      source: 'email',
+      catchup,
+      messages: Array.from({ length: 10 }, (_, i) => ({ id: `${prefix}-${i}`, from: 'Shop <orders@shop.example>', subject: 'Your receipt', text: 'Order total $5.00' })),
+    });
+    await fill(195, 0);
+    assert((await post(noModel, batch('new', false), token)).status === 429, 'normal sends stop at the hourly limit');
+    const fast = await post(noModel, batch('past', true), token);
+    assert(fast.status === 200, `the catch-up goes on: ${fast.status}`);
+    await fill(300, 1000);
+    assert((await post(noModel, batch('past2', true), token)).status === 429, 'the catch-up has its own hourly limit');
+  } finally {
+    await admin.auth.admin.deleteUser(u.id);
   }
 });
 

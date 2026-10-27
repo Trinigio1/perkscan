@@ -1,4 +1,4 @@
-import { findDuplicate, mergeFields, sameMerchant, type ExistingReceipt } from '../merge.ts';
+import { findDuplicate, mergeFields, orderKey, sameMerchant, type ExistingReceipt } from '../merge.ts';
 import type { ReceiptRow } from '../opportunities.ts';
 
 const row = (r: Partial<ReceiptRow>): ReceiptRow => ({
@@ -37,14 +37,36 @@ describe('findDuplicate', () => {
   it('never merges across different cards', () => {
     expect(findDuplicate(row({ last_four: '1111' }), [existing({ last_four: '2222' })])).toBeNull();
   });
-  it('merges a settled alert into its pending one, but not two receipts', () => {
+  it('merges a settled alert into its pending one', () => {
     expect(findDuplicate(row({ pending: false }), [existing({ kind: 'card_alert', pending: true, last_four: '0000' })])?.id).toBe('r1');
     expect(findDuplicate(row({ pending: true }), [existing({ kind: 'card_alert', pending: true, last_four: '0000' })])).toBeNull();
-    expect(findDuplicate(row({ kind: 'receipt', pending: false }), [existing({})])).toBeNull();
+  });
+  it('merges store emails for the same order number, whatever their amounts and dates', () => {
+    const confirm = existing({ merchant: 'Caribbean Airlines', total: 669.23, currency: 'USD', purchase_date: '2026-09-02', order_number: 'ABC123' });
+    expect(findDuplicate(row({ kind: 'receipt', pending: false, merchant: 'Caribbean Airlines', total: null, purchase_date: null, order_number: 'abc-123' }), [confirm])?.id).toBe('r1');
+    expect(findDuplicate(row({ kind: 'receipt', pending: false, merchant: 'Amazon', order_number: 'ABC123' }), [confirm])).toBeNull();
+  });
+  it('merges same-store receipts for the same amount on the same day unless they name different orders', () => {
+    expect(findDuplicate(row({ kind: 'receipt', pending: false, order_number: null }), [existing({})])?.id).toBe('r1');
+    expect(findDuplicate(row({ kind: 'receipt', pending: false, order_number: 'U-22222' }), [existing({ order_number: 'U-11111' })])).toBeNull();
+    expect(findDuplicate(row({ kind: 'receipt', pending: false, purchase_date: '2026-10-21' }), [existing({})])).toBeNull();
+  });
+});
+
+describe('orderKey', () => {
+  it('compares order numbers loosely and ignores ones too short to be real', () => {
+    expect(orderKey('#112-3344 556')).toBe('1123344556');
+    expect(orderKey('12')).toBeNull();
+    expect(orderKey(null)).toBeNull();
   });
 });
 
 describe('mergeFields', () => {
+  it('fills only the gaps when a second email about the same order arrives', () => {
+    expect(mergeFields(existing({ total: null, last_four: null }), row({ kind: 'receipt', total: 669.23, last_four: '6042', order_number: 'X' }))).toEqual({
+      total: 669.23, purchase_date: '2026-10-20', order_number: 'U-1', last_four: '6042',
+    });
+  });
   it('keeps the store receipt and takes the card digits from the alert', () => {
     expect(mergeFields(existing({}), row({}))).toEqual({ last_four: '0000', pending: false });
   });

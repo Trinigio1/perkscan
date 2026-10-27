@@ -9,7 +9,7 @@ import { readReport, type ReadOutcome } from '@/domain/readReport';
 import type { InboundMessage } from '@/domain/types';
 import type { IconTone } from '@/domain/visuals';
 import { useData } from '@/lib/data';
-import { listMessages, retryFailed } from '@/lib/inbox';
+import { countMessages, listMessages, retryFailed, type MessageTotals } from '@/lib/inbox';
 import { useToast } from '@/lib/toast';
 import { space, useColors } from '@/theme';
 
@@ -24,6 +24,9 @@ const KIND: Record<string, { icon: IconName; tone: IconTone; label: string }> = 
   other: { icon: 'mail-open', tone: 'gray', label: 'Nothing to act on' },
 };
 
+/** Messages per page in the list; "Show more" adds another page. */
+const PAGE = 200;
+
 const OUTCOME_COLOR: Record<ReadOutcome, 'accent' | 'muted' | 'warn' | 'bad'> = { found: 'accent', receipt: 'muted', nothing: 'muted', failed: 'bad', waiting: 'warn' };
 
 /** "What PerkScan read": every email and text it got, what it found in each, or why it found nothing. */
@@ -32,18 +35,31 @@ export default function Inbox() {
   const toast = useToast();
   const { data, refresh } = useData();
   const [messages, setMessages] = useState<InboundMessage[] | null>(null);
+  const [totals, setTotals] = useState<MessageTotals | null>(null);
+  const [shown, setShown] = useState(PAGE);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
 
   const load = useCallback(async () => {
     try {
-      setMessages(await listMessages(200));
+      const [list, t] = await Promise.all([listMessages(shown), countMessages()]);
+      setMessages(list);
+      setTotals(t);
       setError(null);
     } catch (e) {
       setError((e as Error).message);
+    } finally {
+      setLoadingMore(false);
     }
-  }, []);
+  }, [shown]);
+
+  // Loading reruns with the bigger page (the list on screen is refetched, so it stays in order).
+  const showMore = () => {
+    setLoadingMore(true);
+    setShown((n) => n + PAGE);
+  };
 
   useFocusEffect(
     useCallback(() => {
@@ -92,8 +108,14 @@ export default function Inbox() {
       ) : null}
       {report && messages?.length ? (
         <Panel style={{ gap: space.sm }}>
+          {totals ? (
+            <T variant="caption" muted>
+              {totals.total.toLocaleString('en-US')} email{totals.total === 1 ? '' : 's'} received in all
+              {totals.waiting ? ` · ${totals.waiting.toLocaleString('en-US')} still waiting to be read` : ''}
+            </T>
+          ) : null}
           <T variant="subheading">
-            Last {messages.length} message{messages.length === 1 ? '' : 's'}: {report.offers} offer{report.offers === 1 ? '' : 's'} found
+            {totals && totals.total <= messages.length ? 'All' : 'Latest'} {messages.length} message{messages.length === 1 ? '' : 's'}: {report.offers} offer{report.offers === 1 ? '' : 's'} found
             {Object.keys(report.money).length ? ` worth ${formatBag(report.money)}` : ''}
           </T>
           <Row gap={space.md} style={{ flexWrap: 'wrap' }}>
@@ -139,6 +161,15 @@ export default function Inbox() {
             );
           })}
         </Panel>
+      ) : null}
+      {messages && totals && totals.total > messages.length ? (
+        <Button
+          title={`Show ${Math.min(PAGE, totals.total - messages.length)} more (${messages.length.toLocaleString('en-US')} of ${totals.total.toLocaleString('en-US')} shown)`}
+          icon="chevron-down"
+          kind="secondary"
+          loading={loadingMore}
+          onPress={showMore}
+        />
       ) : null}
     </Screen>
   );

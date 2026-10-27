@@ -288,6 +288,20 @@ export interface EmailContext {
   sentOn?: string | null;
   /** Who sent it ("email.uber.com"): one store however its emails name it ("Uber", "Uber Eats"). */
   fromDomain?: string | null;
+  /** The email's subject, to spot order updates that aren't purchases. */
+  subject?: string | null;
+}
+
+const ORDER_UPDATE =
+  /\b(shipped|has shipped|on (its|the) way|out for delivery|delivered|arriving|delivery (update|date|estimate)|(is |been )?delayed|on hold|payment (was )?(declined|failed)|problem with your (order|payment)|could not be processed|track your (order|package))\b/i;
+const ORDER_CONFIRMED = /\b(receipt|order confirm|booking confirm|confirmation|thanks for your (order|purchase)|thank you for your (order|purchase))\b/i;
+
+/**
+ * Shipped, out for delivery, delivered, delivery date changed, order on hold, payment declined: news
+ * about an order, not a purchase. Only the order confirmation or receipt is saved, so it's counted once.
+ */
+export function isOrderUpdate(subject: string | null | undefined): boolean {
+  return !!subject && ORDER_UPDATE.test(subject) && !ORDER_CONFIRMED.test(subject);
 }
 
 export function toRows(p: ParsedEmail, today: string, defaultCurrency = 'USD', flightRefundRule: RefundRule | null = null, ctx: EmailContext = {}): Rows {
@@ -344,7 +358,7 @@ export function toRows(p: ParsedEmail, today: string, defaultCurrency = 'USD', f
         category: null,
       };
     }
-  } else if (p.kind === 'receipt' && p.receipt) {
+  } else if (p.kind === 'receipt' && p.receipt && !isOrderUpdate(ctx.subject)) {
     const r = p.receipt;
     const returnBy = r.return_by ?? (r.purchase_date && r.return_window_days ? addDays(r.purchase_date, r.return_window_days) : null);
     receipt = {

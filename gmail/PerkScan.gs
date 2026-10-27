@@ -81,7 +81,9 @@ function queries_(newer) {
 
 /** Sends everything the searches find. True when nothing is left, false when it had to stop early. */
 function sendAll_(newer) {
-  for (const q of queries_(newer)) if (!sendMatching_(q)) return false;
+  // Past mail (scanPastYear, rereadAll) is a one-time catch-up: PerkScan accepts it a bit faster.
+  const catchup = newer !== '14d';
+  for (const q of queries_(newer)) if (!sendMatching_(q, catchup)) return false;
   return true;
 }
 
@@ -181,7 +183,7 @@ function rereadAll() {
 }
 
 /** Sends matching emails in batches. Returns true when nothing is left, false when it had to stop early. */
-function sendMatching_(q) {
+function sendMatching_(q, catchup) {
   const started = Date.now();
   const sent = GmailApp.getUserLabelByName(SENT_LABEL) || GmailApp.createLabel(SENT_LABEL);
   GmailApp.getUserLabelByName(LABEL) || GmailApp.createLabel(LABEL);
@@ -199,7 +201,7 @@ function sendMatching_(q) {
       batchThreads.push(thread);
     }
 
-    const res = send_(messages);
+    const res = send_(messages, catchup);
     if (res.code === 200) {
       batchThreads.forEach(function (t) { t.addLabel(sent); });
       console.log('PerkScan: sent ' + messages.length + ' email(s). ' + res.body);
@@ -274,12 +276,12 @@ function uninstallPerkScanTrigger() {
   console.log('PerkScan sync stopped.');
 }
 
-function send_(messages) {
+function send_(messages, catchup) {
   const response = UrlFetchApp.fetch(PERKSCAN_URL, {
     method: 'post',
     contentType: 'application/json',
     headers: { Authorization: 'Bearer ' + PERKSCAN_TOKEN },
-    payload: JSON.stringify({ source: 'email', messages: messages, reread: PropertiesService.getUserProperties().getProperty('PERKSCAN_REREAD') === 'on' }),
+    payload: JSON.stringify({ source: 'email', messages: messages, reread: PropertiesService.getUserProperties().getProperty('PERKSCAN_REREAD') === 'on', catchup: !!catchup }),
     muteHttpExceptions: true,
   });
   return { code: response.getResponseCode(), body: response.getContentText().slice(0, 300) };

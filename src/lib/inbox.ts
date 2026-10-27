@@ -11,14 +11,36 @@ export const INGEST_SMS_URL = `${SUPABASE_URL}/functions/v1/ingest/sms`;
 export const SHORTCUT_URL = (process.env.EXPO_PUBLIC_SHORTCUT_URL ?? '').trim() || null;
 export const GMAIL_SCRIPT_URL = 'https://github.com/Trinigio1/perkscan/blob/phase-1/gmail/README.md';
 
-export async function listMessages(limit = 50): Promise<InboundMessage[]> {
+/** Newest first; `offset` skips that many for "Show more". */
+export async function listMessages(limit = 50, offset = 0): Promise<InboundMessage[]> {
   const { data, error } = await supabase
     .from('inbound_messages')
     .select('id, source, received_at, parse_status, parse_error, kind, summary, from_domain, read_note')
     .order('received_at', { ascending: false })
-    .limit(limit);
+    .order('id', { ascending: false })
+    .range(offset, offset + limit - 1);
   if (error) throw new Error(error.message);
   return data as InboundMessage[];
+}
+
+export interface MessageTotals {
+  /** Every email and text PerkScan has received. */
+  total: number;
+  /** Of those, still waiting to be read. */
+  waiting: number;
+}
+
+/** True totals across everything received, not just the page on screen (counts only, no rows). */
+export async function countMessages(): Promise<MessageTotals> {
+  const count = async (statuses?: string[]) => {
+    let q = supabase.from('inbound_messages').select('id', { count: 'exact', head: true });
+    if (statuses) q = q.in('parse_status', statuses);
+    const { count: n, error } = await q;
+    if (error) throw new Error(error.message);
+    return n ?? 0;
+  };
+  const [total, waiting] = await Promise.all([count(), count(['pending', 'parsing'])]);
+  return { total, waiting };
 }
 
 export async function listTokens(): Promise<IngestToken[]> {

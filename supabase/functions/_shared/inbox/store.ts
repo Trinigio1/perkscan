@@ -13,6 +13,13 @@ export interface IncomingMessage extends RawEmail {
 
 /** Per user, per hour. Generous for personal use, stops a leaked token from running up AI costs. */
 export const HOURLY_LIMIT = 200;
+/**
+ * The one-time catch-up (Gmail script: scanPastYear, rereadAll) may send faster, so a year of mail is
+ * read in hours, not a day. Only while the user's last 7 days stay under CATCHUP_WEEKLY_LIMIT: a burst,
+ * not a permanent higher rate. The monthly AI budget cap applies either way.
+ */
+export const CATCHUP_HOURLY_LIMIT = 500;
+export const CATCHUP_WEEKLY_LIMIT = 5000;
 
 export interface StoreResult {
   ids: string[];
@@ -39,12 +46,24 @@ export async function textId(source: Source, text: string, day = new Date().toIS
   return `${source}-${day}-${(await sha256Hex(text.trim())).slice(0, 32)}`;
 }
 
-export async function storeMessages(db: SupabaseClient, userId: string, source: Source, messages: IncomingMessage[], opts: { reread?: boolean } = {}): Promise<StoreResult> {
+export async function storeMessages(
+  db: SupabaseClient,
+  userId: string,
+  source: Source,
+  messages: IncomingMessage[],
+  opts: { reread?: boolean; catchup?: boolean } = {},
+): Promise<StoreResult> {
   const result: StoreResult = { ids: [], duplicates: 0, securityCodes: 0 };
 
-  const since = new Date(Date.now() - 3600_000).toISOString();
-  const { count } = await db.from('inbound_messages').select('id', { count: 'exact', head: true }).eq('user_id', userId).gte('received_at', since);
-  if ((count ?? 0) + messages.length > HOURLY_LIMIT) return { ...result, error: 'rate_limited' };
+  const receivedSince = async (ms: number) => {
+    const { count } = await db.from('inbound_messages').select('id', { count: 'exact', head: true }).eq('user_id', userId).gte('received_at', new Date(Date.now() - ms).toISOString());
+    return count ?? 0;
+  };
+  const lastHour = (await receivedSince(3600_000)) + messages.length;
+  if (lastHour > HOURLY_LIMIT) {
+    const catchingUp = opts.catchup && source === 'email' && lastHour <= CATCHUP_HOURLY_LIMIT && (await receivedSince(7 * 86_400_000)) + messages.length <= CATCHUP_WEEKLY_LIMIT;
+    if (!catchingUp) return { ...result, error: 'rate_limited' };
+  }
 
   const mutes = source === 'email' ? await mutedStores(db, userId) : new Set<string>();
   for (const m of messages) {

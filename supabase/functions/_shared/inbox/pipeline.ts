@@ -1,7 +1,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { matchAndApply } from '../matching/apply.ts';
 import { doubleChargeRow, isDoubleCharge, priceAdjustment, statedWarranty, type ExtraRow, type PriceProgramIn, type PurchaseIn } from '../matching/programs.ts';
-import { findDuplicate, mergeFields, MERGE_WINDOW_DAYS, type ExistingReceipt } from './merge.ts';
+import { findDuplicate, mergeFields, MERGE_WINDOW_DAYS, orderKey, type ExistingReceipt } from './merge.ts';
 import { cardSighting } from './cards.ts';
 import { readNote, toRows, type ReceiptRow, type RefundRule } from './opportunities.ts';
 import { costUsd, parseEmail, type ModelCall } from './parse.ts';
@@ -58,7 +58,7 @@ export async function processMessages(db: SupabaseClient, ids: string[], call: M
       .eq('id', id)
       .in('parse_status', ['pending', 'failed'])
       .not('raw_body', 'is', null)
-      .select('id, user_id, raw_body, attempts, from_domain, sent_at')
+      .select('id, user_id, raw_body, attempts, from_domain, sent_at, subject')
       .maybeSingle();
     if (!claimed) {
       results.push({ id, status: 'skipped' });
@@ -91,7 +91,11 @@ export async function processMessages(db: SupabaseClient, ids: string[], call: M
     // US users get pointed to the DOT refund rule when an airline cancels and hands out a credit.
     const flightRule = parsed.data.offers.some((o) => o.after_cancellation) && (home === 'USD' || profile?.country === 'US') ? await refundRule(db, 'us_dot_flight_refunds') : null;
     const fromDomainOf = (claimed.from_domain as string | null) ?? null;
-    const rows = toRows(parsed.data, today, home, flightRule, { sentOn: (claimed.sent_at as string | null)?.slice(0, 10) ?? null, fromDomain: fromDomainOf });
+    const rows = toRows(parsed.data, today, home, flightRule, {
+      sentOn: (claimed.sent_at as string | null)?.slice(0, 10) ?? null,
+      fromDomain: fromDomainOf,
+      subject: (claimed.subject as string | null) ?? null,
+    });
     // The connection test's fictional shop: confirm it was read, but never add its code to the user's money.
     const isTest = fromDomainOf === 'test-shop.example' || /perkscan test shop/i.test(parsed.data.merchant ?? '');
     // Read again (rereadAll): this email's earlier results are replaced by what the current reader finds.
@@ -103,6 +107,10 @@ export async function processMessages(db: SupabaseClient, ids: string[], call: M
       .eq('status', 'open')
       .is('claim_started_at', null)
       .not('dedupe_key', 'like', 'manual:%');
+    if (!rows.receipt) {
+      // Read again and it's not a purchase after all (an order update): drop the store receipt it made before.
+      await db.from('receipts').delete().eq('user_id', claimed.user_id).eq('source_message_id', id).eq('kind', 'receipt');
+    }
     const receiptId = rows.receipt ? await saveReceipt(db, claimed.user_id as string, id, rows.receipt) : null;
 
     let created = 0;
@@ -200,11 +208,30 @@ const shiftDay = (d: string, days: number) => {
 };
 
 /** Inserts a receipt, or merges it into the alert/receipt already stored for the same purchase. Returns its id. */
+const RECEIPT_FIELDS = 'id, kind, pending, merchant, total, currency, purchase_date, last_four, order_number';
+const asExisting = (c: ExistingReceipt & { total: number | string | null }): ExistingReceipt => ({ ...c, total: c.total === null ? null : Number(c.total) });
+
 async function saveReceipt(db: SupabaseClient, userId: string, messageId: string, row: ReceiptRow): Promise<string> {
+  // This email was read before (rereadAll): update its receipt rather than adding another.
+  const { data: mine, error: mineErr } = await db.from('receipts').select('id').eq('user_id', userId).eq('source_message_id', messageId).limit(1).maybeSingle();
+  if (mineErr) throw new Error(`receipts: ${mineErr.message}`);
+  if (mine) {
+    const { error } = await db.from('receipts').update(row).eq('id', mine.id);
+    if (error) throw new Error(`receipts: ${error.message}`);
+    return mine.id as string;
+  }
+
+  const candidates: ExistingReceipt[] = [];
+  // Another email about the same order (booking confirmation, e-ticket, invoice), whatever its amount.
+  if (row.kind === 'receipt' && orderKey(row.order_number)) {
+    const { data, error } = await db.from('receipts').select(RECEIPT_FIELDS).eq('user_id', userId).eq('kind', 'receipt').not('order_number', 'is', null).limit(200);
+    if (error) throw new Error(`receipts: ${error.message}`);
+    candidates.push(...(data ?? []).map(asExisting).filter((c) => orderKey(c.order_number) === orderKey(row.order_number)));
+  }
   if (row.total !== null && row.purchase_date) {
-    const { data: candidates, error } = await db
+    const { data, error } = await db
       .from('receipts')
-      .select('id, kind, pending, merchant, total, currency, purchase_date, last_four, order_number')
+      .select(RECEIPT_FIELDS)
       .eq('user_id', userId)
       .eq('currency', row.currency)
       .eq('total', row.total)
@@ -212,15 +239,13 @@ async function saveReceipt(db: SupabaseClient, userId: string, messageId: string
       .lte('purchase_date', shiftDay(row.purchase_date, MERGE_WINDOW_DAYS))
       .limit(10);
     if (error) throw new Error(`receipts: ${error.message}`);
-    const dup = findDuplicate(
-      row,
-      (candidates ?? []).map((c: ExistingReceipt & { total: number | string | null }) => ({ ...c, total: c.total === null ? null : Number(c.total) })),
-    );
-    if (dup) {
-      const { error: upErr } = await db.from('receipts').update(mergeFields(dup, row)).eq('id', dup.id);
-      if (upErr) throw new Error(`receipts: ${upErr.message}`);
-      return dup.id;
-    }
+    candidates.push(...(data ?? []).map(asExisting));
+  }
+  const dup = findDuplicate(row, candidates);
+  if (dup) {
+    const { error: upErr } = await db.from('receipts').update(mergeFields(dup, row)).eq('id', dup.id);
+    if (upErr) throw new Error(`receipts: ${upErr.message}`);
+    return dup.id;
   }
   const { data, error } = await db.from('receipts').insert({ ...row, user_id: userId, source_message_id: messageId }).select('id').single();
   if (error) throw new Error(`receipts: ${error.message}`);

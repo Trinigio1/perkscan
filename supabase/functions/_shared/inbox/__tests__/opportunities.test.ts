@@ -1,4 +1,4 @@
-import { offerWords, readNote, toRows } from '../opportunities.ts';
+import { isOrderUpdate, offerWords, readNote, toRows } from '../opportunities.ts';
 import type { Offer, ParsedEmail } from '../schema.ts';
 
 const TODAY = '2026-04-10';
@@ -116,6 +116,26 @@ describe('toRows', () => {
     );
     expect(rows.receipt).toMatchObject({ merchant: 'Acme', total: 101.99, last_four: '4242', return_by: '2026-05-05' });
     expect(rows.opportunities).toEqual([]);
+  });
+
+  it('saves no receipt for order updates (shipped, delivered, on hold, declined)', () => {
+    const receiptEmail = email({
+      kind: 'receipt',
+      receipt: { total: 89.99, currency: 'USD', purchase_type: 'home', travel_date: null, purchase_date: '2026-04-05', card_last_four: null, order_number: '112-3344556', return_by: null, return_window_days: null, items: [] },
+    });
+    for (const subject of ['Shipped: "Memory foam mattress"', 'Delivered: your package', 'Your Amazon order is on hold', 'Payment declined for order 112-3344556', 'Arriving tomorrow: 1 item']) {
+      expect(toRows(receiptEmail, TODAY, 'USD', null, { subject }).receipt).toBeNull();
+    }
+    expect(toRows(receiptEmail, TODAY, 'USD', null, { subject: 'Your Amazon.com order of "Mattress" has been confirmed' }).receipt).not.toBeNull();
+    expect(toRows(receiptEmail, TODAY, 'USD', null, { subject: 'Your Instacart order was delivered: receipt' }).receipt).not.toBeNull();
+  });
+
+  it('tells order updates from receipts by subject', () => {
+    expect(isOrderUpdate('Your package is out for delivery')).toBe(true);
+    expect(isOrderUpdate('Delivery date changed for your order')).toBe(true);
+    expect(isOrderUpdate('Thanks for your order')).toBe(false);
+    expect(isOrderUpdate('Your Wednesday evening order with Uber Eats')).toBe(false);
+    expect(isOrderUpdate(null)).toBe(false);
   });
 
   it('uses the offer currency, then the receipt currency, then the home currency', () => {

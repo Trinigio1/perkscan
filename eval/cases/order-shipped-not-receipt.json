@@ -1,0 +1,14 @@
+{
+  "origin": "synthetic",
+  "source": "email",
+  "input": {
+    "subject": "Shipped: \"Memory Foam Mattress, Queen\"",
+    "date": "2026-10-03T14:20:00-04:00",
+    "text": "Your package is on the way.\n\nOrder #112-3344556-7788990\nMemory Foam Mattress, Queen\nArriving Tuesday, October 7\n\nOrder total: $289.99\n\nTrack your package at shop.example/orders.",
+    "from": "Shop Example <shipment-tracking@shop.example>"
+  },
+  "expected": {
+    "kind": "other",
+    "offers": []
+  }
+}
