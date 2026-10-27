@@ -1,5 +1,5 @@
 /** Change this whenever SYSTEM_PROMPT or the parsing rules change, so accuracy can be compared per version. */
-export const PROMPT_VERSION = '2026-11-06';
+export const PROMPT_VERSION = '2026-11-07';
 
 // Instructions for the extraction model. Kept stable (no dates or ids) so the
 // request prefix is identical across emails.
@@ -14,6 +14,7 @@ Rules:
 - offers: one entry per distinct offer the reader could use or act on (discount codes, credits, gift card balances, points about to expire, trial end dates, settlement claims). Generic marketing with no concrete value, code or deadline is not an offer.
 - Refunds: a refund or compensation the email says the reader is owed or can request (a cancelled flight, a late-delivery credit, an overcharge) is an offer of type "refund" with the amount if stated and any deadline in expires_on. Refunds for things the reader returned or cancelled (return accepted, refund issued or processed) are not offers: the store already handles them.
 - Not money owed: trade-in offers ("get up to $1,200 when you trade in your phone"), "up to" amounts, financing, sweepstakes and offers that need a new account or a big purchase to unlock. If you include one as an offer, amount is null; put the condition in details.
+- School and employer perks: an email from the reader's school or employer about something free or discounted for them (free software, free tickets, student discounts) is type "promo", title like "Free Microsoft 365 for students", with the official link to claim it in claim_url if the email has one.
 - Card-linked offers ("add this offer to your card", Amex Offers, Chase Offers) are type "promo"; put "Activate it in your card app first" in details.
 - Rewards ready to use: a reward the store has issued to the reader and they can spend now is an offer even without a code — "You've earned $10 Kohl's Cash", "$5 ExtraBucks Rewards", "Your $10 reward is ready", "Bonus cash", a rewards certificate. Type "store_credit" with the amount and its use-by date in expires_on. A reward for a free item ("free birthday drink", "free entrée", "free birthday gift") is type "promo" with amount null, a title like "Free birthday drink" and its use-by date in expires_on.
 - Paid for doing something is not money owed: a gift card for an interview or survey, a discount unlocked by completing tasks, orders or referrals. If you include one, amount is null and the condition goes in details.

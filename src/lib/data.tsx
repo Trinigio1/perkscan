@@ -3,6 +3,7 @@ import { AppState } from 'react-native';
 import { setHomeCurrency, shortCardName } from '@/domain/format';
 import { domainStoreKey, storeKey, type Deal, type DealFeedback, type StorePair, type StoreStat } from '@/domain/deals';
 import { relevantEvents, type LocalEvent } from '@/domain/events';
+import { isMutedOffer } from '@/domain/mutes';
 import type { Program } from '@/domain/programs';
 import { domainsWithParents } from '@/domain/suggestions';
 import { singleFlight } from '@/domain/singleFlight';
@@ -46,6 +47,8 @@ export interface AppData {
   dealFeedback: DealFeedback[];
   /** Cards the user's email shows they hold (not hidden with "Not mine"). */
   cardSightings: CardSighting[];
+  /** Stores the user hid: their offers and deals aren't shown (receipts still count). */
+  storeMutes: { store_key: string; name: string | null }[];
   /** What the reader saw in each email lately, for memberships the user hasn't added. Never the email text. */
   memberEmails: { membership: string | null; summary: string | null; date: string }[];
   /** How many official pages PerkScan checks for the user's country, and when it last did. */
@@ -68,7 +71,7 @@ interface DataState {
   refresh: () => Promise<RefreshResult>;
 }
 
-const empty: AppData = { profile: null, cards: [], benefits: [], userCards: [], opportunities: [], recovered: [], usage: [], receipts: [], studentOffers: [], studentClaims: [], school: null, myPerks: [], programs: [], senderDomains: [], schoolHints: [], events: [], deals: [], dealFeedback: [], cardSightings: [], memberEmails: [], scout: { sources: 0, lastChecked: null }, storeStats: [], storePairs: [] };
+const empty: AppData = { profile: null, cards: [], benefits: [], userCards: [], opportunities: [], recovered: [], usage: [], receipts: [], studentOffers: [], studentClaims: [], school: null, myPerks: [], programs: [], senderDomains: [], schoolHints: [], events: [], deals: [], dealFeedback: [], cardSightings: [], memberEmails: [], storeMutes: [], scout: { sources: 0, lastChecked: null }, storeStats: [], storePairs: [] };
 const DataContext = createContext<DataState>({ data: empty, loading: true, error: null, refresh: async () => ({ data: null, error: null }) });
 
 function must<T>(what: string, res: { data: T | null; error: { message: string; code?: string } | null }): T {
@@ -92,7 +95,7 @@ async function load(userId: string): Promise<AppData> {
   const since = new Date(Date.now() - 180 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
   const yearAgo = new Date(Date.now() - 365 * 24 * 60 * 60 * 1000).toISOString();
   const today = new Date().toISOString().slice(0, 10);
-  const [profile, cards, benefits, userCards, opportunities, recovered, usage, receipts, studentOffers, studentClaims, myPerks, programs, senders, events, dealFeedback, cardSightings] = await Promise.all([
+  const [profile, cards, benefits, userCards, opportunities, recovered, usage, receipts, studentOffers, studentClaims, myPerks, programs, senders, events, dealFeedback, cardSightings, mutes] = await Promise.all([
     supabase
       .from('profiles')
       .select('*')
@@ -122,6 +125,7 @@ async function load(userId: string): Promise<AppData> {
       .order('starts_on'),
     supabase.from('deal_feedback').select('deal_id, action'),
     supabase.from('card_sightings').select('id, issuer, product, last_four, times_seen, last_seen').is('dismissed_at', null).order('last_seen', { ascending: false }).limit(50),
+    supabase.from('store_mutes').select('store_key, name'),
   ]);
 
   // numeric columns arrive as numbers from PostgREST; normalize defensively.
@@ -169,6 +173,7 @@ async function load(userId: string): Promise<AppData> {
     : [{ data: [] }, { data: [] }];
   const checked = ((sources.data ?? []) as { last_checked: string | null }[]).map((x) => x.last_checked).filter((x): x is string => !!x).sort();
   setHomeCurrency(prof.home_currency?.trim() || 'USD');
+  const muteKeys = ((mutes.data ?? []) as { store_key: string }[]).map((m) => m.store_key);
   return {
     profile: prof,
     cards: must('cards', cards).map((c: Card) => ({ ...c, annual_fee: num(c.annual_fee) })),
@@ -182,7 +187,7 @@ async function load(userId: string): Promise<AppData> {
       discount_amount: num(o.discount_amount),
       // Where the email came from: the store a code or gift card gets used at.
       sender_domain: msg?.from_domain ?? null,
-    })),
+    })).filter((o: Opportunity) => !isMutedOffer(o, muteKeys)),
     recovered: must('recovered', recovered).map((r: Recovered) => ({ ...r, amount: Number(r.amount) })),
     usage: must('benefit_usage', usage).map((u: BenefitUsage) => ({ ...u, amount_used: num(u.amount_used) })),
     receipts: must('receipts', receipts).map((r: Receipt) => ({ ...r, total: num(r.total) })),
@@ -203,6 +208,8 @@ async function load(userId: string): Promise<AppData> {
     dealFeedback: (dealFeedback.data ?? []) as DealFeedback[],
     // Optional: a database without this table yet just means no spotted cards.
     cardSightings: (cardSightings.data ?? []) as CardSighting[],
+    // Optional: a database without this table yet just means nothing hidden.
+    storeMutes: (mutes.data ?? []) as AppData['storeMutes'],
     memberEmails: sentRows.map((m) => ({ membership: m.membership_seen ?? null, summary: m.summary, date: m.received_at })),
     scout: { sources: (sources.data ?? []).length, lastChecked: checked[checked.length - 1] ?? null },
     // Optional: a database without these yet just means no "people like you".

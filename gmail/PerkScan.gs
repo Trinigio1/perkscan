@@ -1,5 +1,6 @@
 /**
- * PerkScan for Gmail — finds receipts, bank alerts, codes, gift cards, store rewards, birthday treats, travel credits, expiring points,
+ * PerkScan for Gmail — finds receipts, bank alerts and card offers, school perks, subscriptions, codes, gift cards, store rewards,
+ * birthday treats, travel credits, expiring points,
  * free-night certificates, refunds, trials and card statements in your Gmail and sends them to your PerkScan account.
  *
  * Setup (about 5 minutes, on a computer):
@@ -51,14 +52,37 @@ const WANTED = [
   // Which cards you carry (for cards you haven't added yet): statements and payment notices from card issuers.
   // Only the issuer, the card's name and its last 4 digits are kept.
   '(from:(chase.com OR americanexpress.com OR aexp.com OR capitalone.com OR citi.com OR citibank.com OR discover.com OR wellsfargo.com OR bankofamerica.com OR usbank.com OR barclaycardus.com OR synchronybank.com) subject:(statement OR "payment due" OR "payment is due" OR "payment received" OR "payment scheduled" OR autopay OR "card benefits" OR "your card"))',
+  // Money your bank or card gives you: cash-back offers to add to your card, rewards, benefits, credits.
+  '(from:(chase.com OR americanexpress.com OR aexp.com OR capitalone.com OR citi.com OR citibank.com OR discover.com OR wellsfargo.com OR bankofamerica.com OR usbank.com OR barclaycardus.com OR synchronybank.com OR scotiabank.com OR republictt.com OR firstcitizenstt.com) (offer OR offers OR deals OR "cash back" OR cashback OR rewards OR points OR credit OR benefit OR benefits OR bonus))',
+  '("BankAmeriDeals" OR "Amex Offers" OR "Chase Offers" OR "Capital One Offers" OR "Citi Merchant Offers" OR "cash back deals" OR "added to your card")',
+  // Your school: student discounts, free software and campus perks.
+  '(from:edu (discount OR discounts OR free OR perk OR perks OR "students get" OR "student offer" OR software OR license OR benefit OR benefits))',
+  // What you pay for regularly: renewals, price changes, what a plan includes.
+  'subject:(subscription OR renewal OR "your plan" OR "your membership" OR "membership renewal" OR "price change" OR "price increase" OR "billing update" OR "upcoming charge")',
+  // Loyalty programs and balances: points, miles, rewards, account credit.
+  'subject:("points balance" OR "your points" OR "miles balance" OR "rewards summary" OR "account summary" OR "rewards balance" OR "your rewards")',
+  '("account credit" OR "promotional credit" OR "credit has been added" OR "credit balance" OR "credits expire" OR "gift card balance" OR "your balance is")',
 ];
 // Never send: account security emails, social and forum notifications, spam, bin.
 const SKIP = '-in:spam -in:trash -category:social -category:forums ' +
   '-subject:("verification code" OR "security code" OR "sign in" OR "sign-in" OR "log in" OR password OR OTP OR "one-time")';
 
-function query_(newer) {
-  const wanted = AUTO_SCAN ? '(label:' + LABEL + ' OR ' + WANTED.concat(storePromos_()).join(' OR ') + ')' : 'label:' + LABEL;
-  return wanted + ' -label:' + SENT_LABEL + ' newer_than:' + newer + ' ' + SKIP;
+/** Searches per group of a few kinds: one very long search can be cut short by Gmail. */
+const PER_SEARCH = 5;
+
+function queries_(newer) {
+  const tail = ' -label:' + SENT_LABEL + ' newer_than:' + newer + ' ' + SKIP;
+  if (!AUTO_SCAN) return ['label:' + LABEL + tail];
+  const all = ['label:' + LABEL].concat(WANTED, storePromos_());
+  const out = [];
+  for (let i = 0; i < all.length; i += PER_SEARCH) out.push('(' + all.slice(i, i + PER_SEARCH).join(' OR ') + ')' + tail);
+  return out;
+}
+
+/** Sends everything the searches find. True when nothing is left, false when it had to stop early. */
+function sendAll_(newer) {
+  for (const q of queries_(newer)) if (!sendMatching_(q)) return false;
+  return true;
 }
 
 // Promotions from stores you actually buy from: most codes, sales and rewards are in Gmail's
@@ -110,9 +134,9 @@ function syncPerkScan() {
   checkConfig_();
   const props = PropertiesService.getUserProperties();
   // New mail first; then, if scanPastYear was started, older mail until it's done.
-  const recentDone = sendMatching_(query_('14d'));
+  const recentDone = sendAll_('14d');
   if (recentDone && props.getProperty('PERKSCAN_BACKFILL') === 'on') {
-    if (sendMatching_(query_('365d'))) {
+    if (sendAll_('365d')) {
       props.deleteProperty('PERKSCAN_BACKFILL');
       props.deleteProperty('PERKSCAN_REREAD');
       console.log('PerkScan: finished looking through the last 12 months.');
@@ -222,8 +246,9 @@ function testPerkScan() {
 
 /** Shows how many emails would be sent, without sending anything. */
 function previewPerkScan() {
-  const recent = GmailApp.search(query_('14d'), 0, 100).length;
-  const year = GmailApp.search(query_('365d'), 0, 500).length;
+  const count = (newer, max) => queries_(newer).reduce((n, q) => n + GmailApp.search(q, 0, max).length, 0);
+  const recent = count('14d', 100);
+  const year = count('365d', 500);
   console.log('Would send ' + recent + ' thread(s) from the last 2 weeks' + (AUTO_SCAN ? ', and up to ' + year + ' from the last 12 months with scanPastYear.' : '.'));
   if (AUTO_SCAN) console.log('Promotions included from the stores on your receipts: ' + (myStores_().join(', ') || 'none found yet'));
 }

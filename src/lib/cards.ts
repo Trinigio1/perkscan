@@ -51,3 +51,16 @@ export async function removeMembership(userCardId: string) {
   if (error) throw new Error(error.message);
   track('membership_toggled', { on: false });
 }
+
+/** "Hide offers from this store": its marketing isn't read and its offers and deals aren't shown. */
+export async function muteStore(storeKey: string, name: string | null) {
+  const { error } = await supabase.from('store_mutes').upsert({ store_key: storeKey, name: name?.slice(0, 80) ?? null }, { onConflict: 'user_id,store_key' });
+  if (error) throw new Error(error.message);
+  track('store_muted', { on: true });
+}
+
+export async function unmuteStore(storeKey: string) {
+  const { error } = await supabase.from('store_mutes').delete().eq('store_key', storeKey);
+  if (error) throw new Error(error.message);
+  track('store_muted', { on: false });
+}

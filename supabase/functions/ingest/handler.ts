@@ -82,6 +82,8 @@ export function ingestHandler(deps: IngestDeps) {
     return json({
       accepted: stored.ids.length,
       duplicates: stored.duplicates,
+      muted: stored.muted ?? 0,
+      capped: stored.capped ?? 0,
       // Messages with a sign-in or verification code are dropped without being stored.
       skipped_security_codes: stored.securityCodes,
       parsing: !!deps.model,

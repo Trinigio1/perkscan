@@ -1,6 +1,6 @@
 # Connect Gmail to PerkScan (free)
 
-A small Google Apps Script in your own Google account finds the emails PerkScan can use — receipts, bank alerts,
+A small Google Apps Script in your own Google account finds the emails PerkScan can use — receipts, bank alerts and card offers, school perks, subscriptions and renewals, loyalty balances,
 promo codes, gift cards, store credit and rewards, expiring points, refunds, trials and settlement notices, plus
 promotions from the stores your own receipts come from — and sends them to PerkScan every 10 minutes. No labels or filters to set up, no domain, no paid service.
 
@@ -66,3 +66,8 @@ mailboxes take a few hours — it continues by itself every 10 minutes.
 ## After PerkScan's reader improves
 Run **rereadAll** once. It sends the last 12 months again and PerkScan reads every email with its current rules —
 offers it already had aren't added twice. It costs a little AI time per email and continues by itself every 10 minutes.
+
+## Less noise
+At most 3 promotional emails per store per week are read (receipts, bills and account emails always are). To stop a
+store's promotions completely, open one of its offers in the app and tap **Hide all offers from …**; undo it in
+Settings → Hidden stores.

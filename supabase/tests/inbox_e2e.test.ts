@@ -225,6 +225,19 @@ Deno.test('inbox pipeline end to end', async () => {
     const g1 = await admin.from('inbound_messages').select('parse_status, read_note').eq('external_id', 'g-1').single();
     assert(g1.data?.parse_status === 'parsed' && g1.data.read_note === null, `not its own duplicate: ${JSON.stringify(g1.data)}`);
 
+    // A store the user hid: its marketing isn't stored or read, but its receipts are.
+    await alice.client.from('store_mutes').insert({ store_key: 'promoshop', name: 'Promo Shop' });
+    const muted = await (await post(ingest, { messages: [
+      { id: 'm-1', from: 'Promo Shop <news@email.promoshop.com>', subject: 'Big weekend sale', date: '2026-04-02', text: '20% off everything with code WEEKEND' },
+      { id: 'm-2', from: 'Promo Shop <orders@promoshop.com>', subject: 'Your order receipt', date: '2026-04-02', text: RECEIPT_TEXT },
+    ] }, token)).json();
+    assert(muted.muted === 1 && muted.accepted === 1, `hidden store's marketing skipped, receipt kept: ${JSON.stringify(muted)}`);
+
+    // More than 3 promotional emails from one store in a week: the rest are skipped.
+    const daily = Array.from({ length: 5 }, (_, i) => ({ id: `d-${i}`, from: 'Daily Deals <hi@dailydeals.example.com>', subject: `Today's picks ${i}`, date: `2026-04-${String(6 + i).padStart(2, "0")}T12:00:00Z`, text: `Picks number ${i}` }));
+    const overLimit = await (await post(ingest, { messages: daily }, token)).json();
+    assert(overLimit.accepted === 3 && overLimit.capped === 2, `weekly limit per store: ${JSON.stringify(overLimit)}`);
+
     // Test button
     const test = await (await post(proc, { action: 'test' })).json();
     assert(test.result?.status === 'parsed' && test.result.opportunities === 1, `test email: ${JSON.stringify(test)}`);

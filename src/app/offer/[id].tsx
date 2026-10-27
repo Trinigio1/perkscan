@@ -12,14 +12,19 @@ import { claimTarget } from '@/domain/claimTarget';
 import { claimHelp } from '@/domain/claims';
 import { CONFIDENCE_HELP, confidenceOf } from '@/domain/confidence';
 import { offerEstimate } from '@/domain/estimate';
+import { muteKeyOf } from '@/domain/mutes';
 import { formatMoney, lastDayLabel, relativeDays } from '@/domain/format';
 import { offerIcon, OFFER_TYPE_LABELS } from '@/domain/visuals';
 import { track } from '@/lib/analytics';
+import { muteStore } from '@/lib/cards';
 import { useData } from '@/lib/data';
 import { markOpportunity } from '@/lib/inbox';
 import { removeItem } from '@/lib/programs';
 import { useToast } from '@/lib/toast';
 import { radius, space, useColors } from '@/theme';
+
+/** Offers from a store's own emails, which a store can be hidden from. */
+const STORE_OFFER_TYPES = new Set(['promo', 'gift_card', 'store_credit', 'points', 'free_trial', 'travel_credit', 'certificate']);
 
 export default function OfferDetail() {
   const c = useColors();
@@ -59,6 +64,22 @@ export default function OfferDetail() {
   const help = opp.status === 'open' && !missed ? claimHelp({ opp, receipt, name: data.profile?.display_name }) : null;
   // Codes, gift cards, points, trials, settlements: straight to where you use them.
   const target = !help || help.kind === 'settlement' ? (!missed ? claimTarget({ opp }) : null) : null;
+
+  // "Hide all offers from Uber Eats": its marketing isn't read any more; its receipts still are.
+  const muteKey = muteKeyOf(opp);
+  const hideStore = async () => {
+    if (!muteKey) return;
+    setBusy('mute');
+    try {
+      await muteStore(muteKey, opp.merchant ?? null);
+      await refresh();
+      toast(`Hidden. Offers from ${opp.merchant ?? 'this store'} won’t show; undo in Settings → Hidden stores.`, { tone: 'info' });
+      router.back();
+    } catch (e) {
+      setError((e as Error).message);
+      setBusy(null);
+    }
+  };
 
   const act = async (key: string, action: 'used' | 'dismiss' | 'reopen', amount: number | null, message: string) => {
     setBusy(key);
@@ -184,6 +205,9 @@ export default function OfferDetail() {
               onPress={markUsed}
             />
             <Button title={isProtection ? 'Not needed' : opp.type === 'settlement' ? 'Not for me' : opp.dedupe_key?.startsWith('double_charge:') ? 'It was two purchases' : 'Not interested'} kind="ghost" loading={busy === 'dismiss'} disabled={!!busy} onPress={() => act('dismiss', 'dismiss', null, 'Dismissed')} />
+            {muteKey && STORE_OFFER_TYPES.has(opp.type) ? (
+              <Button title={`Hide all offers from ${opp.merchant ?? 'this store'}`} kind="ghost" icon="eye-off-outline" loading={busy === 'mute'} disabled={!!busy} onPress={hideStore} />
+            ) : null}
           </>
         ) : (
           <Button title="Undo" kind="secondary" icon="arrow-undo" loading={busy === 'reopen'} disabled={!!busy} onPress={() => act('reopen', 'reopen', null, 'Moved back to active')} />

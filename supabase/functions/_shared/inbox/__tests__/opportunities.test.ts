@@ -73,6 +73,12 @@ describe('toRows', () => {
     expect(skipped.noValue).toBe(2);
   });
 
+  it('keeps a free perk with its official link, even without a date', () => {
+    const { opportunities } = toRows(email({ merchant: 'University of Miami', offers: [offer({ title: 'Free Microsoft 365 for students', claim_url: 'https://it.miami.edu/office' }), offer({ title: 'Free pizza Friday' })] }), TODAY);
+    expect(opportunities.map((o) => o.title)).toEqual(['Free Microsoft 365 for students']);
+    expect(opportunities[0]!.value_estimate).toBeNull();
+  });
+
   it('keeps a percent off as a number, never as money', () => {
     const { opportunities } = toRows(email({ offers: [offer({ title: '20% off sitewide', percent_off: 20, code: 'TWENTY', expires_on: '2026-04-30' })] }), TODAY);
     expect(opportunities[0]).toMatchObject({ percent_off: 20, value_estimate: null });

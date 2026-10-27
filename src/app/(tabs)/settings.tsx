@@ -104,6 +104,7 @@ export default function Settings() {
         <ListRow icon="chatbubbles" tone="green" title="Texts" subtitle="Bank alerts and offers by SMS" onPress={() => router.push('/connect-texts')} />
         <ListRow icon="clipboard" tone="orange" title="Add a text" onPress={() => router.push('/add-text')} />
         <ListRow icon="file-tray-full" tone="gray" title="What PerkScan read" onPress={() => router.push('/inbox')} />
+        <ListRow icon="eye-off-outline" tone="gray" title="Hidden stores" onPress={() => router.push('/hidden-stores')} />
         <ListRow
           icon="analytics"
           tone="purple"

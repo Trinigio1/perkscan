@@ -54,7 +54,8 @@ export function failureText(error: string | null): string {
 export function readReport(messages: InboundMessage[], opportunities: Opportunity[]): ReadReport {
   const byMessage = new Map<string, Opportunity[]>();
   for (const o of opportunities) {
-    if (!o.source_message_id) continue;
+    // Dismissed (by the user, or cleaned up: returns, test codes) isn't something found to use.
+    if (!o.source_message_id || o.status === 'dismissed') continue;
     byMessage.set(o.source_message_id, [...(byMessage.get(o.source_message_id) ?? []), o]);
   }
   const counts: Record<ReadOutcome, number> = { found: 0, receipt: 0, nothing: 0, failed: 0, waiting: 0 };

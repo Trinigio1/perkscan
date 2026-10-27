@@ -273,8 +273,11 @@ const isTradeIn = (o: Pick<Offer, 'title' | 'details'>) => /\btrade[- ]?in\b/i.t
 
 /** Offers with no value, code, points or deadline are marketing noise. */
 function isActionable(o: Offer): boolean {
-  return o.amount !== null || o.percent_off !== null || o.code !== null || o.points !== null || o.expires_on !== null;
+  return o.amount !== null || o.percent_off !== null || o.code !== null || o.points !== null || o.expires_on !== null || freeWithLink(o);
 }
+
+/** "Free Microsoft 365 for students" with the official page to claim it: worth keeping without a date. */
+const freeWithLink = (o: Pick<Offer, 'title' | 'claim_url'>) => !!o.claim_url && /\bfree\b/i.test(o.title);
 
 /**
  * @param defaultCurrency used when the email doesn't say (the user's home currency).

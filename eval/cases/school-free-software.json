@@ -1,0 +1,11 @@
+{
+  "origin": "synthetic",
+  "source": "email",
+  "input": {
+    "subject": "Free software for students",
+    "date": "2026-09-02T10:00:00-04:00",
+    "text": "As a current student you can install Microsoft 365 for free on up to 5 devices while you're enrolled. Get it at https://it.example.edu/microsoft365. Adobe Creative Cloud is also available to students at no cost through the campus license.",
+    "from": "University IT <it@example.edu>"
+  },
+  "expected": { "kind": "promo", "offers": [{ "type": "promo", "amount": null, "code": null }, { "type": "promo", "amount": null, "code": null }] }
+}

@@ -1,5 +1,7 @@
 import { useMemo } from 'react';
 import { interestProfile, peopleLikeYou, rankDeals, suggestedInterests, type DealFeedback, type Interest, type InterestProfile, type RankedDeal } from '@/domain/deals';
+import { isMutedStore } from '@/domain/mutes';
+import { storeKey } from '@/domain/deals';
 import { track } from './analytics';
 import { useData } from './data';
 import { supabase } from './supabase';
@@ -18,7 +20,8 @@ export function useDeals(): { forYou: RankedDeal[]; popular: RankedDeal[]; profi
   return useMemo(() => {
     const picked = data.profile?.interests ?? [];
     const profile = interestProfile({ picked, receipts: data.receipts, opportunities: data.opportunities, senderDomains: data.senderDomains });
-    const ranked = rankDeals(data.deals, {
+    const mutes = data.storeMutes.map((m) => m.store_key);
+    const ranked = rankDeals(data.deals.filter((d) => !isMutedStore(storeKey(d.merchant), mutes)), {
       country: data.profile?.country ?? null,
       region: data.profile?.region ?? null,
       today: new Date().toISOString().slice(0, 10),
