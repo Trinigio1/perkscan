@@ -51,6 +51,12 @@ export interface CardBenefit {
   last_verified: string | null;
   notes: string | null;
   sort_order: number;
+  /** What a perk with no stated amount is worth, by the provider's own figure (see worth_basis). */
+  worth?: number | null;
+  worth_period?: 'year' | 'use' | null;
+  /** "Amazon puts Grubhub+ at a $120 value a year". */
+  worth_basis?: string | null;
+  worth_source_url?: string | null;
 }
 
 export interface Profile {

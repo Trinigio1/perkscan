@@ -14,6 +14,7 @@ import { dealsWorth, discountSummary } from '@/domain/estimate';
 import { foundMoney, nextStep, toCheckCount, worthCelebrating } from '@/domain/firstRun';
 import { addToBag, formatBag, getHomeCurrency, sumBags, type MoneyBag } from '@/domain/format';
 import { nextToUse, setupSteps } from '@/domain/money';
+import { includedWhenYouNeedIt, includedWorth } from '@/domain/included';
 import { scoreByCurrency } from '@/domain/score';
 import { greeting } from '@/domain/visuals';
 import { useData, useLookups } from '@/lib/data';
@@ -93,7 +94,9 @@ export default function Home() {
   const dealsFor = useMemo(() => dealsWorth(deals.forYou, data.receipts, now, home), [deals.forYou, data.receipts, now, home]);
   // "Save up to": money in hand, plus estimated discounts at your stores, deals for you and cheaper
   // student plans. Each part is its own line underneath, so it's clear what's sure and what's an estimate.
-  const saveUpTo = sumBags(totals.ready, discounts.estimated, dealsFor.worth, studentYearly);
+  // Card and membership perks: credits you get back when you pay (up to their amount), and perks with a yearly worth.
+  const perks = useMemo(() => includedWorth(includedWhenYouNeedIt(data.userCards, data.cards, data.benefits)), [data.userCards, data.cards, data.benefits]);
+  const saveUpTo = sumBags(totals.ready, discounts.estimated, dealsFor.worth, studentYearly, perks.total);
 
   // The "We found $X" moment: opens by itself once, the first time there's something to show after setup.
   const celebrate = worthCelebrating(found) && !!data.profile?.onboarded_at;
@@ -154,6 +157,11 @@ export default function Home() {
           show={dealsFor.total > 0}
           text={nonZero(dealsFor.worth) ? `≈ ${formatBag(dealsFor.worth, big)} in deals for you · ${dealsFor.total} deal${dealsFor.total === 1 ? '' : 's'}` : `${dealsFor.total} deal${dealsFor.total === 1 ? '' : 's'} for you`}
           onPress={() => router.push('/deals')}
+        />
+        <ExtraLine
+          show={nonZero(perks.total)}
+          text={`≈ ${formatBag(perks.total, big)} in card & membership perks · ${perks.count} perk${perks.count === 1 ? '' : 's'}`}
+          onPress={() => router.push('/money')}
         />
         <ExtraLine show={nonZero(studentYearly)} text={`${formatBag(studentYearly, big)} a year with student prices`} onPress={() => router.push('/subscriptions')} />
         <ExtraLine show={studentPerks > 0} text={`+ ${studentPerks} student perk${studentPerks === 1 ? '' : 's'} for you`} onPress={() => router.push('/student')} />

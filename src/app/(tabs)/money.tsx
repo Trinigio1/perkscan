@@ -185,12 +185,17 @@ export default function Money() {
                     <T variant="caption" muted numberOfLines={1}>{x.from}</T>
                     {x.terms ? <T variant="caption" numberOfLines={2}>{x.terms}</T> : null}
                   </View>
-                  {x.amount !== null ? <T variant="label" color={c.textMuted}>up to {formatMoney(x.amount, { currency: x.currency ?? undefined })}</T> : null}
+                  {x.amount !== null ? (
+                    <T variant="label" color={c.textMuted}>up to {formatMoney(x.amount, { currency: x.currency ?? undefined })}</T>
+                  ) : x.worth !== null ? (
+                    <T variant="label" color={c.textMuted}>≈ {formatMoney(x.worth, { currency: x.currency ?? undefined })}{x.worthPeriod === 'year' ? '/yr' : ' each time'}</T>
+                  ) : null}
                 </Row>
+                {x.worthBasis ? <T variant="caption" faint numberOfLines={2}>{x.worthBasis}</T> : null}
               </Pressable>
             ))}
           </Panel>
-          <T variant="caption" faint>Paid back or included when you use it, so not in your total.</T>
+          <T variant="caption" faint>Paid back or included when you use it, so not in “ready to use”. Values are the provider’s own figures.</T>
         </View>
       ) : null}
 

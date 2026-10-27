@@ -1,4 +1,4 @@
-import { isOrderUpdate, isPrice, notMoneyOwed, offerWords, readNote, toRows } from '../opportunities.ts';
+import { isOrderUpdate, isPrice, notAPerk, notMoneyOwed, offerWords, readNote, toRows } from '../opportunities.ts';
 import type { Offer, ParsedEmail } from '../schema.ts';
 
 const TODAY = '2026-04-10';
@@ -130,6 +130,16 @@ describe('toRows', () => {
     expect(toRows(receiptEmail, TODAY, 'USD', null, { subject: 'Your Instacart order was delivered: receipt' }).receipt).not.toBeNull();
   });
 
+  it('leaves out things that are not perks: card applications, interviews, signing up for texts', () => {
+    for (const title of ['Apply for Robinhood Gold Card (3% cash back)', '$100 Visa gift card for a case study interview', '15% off when you connect via text', 'Sign up for emails and get 10% off']) {
+      expect(notAPerk({ title, details: null })).toBe(true);
+    }
+    for (const title of ['40% off your first grocery order from ALDI', 'Grammarly Pro 50% off', '$5 Michaels Rewards voucher']) {
+      expect(notAPerk({ title, details: null })).toBe(false);
+    }
+    expect(toRows(email({ offers: [offer({ title: 'Apply for Robinhood Gold Card (3% cash back)', amount: null, expires_on: '2099-01-01' })] }), TODAY).skipped.notMoney).toBe(1);
+  });
+
   it('never counts a price or a referral reward as money', () => {
     expect(isPrice({ title: "Broadway's Beaches for $59", details: null })).toBe(true);
     expect(isPrice({ title: 'Plans from $9.99', details: null })).toBe(true);
@@ -244,11 +254,11 @@ describe('offers that are not money owed', () => {
     );
     expect(opportunities.map((o) => [o.title, o.value_estimate])).toEqual([
       ['Up to 40% off your next order', null],
-      ['$100 Visa gift card for a case study interview', null],
       ['$20 off your next order', null],
       ['$20 off your order', 20],
     ]);
-    expect(skipped).toEqual({ expired: 0, noValue: 0, notMoney: 2 });
+    // The trade-in and the interview gift card aren't perks: left out.
+    expect(skipped).toEqual({ expired: 0, noValue: 0, notMoney: 3 });
   });
 });
 

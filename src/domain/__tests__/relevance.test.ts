@@ -2,7 +2,7 @@ import { opp } from '../__fixtures__/opportunities';
 import { rankCompare } from '../confidence';
 import { sumBags } from '../format';
 import { nextToUse } from '../money';
-import { groupByStore, isStale, relevance, STALE_DAYS, yourStores } from '../relevance';
+import { groupByStore, isStale, isVagueElsewhere, relevance, STALE_DAYS, yourStores } from '../relevance';
 
 const NOW = new Date('2026-10-27T12:00:00Z');
 const promo = (o: Parameters<typeof opp>[0]) => opp({ type: 'promo', category: 'promos', user_card_id: null, benefit_id: null, value_estimate: null, ...o });
@@ -90,5 +90,19 @@ describe('one row per store', () => {
 describe('save up to', () => {
   it('adds amounts per currency, never converting', () => {
     expect(sumBags({ USD: 290 }, { USD: 95.5 }, { TTD: 40 }, {})).toEqual({ USD: 385.5, TTD: 40 });
+  });
+});
+
+describe('vague offers from stores you don’t use', () => {
+  const you = yourStores([{ merchant: 'Uber Eats' }], [], [], ['fitness']);
+  it('are hidden; the same from your own stores or interests stay to check', () => {
+    expect(isVagueElsewhere(promo({ title: 'Factors.ai: save 25%', merchant: 'LinkedIn', sender_domain: 'linkedin.com' }), you)).toBe(true);
+    expect(isVagueElsewhere(promo({ title: '30% off select fresh groceries', merchant: 'Uber Eats', sender_domain: 'uber.com' }), you)).toBe(false);
+    expect(isVagueElsewhere(promo({ title: '20% off', merchant: 'Alo Yoga', interest: 'fitness' }), you)).toBe(false);
+  });
+  it('keep anything with a code or an amount, and anything you acted on', () => {
+    expect(isVagueElsewhere(promo({ merchant: 'SAVA', code: 'FIRST' }), you)).toBe(false);
+    expect(isVagueElsewhere(promo({ merchant: 'SAVA', value_estimate: 10 }), you)).toBe(false);
+    expect(isVagueElsewhere(promo({ merchant: 'SAVA', claim_started_at: '2026-10-20T00:00:00Z' }), you)).toBe(false);
   });
 });

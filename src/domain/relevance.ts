@@ -67,6 +67,17 @@ export function relevance(o: Opportunity, you: YourStores): 0 | 1 | 2 {
   return 2;
 }
 
+/**
+ * A vague offer from a store you don't use and that isn't one of your interests ("Factors.ai: save 25%",
+ * no code, no amount): nothing to act on and nothing to gain, so it isn't shown. The same offer from a
+ * store you buy from stays, as something to check.
+ */
+export function isVagueElsewhere(o: Opportunity, you: YourStores): boolean {
+  if (o.type !== 'promo' || o.status !== 'open' || o.claim_started_at || o.dedupe_key?.startsWith('manual:') || o.dedupe_key?.startsWith('deal:')) return false;
+  if (o.value_estimate !== null || o.code || o.discount_amount) return false;
+  return relevance(o, you) === 2;
+}
+
 /** Codes from one store, best first: the first one shows, the others fold under it. */
 export interface StoreGroup {
   lead: Opportunity;

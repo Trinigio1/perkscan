@@ -24,6 +24,10 @@ describe('toCheckCount', () => {
     ];
     expect(toCheckCount(list, NOW)).toBe(2);
   });
+  it('counts one per store, the way Money lists them', () => {
+    const vague = (merchant: string) => opp({ type: 'promo', category: 'promos', user_card_id: null, benefit_id: null, value_estimate: null, merchant, expires_at: days(9) });
+    expect(toCheckCount([vague('Uber Eats'), vague('Uber Eats'), vague('Uber Eats'), vague('Fogo de Chao')], NOW)).toBe(2);
+  });
 });
 
 describe('foundMoney', () => {

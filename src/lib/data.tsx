@@ -4,7 +4,7 @@ import { setHomeCurrency, shortCardName } from '@/domain/format';
 import { domainStoreKey, storeKey, type Deal, type DealFeedback, type StorePair, type StoreStat } from '@/domain/deals';
 import { relevantEvents, type LocalEvent } from '@/domain/events';
 import { isMutedOffer } from '@/domain/mutes';
-import { isStale } from '@/domain/relevance';
+import { isStale, isVagueElsewhere, yourStores } from '@/domain/relevance';
 import type { Program } from '@/domain/programs';
 import { domainsWithParents } from '@/domain/suggestions';
 import { singleFlight } from '@/domain/singleFlight';
@@ -175,10 +175,17 @@ async function load(userId: string): Promise<AppData> {
   const checked = ((sources.data ?? []) as { last_checked: string | null }[]).map((x) => x.last_checked).filter((x): x is string => !!x).sort();
   setHomeCurrency(prof.home_currency?.trim() || 'USD');
   const muteKeys = ((mutes.data ?? []) as { store_key: string }[]).map((m) => m.store_key);
+  // Your stores (receipts, memberships) and interests: vague offers from anywhere else aren't shown.
+  const you = yourStores(
+    ((receipts.data ?? []) as { merchant: string }[]),
+    ((userCards.data ?? []) as { card_id: string }[]),
+    ((cards.data ?? []) as Card[]),
+    prof.interests ?? [],
+  );
   return {
     profile: prof,
     cards: must('cards', cards).map((c: Card) => ({ ...c, annual_fee: num(c.annual_fee) })),
-    benefits: must('card_benefits', benefits).map((b: CardBenefit) => ({ ...b, amount: num(b.amount), max_coverage: num(b.max_coverage) })),
+    benefits: must('card_benefits', benefits).map((b: CardBenefit) => ({ ...b, amount: num(b.amount), max_coverage: num(b.max_coverage), worth: num(b.worth) })),
     userCards: must('user_cards', userCards),
     opportunities: must('opportunities', opportunities).map(({ inbound_messages: msg, ...o }: Opportunity & { inbound_messages?: { from_domain: string | null; sent_at?: string | null } | null }) => ({
       ...o,
@@ -190,8 +197,9 @@ async function load(userId: string): Promise<AppData> {
       sender_domain: msg?.from_domain ?? null,
       sent_on: msg?.sent_at ?? null,
     }))
-      // Hidden stores, and old codes with no end date (almost certainly over): never shown or counted.
-      .filter((o: Opportunity) => !isMutedOffer(o, muteKeys) && !isStale(o, new Date())),
+      // Hidden stores, old codes with no end date (almost certainly over) and vague offers from stores
+      // you don't use: never shown or counted.
+      .filter((o: Opportunity) => !isMutedOffer(o, muteKeys) && !isStale(o, new Date()) && !isVagueElsewhere(o, you)),
     recovered: must('recovered', recovered).map((r: Recovered) => ({ ...r, amount: Number(r.amount) })),
     usage: must('benefit_usage', usage).map((u: BenefitUsage) => ({ ...u, amount_used: num(u.amount_used) })),
     receipts: must('receipts', receipts).map((r: Receipt) => ({ ...r, total: num(r.total) })),

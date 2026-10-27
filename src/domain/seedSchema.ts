@@ -23,8 +23,19 @@ export const benefitSchema = z
     source_url: z.string().url().nullable(),
     last_verified: isoDate.nullable(),
     notes: z.string().nullable(),
+    /**
+     * What a perk with no stated amount is worth: the price the provider itself puts on it ("a $120 value
+     * per year"), or what the same thing costs to buy. Only with the provider's own source.
+     */
+    worth: money.optional().default(null),
+    worth_period: z.enum(['year', 'use']).nullable().optional().default(null),
+    worth_basis: z.string().min(1).nullable().optional().default(null),
+    worth_source_url: z.string().url().nullable().optional().default(null),
   })
   .superRefine((b, ctx) => {
+    if (b.worth !== null && (b.status !== 'active' || !b.worth_period || !b.worth_basis || !b.worth_source_url)) {
+      ctx.addIssue({ code: 'custom', path: ['worth'], message: 'A worth needs a verified benefit, worth_period, worth_basis and worth_source_url' });
+    }
     if (b.amount_schedule && b.period !== 'monthly') {
       ctx.addIssue({ code: 'custom', path: ['amount_schedule'], message: 'amount_schedule is only for monthly benefits' });
     }
@@ -117,10 +128,12 @@ export function seedToSql(seed: SeedFile): string {
       const cols = [
         'id', 'card_id', 'type', 'name', 'amount', 'period', 'period_anchor', 'amount_schedule', 'terms_summary', 'max_coverage',
         'coverage_window_days', 'enrollment_required', 'merchant_match', 'currency', 'status', 'source_url', 'last_verified', 'notes', 'sort_order',
+        'worth', 'worth_period', 'worth_basis', 'worth_source_url',
       ];
       const vals = [
         b.id, c.id, b.type, b.name, b.amount, b.period, b.period_anchor, b.amount_schedule, b.terms_summary, b.max_coverage,
         b.coverage_window_days, b.enrollment_required, b.merchant_match, b.currency, b.status, b.source_url, b.last_verified, b.notes, bi,
+        b.worth, b.worth_period, b.worth_basis, b.worth_source_url,
       ];
       lines.push(
         `insert into public.card_benefits (${cols.join(', ')}) values (${vals.map(sqlLiteral).join(', ')}) ` +

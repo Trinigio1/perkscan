@@ -38,7 +38,11 @@
           "status": "active",
           "source_url": "https://www.aboutamazon.com/news/retail/amazon-prime-benefits",
           "last_verified": "2026-10-25",
-          "notes": "Read from the provider's own page text via web search on 2026-10-25 (the page itself could not be opened from the build environment). Terms change: confirm in your account before relying on it."
+          "notes": "Read from the provider's own page text via web search on 2026-10-25 (the page itself could not be opened from the build environment). Terms change: confirm in your account before relying on it.",
+          "worth": 120,
+          "worth_period": "year",
+          "worth_basis": "Amazon puts Grubhub+ with Prime at a $120 value a year",
+          "worth_source_url": "https://www.aboutamazon.com/news/retail/amazon-prime-grubhub"
         },
         {
           "id": "amazon_prime__prime_video",

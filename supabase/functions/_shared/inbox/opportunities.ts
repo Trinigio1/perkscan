@@ -275,6 +275,19 @@ export function earnedByDoing(o: Pick<Offer, 'title' | 'details'>): boolean {
   return /\b(interview|survey|focus group|research study|complet(e|ing) \d+ (tasks?|orders?|trips?|rides?)|unlock by|referrals?|refer (a )?friends?|invite (a )?friends?|spread the love|give \$\d+[^.]{0,20}get \$\d+|when (a |your )?friends? (joins?|signs? up|buys?|orders?))\b/i.test(`${o.title} ${o.details ?? ''}`);
 }
 
+/**
+ * Not a perk at all, so not shown: applying for a card or account ("Apply for Robinhood Gold Card"),
+ * being paid for an interview or survey, or a discount for signing up to texts or emails.
+ */
+export function notAPerk(o: Pick<Offer, 'title' | 'details'>): boolean {
+  const text = `${o.title} ${o.details ?? ''}`;
+  return (
+    /\b(apply|applying|application)\b|\bopen (a |an )?(new )?(account|card)\b|\bget approved\b/i.test(o.title) ||
+    /\b(interview|survey|focus group|research study|case study)\b/i.test(text) ||
+    /\b(sign(ing)? up|connect|subscrib(e|ing)|opt(ing)? in|join)\b[^.]{0,25}\b(texts?|sms|text messages|emails?|newsletter)\b/i.test(o.title)
+  );
+}
+
 /** A trade-in offer: never money the user has, and not worth showing. */
 const isTradeIn = (o: Pick<Offer, 'title' | 'details'>) => /\btrade[- ]?in\b/i.test(`${o.title} ${o.details ?? ''}`);
 
@@ -321,7 +334,7 @@ export function toRows(p: ParsedEmail, today: string, defaultCurrency = 'USD', f
   let inApp = 0;
 
   for (const o of p.offers) {
-    if (isTradeIn(o)) {
+    if (isTradeIn(o) || notAPerk(o)) {
       skipped.notMoney += 1;
       continue;
     }

@@ -1,6 +1,7 @@
 import { confidenceOf, type BenefitStatusOf } from './confidence';
 import { addToBag, type MoneyBag } from './format';
 import { KIND_LABELS, kindOf, viewOf, type MoneyKind, type SetupStep } from './money';
+import { groupByStore } from './relevance';
 import type { Opportunity, Recovered } from './types';
 
 // What a new user sees first: the one next thing to do, how many perks still need checking,
@@ -11,7 +12,8 @@ export const nextStep = (steps: SetupStep[]): SetupStep | null => steps.find((s)
 
 /** Open items whose amount or terms aren't confirmed yet (shown as "Check"), protections aside. */
 export function toCheckCount(opportunities: Opportunity[], now: Date, statusOf?: BenefitStatusOf): number {
-  return opportunities.filter((o) => o.type !== 'protection' && viewOf(o, now) === 'open' && confidenceOf(o, statusOf) === 'check').length;
+  // One per store, the way Money lists them: 21 Uber Eats offers are one thing to check.
+  return groupByStore(opportunities.filter((o) => o.type !== 'protection' && viewOf(o, now) === 'open' && confidenceOf(o, statusOf) === 'check')).length;
 }
 
 // ---- "We found $X": the first big moment, once the cards and inbox are in.
