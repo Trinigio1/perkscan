@@ -38,6 +38,13 @@ export function addToBag(bag: MoneyBag, currency: string, amount: number): Money
   return bag;
 }
 
+/** Several amounts-by-currency added together (never converted between currencies). */
+export function sumBags(...bags: MoneyBag[]): MoneyBag {
+  const out: MoneyBag = {};
+  for (const b of bags) for (const [cur, v] of Object.entries(b)) if (v > 0) addToBag(out, cur, v);
+  return out;
+}
+
 /** "TT$450 + US$35", home currency first, zero amounts left out ("$0" style when empty). */
 export function formatBag(bag: MoneyBag, home = homeCurrency): string {
   const entries = Object.entries(bag).filter(([, v]) => v !== 0);

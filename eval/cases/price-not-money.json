@@ -1,0 +1,14 @@
+{
+  "origin": "synthetic",
+  "source": "email",
+  "input": {
+    "subject": "Broadway's Beaches — tickets for $59 this week only",
+    "date": "2026-10-20T10:00:00-04:00",
+    "text": "Broadway's Beaches is back! Get orchestra seats for just $59 through October 31. Use code BEACH59 at checkout.",
+    "from": "Telecharge <offers@telecharge.com>"
+  },
+  "expected": {
+    "kind": "promo",
+    "offers": [{ "type": "promo", "amount": null, "code": "BEACH59" }]
+  }
+}

@@ -1,3 +1,4 @@
+import { percentOff } from './estimate';
 import type { Opportunity } from './types';
 
 // How sure PerkScan is about an item, in three plain words instead of a made-up percentage:
@@ -62,11 +63,14 @@ export function urgency(o: Pick<Opportunity, 'expires_at'>, now: Date): number {
 }
 
 /**
- * The order to show things in: what you'd lose soonest first, then the surer thing, then the
+ * The order to show things in: stores you use first (when `relevanceOf` is given), then what you'd lose soonest, then the surer thing, then the
  * bigger amount (only compared within one currency, since amounts are never converted), then the date.
  */
-export function rankCompare(now: Date, statusOf?: BenefitStatusOf) {
+export function rankCompare(now: Date, statusOf?: BenefitStatusOf, relevanceOf?: (o: Opportunity) => number) {
   return (a: Opportunity, b: Opportunity): number => {
+    // Yours first: a store you buy from beats a newsletter from one you don't.
+    const r = relevanceOf ? relevanceOf(a) - relevanceOf(b) : 0;
+    if (r) return r;
     const u = urgency(a, now) - urgency(b, now);
     if (u) return u;
     const c = CONFIDENCE_ORDER[confidenceOf(a, statusOf)] - CONFIDENCE_ORDER[confidenceOf(b, statusOf)];
@@ -76,6 +80,9 @@ export function rankCompare(now: Date, statusOf?: BenefitStatusOf) {
     if (a.currency === b.currency && a.value_estimate !== null && b.value_estimate !== null && a.value_estimate !== b.value_estimate) {
       return b.value_estimate - a.value_estimate;
     }
+    // No dollar figure on either: the bigger percent off first.
+    const pct = (b.percent_off ?? percentOff(b.title) ?? 0) - (a.percent_off ?? percentOff(a.title) ?? 0);
+    if (pct) return pct;
     const at = a.expires_at ? new Date(a.expires_at).getTime() : Infinity;
     const bt = b.expires_at ? new Date(b.expires_at).getTime() : Infinity;
     return at - bt;

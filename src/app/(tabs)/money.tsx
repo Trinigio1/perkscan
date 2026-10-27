@@ -7,7 +7,10 @@ import { Button, Chip, Empty, Panel, Row, Screen, Segmented, T } from '@/compone
 import { formatBag, formatMoney, getHomeCurrency } from '@/domain/format';
 import { includedWhenYouNeedIt } from '@/domain/included';
 import { KIND_LABELS, moneyList, type MoneyKind, type MoneyView } from '@/domain/money';
+import { groupByStore } from '@/domain/relevance';
+import type { Opportunity } from '@/domain/types';
 import { useData, useLookups } from '@/lib/data';
+import { useRelevance } from '@/lib/relevance';
 import { space, useColors } from '@/theme';
 
 const EMPTY: Record<MoneyView, { title: string; body: string }> = {
@@ -27,16 +30,28 @@ export default function Money() {
   const [kind, setKind] = useState<MoneyKind | 'all'>('all');
   const [refreshing, setRefreshing] = useState(false);
   const [showCheck, setShowCheck] = useState(false);
+  // Stores whose other codes are unfolded.
+  const [unfolded, setUnfolded] = useState<Set<string>>(new Set());
+  const { relevanceOf } = useRelevance();
   const home = data.profile?.home_currency?.trim() || getHomeCurrency();
   const statusOf = useCallback((id: string) => benefitById.get(id)?.status, [benefitById]);
 
   const { now, list } = useMemo(() => {
     const at = new Date();
-    return { now: at, list: moneyList(data.opportunities, view, kind, at, recoveredByOpp, statusOf) };
-  }, [data.opportunities, view, kind, recoveredByOpp, statusOf]);
+    return { now: at, list: moneyList(data.opportunities, view, kind, at, recoveredByOpp, statusOf, relevanceOf) };
+  }, [data.opportunities, view, kind, recoveredByOpp, statusOf, relevanceOf]);
   // A filter that no longer has anything in this view falls back to All.
   const shownKind = kind !== 'all' && !list.kinds.includes(kind) ? 'all' : kind;
-  const shown = shownKind === kind ? list : moneyList(data.opportunities, view, 'all', now, recoveredByOpp, statusOf);
+  const shown = shownKind === kind ? list : moneyList(data.opportunities, view, 'all', now, recoveredByOpp, statusOf, relevanceOf);
+  const row = (o: Opportunity) => (
+    <OpportunityRow
+      opp={o}
+      benefit={o.benefit_id ? benefitById.get(o.benefit_id) : undefined}
+      recovered={recoveredByOpp.get(o.id) ?? 0}
+      subtitle={userCardLabel(o.user_card_id) || undefined}
+      now={now}
+    />
+  );
 
   const onRefresh = async () => {
     setRefreshing(true);
@@ -111,17 +126,41 @@ export default function Money() {
               ) : null}
               {open ? (
                 <Panel style={{ paddingVertical: space.xs }}>
-                  {s.items.map((o, i) => (
-                    <View key={o.id} style={i > 0 ? { borderTopWidth: 1, borderTopColor: c.border } : undefined}>
-                      <OpportunityRow
-                        opp={o}
-                        benefit={o.benefit_id ? benefitById.get(o.benefit_id) : undefined}
-                        recovered={recoveredByOpp.get(o.id) ?? 0}
-                        subtitle={userCardLabel(o.user_card_id) || undefined}
-                        now={now}
-                      />
-                    </View>
-                  ))}
+                  {/* One row per store: its best code, with the rest folded underneath. */}
+                  {(view === 'open' ? groupByStore(s.items) : s.items.map((o) => ({ lead: o, more: [] as Opportunity[] }))).map(({ lead, more }, i) => {
+                    const isOpen = unfolded.has(lead.id);
+                    const store = lead.merchant ?? 'this store';
+                    return (
+                      <View key={lead.id} style={i > 0 ? { borderTopWidth: 1, borderTopColor: c.border } : undefined}>
+                        {row(lead)}
+                        {more.length ? (
+                          <Pressable
+                            onPress={() => setUnfolded((prev) => {
+                              const next = new Set(prev);
+                              if (next.has(lead.id)) next.delete(lead.id);
+                              else next.add(lead.id);
+                              return next;
+                            })}
+                            accessibilityRole="button"
+                            hitSlop={4}
+                            style={({ pressed }) => ({ paddingBottom: space.md, opacity: pressed ? 0.6 : 1 })}
+                          >
+                            <Row gap={4}>
+                              <T variant="label" color={c.accent}>{isOpen ? 'Hide' : `${more.length} more code${more.length === 1 ? '' : 's'} from ${store}`}</T>
+                              <Ionicons name={isOpen ? 'chevron-up' : 'chevron-down'} size={14} color={c.accent} />
+                            </Row>
+                          </Pressable>
+                        ) : null}
+                        {isOpen
+                          ? more.map((o) => (
+                              <View key={o.id} style={{ borderTopWidth: 1, borderTopColor: c.border, marginLeft: space.md }}>
+                                {row(o)}
+                              </View>
+                            ))
+                          : null}
+                      </View>
+                    );
+                  })}
                 </Panel>
               ) : null}
             </View>

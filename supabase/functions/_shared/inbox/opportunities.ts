@@ -260,12 +260,19 @@ export function offerWords(o: Pick<Offer, 'title' | 'amount' | 'percent_off'>): 
  */
 export function notMoneyOwed(o: Pick<Offer, 'title' | 'details'>): boolean {
   const text = `${o.title} ${o.details ?? ''}`;
-  return /\btrade[- ]?in\b|\bup to\b|\bfinanc(e|ing)\b|\bsweepstakes\b|\bchance to win\b/i.test(text) || earnedByDoing(o);
+  return /\btrade[- ]?in\b|\bup to\b|\bfinanc(e|ing)\b|\bsweepstakes\b|\bchance to win\b/i.test(text) || earnedByDoing(o) || isPrice(o);
+}
+
+const MONEY_WORDS = /\b(off|credit|back|save|saving|savings|free|reward|cash|gift ?card|voucher|refund|payout|discount)\b/i;
+
+/** "Broadway's Beaches for $59", "plans from $9.99": a price you'd pay, not money you have. */
+export function isPrice(o: Pick<Offer, 'title' | 'details'>): boolean {
+  return /\b(for|from|starting at|only|just|now)\s+(US)?\$\s?\d/i.test(o.title) && !MONEY_WORDS.test(o.title);
 }
 
 /** "$100 gift card for a case study interview", "$20 off after 5 tasks": paid for doing something, not owed. */
 export function earnedByDoing(o: Pick<Offer, 'title' | 'details'>): boolean {
-  return /\b(interview|survey|focus group|research study|complet(e|ing) \d+ (tasks?|orders?|trips?|rides?)|unlock by|refer(ral)? (a )?friends?)\b/i.test(`${o.title} ${o.details ?? ''}`);
+  return /\b(interview|survey|focus group|research study|complet(e|ing) \d+ (tasks?|orders?|trips?|rides?)|unlock by|referrals?|refer (a )?friends?|invite (a )?friends?|spread the love|give \$\d+[^.]{0,20}get \$\d+|when (a |your )?friends? (joins?|signs? up|buys?|orders?))\b/i.test(`${o.title} ${o.details ?? ''}`);
 }
 
 /** A trade-in offer: never money the user has, and not worth showing. */

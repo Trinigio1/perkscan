@@ -9,7 +9,7 @@ import { space, useColors } from '@/theme';
 import { Button, IconBubble, Panel, Row, T, type IconName } from './ui';
 
 const TIPS: { icon: IconName; title: string; body: string }[] = [
-  { icon: 'sparkles', title: 'Your total', body: 'The big number is money you can use now. Tap it to see where it comes from.' },
+  { icon: 'sparkles', title: 'Your total', body: 'The big number is what you could save. The lines under it show what’s ready now and what’s an estimate (≈).' },
   { icon: 'wallet', title: 'Money', body: 'Every credit, code and gift card in one list, soonest first. Mark things used to track what you get back.' },
   { icon: 'pricetags', title: 'Deals', body: 'Offers your own inbox won’t show you, picked for what you’re into and where you live.' },
 ];

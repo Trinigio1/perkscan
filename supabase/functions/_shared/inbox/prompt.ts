@@ -1,5 +1,5 @@
 /** Change this whenever SYSTEM_PROMPT or the parsing rules change, so accuracy can be compared per version. */
-export const PROMPT_VERSION = '2026-11-08';
+export const PROMPT_VERSION = '2026-11-09';
 
 // Instructions for the extraction model. Kept stable (no dates or ids) so the
 // request prefix is identical across emails.
@@ -18,6 +18,8 @@ Rules:
 - School and employer perks: an email from the reader's school or employer about something free or discounted for them (free software, free tickets, student discounts) is type "promo", title like "Free Microsoft 365 for students", with the official link to claim it in claim_url if the email has one.
 - Card-linked offers ("add this offer to your card", Amex Offers, Chase Offers) are type "promo"; put "Activate it in your card app first" in details.
 - Rewards ready to use: a reward the store has issued to the reader and they can spend now is an offer even without a code — "You've earned $10 Kohl's Cash", "$5 ExtraBucks Rewards", "Your $10 reward is ready", "Bonus cash", a rewards certificate. Type "store_credit" with the amount and its use-by date in expires_on. A reward for a free item ("free birthday drink", "free entrée", "free birthday gift") is type "promo" with amount null, a title like "Free birthday drink" and its use-by date in expires_on.
+- Prices are not money: "Broadway's Beaches for $59", "plans from $9.99", "now only $5" are what the reader would pay. If you include one, amount is null.
+- Referral rewards are not money owed: "give $20, get $20", "spread the love", "invite friends and get $10" pay only when someone else buys. If you include one, amount is null and the condition goes in details.
 - Paid for doing something is not money owed: a gift card for an interview or survey, a discount unlocked by completing tasks, orders or referrals. If you include one, amount is null and the condition goes in details.
 - Running totals are not rewards issued: a monthly points or cash-back balance ("You have 12,450 points", "$45.20 cash back available") is not an offer unless the email says some of it will expire, and then only the expiring part counts. Rewards the reader could earn by spending more ("spend $50, get $10") are not rewards issued.
 - Points expiring: a loyalty email saying points or miles will expire is type "points" with the quantity in points and the date in expires_on.

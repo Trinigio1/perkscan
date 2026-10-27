@@ -1,0 +1,14 @@
+{
+  "origin": "synthetic",
+  "source": "email",
+  "input": {
+    "subject": "Spread the love: give $20, get $20",
+    "date": "2026-10-20T10:00:00-04:00",
+    "text": "Share your link with friends. They get $20 off their first order of $75+, and you get $20 off when they buy.",
+    "from": "Kendra Scott <hello@kendrascott.com>"
+  },
+  "expected": {
+    "kind": "promo",
+    "offers": [{ "type": "promo", "amount": null }]
+  }
+}

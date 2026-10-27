@@ -1,6 +1,7 @@
 import { confidenceOf, rankCompare, type BenefitStatusOf } from './confidence';
 import { isInAppDeal } from './inApp';
 import { addToBag, type MoneyBag } from './format';
+import { groupByStore } from './relevance';
 import { remainingValue } from './score';
 import type { Opportunity } from './types';
 
@@ -88,6 +89,7 @@ export function moneyList(
   now: Date,
   recoveredByOpp: Map<string, number>,
   statusOf?: BenefitStatusOf,
+  relevanceOf?: (o: Opportunity) => number,
 ): MoneyList {
   const inView = opportunities.filter((o) => viewOf(o, now) === view);
   const kinds = KIND_ORDER.filter((k) => inView.some((o) => kindOf(o) === k));
@@ -103,7 +105,7 @@ export function moneyList(
 
   let sections: MoneySection[];
   if (view === 'open') {
-    const ranked = [...items].filter((o) => !isInAppDeal(o)).sort(rankCompare(now, statusOf));
+    const ranked = [...items].filter((o) => !isInAppDeal(o)).sort(rankCompare(now, statusOf, relevanceOf));
     const sure = ranked.filter((o) => confidenceOf(o, statusOf) !== 'check');
     const end = now.getTime() + WEEK_MS;
     sections = [
@@ -123,15 +125,16 @@ export function moneyList(
 }
 
 /**
- * The few things to use next on Home, in rank order. Guesses only fill the list when there's
- * nothing surer to show.
+ * The few things to use next on Home, in rank order, one per store. Guesses only fill the list when
+ * there's nothing surer to show.
  */
-export function nextToUse(opportunities: Opportunity[], now: Date, max = 4, statusOf?: BenefitStatusOf): Opportunity[] {
+export function nextToUse(opportunities: Opportunity[], now: Date, max = 4, statusOf?: BenefitStatusOf, relevanceOf?: (o: Opportunity) => number): Opportunity[] {
   const open = opportunities
     .filter((o) => viewOf(o, now) === 'open' && o.expires_at !== null && o.type !== 'protection' && !isInAppDeal(o))
-    .sort(rankCompare(now, statusOf));
+    .sort(rankCompare(now, statusOf, relevanceOf));
   const sure = open.filter((o) => confidenceOf(o, statusOf) !== 'check');
-  return [...sure, ...open.filter((o) => !sure.includes(o))].slice(0, max);
+  const ordered = [...sure, ...open.filter((o) => !sure.includes(o))];
+  return groupByStore(ordered).map((g) => g.lead).slice(0, max);
 }
 
 export interface SetupStep {

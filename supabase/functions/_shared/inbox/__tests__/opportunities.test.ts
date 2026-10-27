@@ -1,4 +1,4 @@
-import { isOrderUpdate, offerWords, readNote, toRows } from '../opportunities.ts';
+import { isOrderUpdate, isPrice, notMoneyOwed, offerWords, readNote, toRows } from '../opportunities.ts';
 import type { Offer, ParsedEmail } from '../schema.ts';
 
 const TODAY = '2026-04-10';
@@ -128,6 +128,19 @@ describe('toRows', () => {
     }
     expect(toRows(receiptEmail, TODAY, 'USD', null, { subject: 'Your Amazon.com order of "Mattress" has been confirmed' }).receipt).not.toBeNull();
     expect(toRows(receiptEmail, TODAY, 'USD', null, { subject: 'Your Instacart order was delivered: receipt' }).receipt).not.toBeNull();
+  });
+
+  it('never counts a price or a referral reward as money', () => {
+    expect(isPrice({ title: "Broadway's Beaches for $59", details: null })).toBe(true);
+    expect(isPrice({ title: 'Plans from $9.99', details: null })).toBe(true);
+    expect(isPrice({ title: '$20 off orders from $50', details: null })).toBe(false);
+    expect(isPrice({ title: '$10 off groceries', details: null })).toBe(false);
+    expect(notMoneyOwed({ title: 'Spread the love and get $20 off', details: null })).toBe(true);
+    expect(notMoneyOwed({ title: 'Give $20, get $20', details: null })).toBe(true);
+    expect(notMoneyOwed({ title: '$10 off', details: 'Invite friends to earn more' })).toBe(true);
+    expect(notMoneyOwed({ title: '$5 Michaels Rewards voucher', details: null })).toBe(false);
+    const { opportunities } = toRows(email({ offers: [offer({ title: "Broadway's Beaches for $59", amount: 59, code: 'BEACH' })] }), TODAY);
+    expect(opportunities[0]!.value_estimate).toBeNull();
   });
 
   it('tells order updates from receipts by subject', () => {

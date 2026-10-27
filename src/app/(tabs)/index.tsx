@@ -12,13 +12,14 @@ import { Chip, ErrorNote, Money, Panel, Row, Screen, SectionHeader, T, type Icon
 import { claimsToCheck } from '@/domain/claims';
 import { dealsWorth, discountSummary } from '@/domain/estimate';
 import { foundMoney, nextStep, toCheckCount, worthCelebrating } from '@/domain/firstRun';
-import { addToBag, formatBag, getHomeCurrency, type MoneyBag } from '@/domain/format';
+import { addToBag, formatBag, getHomeCurrency, sumBags, type MoneyBag } from '@/domain/format';
 import { nextToUse, setupSteps } from '@/domain/money';
 import { scoreByCurrency } from '@/domain/score';
 import { greeting } from '@/domain/visuals';
 import { useData, useLookups } from '@/lib/data';
 import { useDeals } from '@/lib/deals';
 import { useMembershipHints, useMySubscriptions } from '@/lib/memberships';
+import { useRelevance } from '@/lib/relevance';
 import { openStudentOffers } from '@/domain/suggestions';
 import { useDismissed } from '@/lib/suggestions';
 import { font, space, useColors } from '@/theme';
@@ -58,6 +59,7 @@ export default function Home() {
   // Matched deals first; a couple of popular ones if nothing matches yet.
   const topDeals = (deals.forYou.length ? deals.forYou : deals.popular).slice(0, 3);
   const statusOf = useCallback((id: string) => benefitById.get(id)?.status, [benefitById]);
+  const { relevanceOf } = useRelevance();
 
   const { now, home, totals, soon, toCheck, found, arrivals, discounts } = useMemo(() => {
     const at = new Date();
@@ -74,20 +76,24 @@ export default function Home() {
         used: bag((s) => s.recoveredThisYear),
         missed: bag((s) => s.leftOnTable),
       },
-      soon: nextToUse(data.opportunities, at, 4, statusOf),
+      soon: nextToUse(data.opportunities, at, 4, statusOf, relevanceOf),
       toCheck: toCheckCount(data.opportunities, at, statusOf),
       found: foundMoney(data.opportunities, data.recovered, at, statusOf),
       arrivals: claimsToCheck(data.opportunities, at),
-      // Not in Ready to use: percent-off codes estimated from what you usually spend at that store.
-      discounts: discountSummary(data.opportunities, data.receipts, at),
+      // Not money in hand: codes at stores you buy from, worth what you usually spend there times the percent.
+      discounts: discountSummary(data.opportunities.filter((o) => relevanceOf(o) === 0), data.receipts, at),
     };
-  }, [data, statusOf]);
+  }, [data, statusOf, relevanceOf]);
   // Student perks: free software, music and Prime prices that come with a school email.
   const studentPerks = data.profile?.is_student || data.school ? openStudentOffers({ studentOffers: data.studentOffers, studentClaims: data.studentClaims, school: data.school, country: data.profile?.country ?? null }).length : 0;
   // Subscriptions where a checked student price is cheaper than what the receipts show.
   const studentSavings = useMySubscriptions().filter((x) => x.student);
+  const studentYearly = studentSavings.reduce((b, x) => addToBag(b, x.student!.currency, x.student!.savesYearly), {} as MoneyBag);
   // Deals matched to you: stated amounts off, or a percent of your usual spend at that store.
   const dealsFor = useMemo(() => dealsWorth(deals.forYou, data.receipts, now, home), [deals.forYou, data.receipts, now, home]);
+  // "Save up to": money in hand, plus estimated discounts at your stores, deals for you and cheaper
+  // student plans. Each part is its own line underneath, so it's clear what's sure and what's an estimate.
+  const saveUpTo = sumBags(totals.ready, discounts.estimated, dealsFor.worth, studentYearly);
 
   // The "We found $X" moment: opens by itself once, the first time there's something to show after setup.
   const celebrate = worthCelebrating(found) && !!data.profile?.onboarded_at;
@@ -106,9 +112,9 @@ export default function Home() {
   const name = data.profile?.display_name?.split(' ')[0];
   const step = nextStep(setupSteps(data));
   // Show the biggest pile big when nothing is in the home currency.
-  const big = (totals.ready[home] ?? 0) > 0 || !nonZero(totals.ready) ? home : Object.entries(totals.ready).sort((a, b) => b[1] - a[1])[0]![0];
-  // Nothing confirmed yet but perks to check: say that, instead of a discouraging $0.
-  const checkFirst = !nonZero(totals.ready) && toCheck > 0;
+  const big = (saveUpTo[home] ?? 0) > 0 || !nonZero(saveUpTo) ? home : Object.entries(saveUpTo).sort((a, b) => b[1] - a[1])[0]![0];
+  // Nothing to save yet but perks to check: say that, instead of a discouraging $0.
+  const checkFirst = !nonZero(saveUpTo) && toCheck > 0;
   const quiet = !nonZero(totals.week) && !nonZero(totals.used) && !nonZero(totals.missed);
 
   return (
@@ -127,29 +133,31 @@ export default function Home() {
             </>
           ) : (
             <>
-              <T variant="label" color={c.heroMuted}>Ready to use</T>
-              <Money value={totals.ready[big] ?? 0} size={56} color={c.heroText} currency={big} animate />
-              {others(totals.ready, big) ? <T variant="subheading" color={c.heroText}>{others(totals.ready, big)}</T> : null}
-              {toCheck > 0 ? <T variant="caption" color={c.heroMuted}>+ {toCheck} more to check</T> : null}
+              <T variant="label" color={c.heroMuted}>Save up to</T>
+              <Money value={saveUpTo[big] ?? 0} size={56} color={c.heroText} currency={big} animate />
+              {others(saveUpTo, big) ? <T variant="subheading" color={c.heroText}>{others(saveUpTo, big)}</T> : null}
             </>
           )}
         </Pressable>
-        {/* Estimates and deals: their own lines, never added to the number above. */}
+        {/* What the headline is made of: what's sure first, then the estimates (≈). */}
+        <ExtraLine show={nonZero(totals.ready)} text={`${formatBag(totals.ready, big)} ready to use now`} onPress={() => router.push('/money')} />
         <ExtraLine
           show={nonZero(discounts.estimated) || discounts.otherCount > 0}
           text={
             nonZero(discounts.estimated)
-              ? `+ ≈ ${formatBag(discounts.estimated, big)} in discounts · ${discounts.estimatedCount + discounts.otherCount} offer${discounts.estimatedCount + discounts.otherCount === 1 ? '' : 's'}`
-              : `+ ${discounts.otherCount} discount${discounts.otherCount === 1 ? '' : 's'}${discounts.bestPercent ? ` · up to ${discounts.bestPercent}% off` : ''}`
+              ? `≈ ${formatBag(discounts.estimated, big)} off at stores you use · ${discounts.estimatedCount} code${discounts.estimatedCount === 1 ? '' : 's'}`
+              : `${discounts.otherCount} code${discounts.otherCount === 1 ? '' : 's'} at stores you use${discounts.bestPercent ? ` · up to ${discounts.bestPercent}% off` : ''}`
           }
           onPress={() => router.push('/money')}
         />
         <ExtraLine
           show={dealsFor.total > 0}
-          text={nonZero(dealsFor.worth) ? `+ ≈ ${formatBag(dealsFor.worth, big)} in deals for you · ${dealsFor.total} deal${dealsFor.total === 1 ? '' : 's'}` : `+ ${dealsFor.total} deal${dealsFor.total === 1 ? '' : 's'} for you`}
+          text={nonZero(dealsFor.worth) ? `≈ ${formatBag(dealsFor.worth, big)} in deals for you · ${dealsFor.total} deal${dealsFor.total === 1 ? '' : 's'}` : `${dealsFor.total} deal${dealsFor.total === 1 ? '' : 's'} for you`}
           onPress={() => router.push('/deals')}
         />
+        <ExtraLine show={nonZero(studentYearly)} text={`${formatBag(studentYearly, big)} a year with student prices`} onPress={() => router.push('/subscriptions')} />
         <ExtraLine show={studentPerks > 0} text={`+ ${studentPerks} student perk${studentPerks === 1 ? '' : 's'} for you`} onPress={() => router.push('/student')} />
+        {!checkFirst && toCheck > 0 ? <T variant="caption" color={c.heroMuted} style={{ marginTop: space.xs }}>{toCheck} more to check before they count</T> : null}
         {/* The three small numbers only once there's something in them. */}
         {quiet ? null : (
           <Row gap={0} style={{ marginTop: space.lg, borderTopWidth: 1, borderTopColor: c.heroTrack, paddingTop: space.md }}>

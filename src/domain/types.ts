@@ -117,6 +117,8 @@ export interface Opportunity {
   min_spend?: number | null;
   /** "$15 off $75": the amount off when it needs a minimum spend: a discount, not money in hand. */
   discount_amount?: number | null;
+  /** When the email it came from was sent (YYYY-MM-DD…), for retiring old codes with no end date. */
+  sent_on?: string | null;
   created_at: string;
 }
 
