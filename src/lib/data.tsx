@@ -105,8 +105,8 @@ async function load(userId: string): Promise<AppData> {
     supabase.from('cards').select('*').order('sort_order'),
     supabase.from('card_benefits').select('*').order('sort_order'),
     supabase.from('user_cards').select('*').order('created_at'),
-    supabase.from('opportunities').select('*, inbound_messages(from_domain, sent_at)').or(`status.eq.open,expires_at.gte.${yearStart}`).order('expires_at', { ascending: true }),
-    supabase.from('recovered').select('id, opportunity_id, amount, currency, recovered_at'),
+    supabase.from('opportunities').select('*, inbound_messages(from_domain, sent_at)').or(`status.in.(open,claimed),expires_at.gte.${yearStart}`).order('expires_at', { ascending: true }),
+    supabase.from('recovered').select('id, opportunity_id, amount, currency, recovered_at, marked_by, source_receipt_id'),
     supabase.from('benefit_usage').select('id, user_card_id, benefit_id, period_start, amount_used, is_used, marked_by'),
     supabase
       .from('receipts')
@@ -196,11 +196,15 @@ async function load(userId: string): Promise<AppData> {
       // Where the email came from: the store a code or gift card gets used at.
       sender_domain: msg?.from_domain ?? null,
       sent_on: msg?.sent_at ?? null,
+      used_guess_amount: num(o.used_guess_amount),
     }))
       // Hidden stores, old codes with no end date (almost certainly over) and vague offers from stores
       // you don't use: never shown or counted.
       .filter((o: Opportunity) => !isMutedOffer(o, muteKeys) && !isStale(o, new Date()) && !isVagueElsewhere(o, you)),
-    recovered: must('recovered', recovered).map((r: Recovered) => ({ ...r, amount: Number(r.amount) })),
+    // Before "used from receipts" is in the database, read without where a "used" came from.
+    recovered: (recovered.error ? must('recovered', await supabase.from('recovered').select('id, opportunity_id, amount, currency, recovered_at')) : must('recovered', recovered)).map(
+      (r: Recovered) => ({ ...r, amount: Number(r.amount) }),
+    ),
     usage: must('benefit_usage', usage).map((u: BenefitUsage) => ({ ...u, amount_used: num(u.amount_used) })),
     receipts: must('receipts', receipts).map((r: Receipt) => ({ ...r, total: num(r.total) })),
     // Student mode is optional; a missing table (database not updated yet) just means no offers.

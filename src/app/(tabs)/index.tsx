@@ -1,7 +1,7 @@
 import { router, type Href } from 'expo-router';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Pressable, RefreshControl, ScrollView, Text, View } from 'react-native';
-import { ArrivalCheck } from '@/components/Claims';
+import { ArrivalCheck, UsedCheck } from '@/components/Claims';
 import { DealRow } from '@/components/DealRow';
 import { Found, NextStep, Tour } from '@/components/FirstRun';
 import { Hero } from '@/components/Hero';
@@ -16,6 +16,7 @@ import { addToBag, formatBag, getHomeCurrency, sumBags, type MoneyBag } from '@/
 import { nextToUse, setupSteps } from '@/domain/money';
 import { includedWhenYouNeedIt, includedWorth } from '@/domain/included';
 import { scoreByCurrency } from '@/domain/score';
+import { usedQuestions } from '@/domain/usedFromReceipts';
 import { greeting } from '@/domain/visuals';
 import { useData, useLookups } from '@/lib/data';
 import { useDeals } from '@/lib/deals';
@@ -62,7 +63,7 @@ export default function Home() {
   const statusOf = useCallback((id: string) => benefitById.get(id)?.status, [benefitById]);
   const { relevanceOf } = useRelevance();
 
-  const { now, home, totals, soon, toCheck, found, arrivals, discounts } = useMemo(() => {
+  const { now, home, totals, soon, toCheck, found, arrivals, discounts, usedAsks } = useMemo(() => {
     const at = new Date();
     const homeCur = data.profile?.home_currency?.trim() || getHomeCurrency();
     // Amounts are never converted: one score per currency, the home currency shown big.
@@ -81,6 +82,8 @@ export default function Home() {
       toCheck: toCheckCount(data.opportunities, at, statusOf),
       found: foundMoney(data.opportunities, data.recovered, at, statusOf),
       arrivals: claimsToCheck(data.opportunities, at),
+      // A receipt showed a discount that might be one of your offers.
+      usedAsks: usedQuestions(data.opportunities, data.receipts),
       // Not money in hand: codes at stores you buy from, worth what you usually spend there times the percent.
       discounts: discountSummary(data.opportunities.filter((o) => relevanceOf(o) === 0), data.receipts, at),
     };
@@ -170,12 +173,13 @@ export default function Home() {
         {quiet ? null : (
           <Row gap={0} style={{ marginTop: space.lg, borderTopWidth: 1, borderTopColor: c.heroTrack, paddingTop: space.md }}>
             <Stat label="This week" value={totals.week} home={big} onPress={() => router.push('/at-risk')} />
-            <Stat label="Used" value={totals.used} home={big} onPress={() => router.push({ pathname: '/money', params: { view: 'used' } })} />
+            <Stat label="Saved" value={totals.used} home={big} onPress={() => router.push({ pathname: '/money', params: { view: 'used' } })} />
             <Stat label="Missed" value={totals.missed} home={big} onPress={() => router.push({ pathname: '/money', params: { view: 'missed' } })} />
           </Row>
         )}
       </Hero>
 
+      {usedAsks[0] ? <UsedCheck question={usedAsks[0]} /> : null}
       {arrivals[0] ? <ArrivalCheck opp={arrivals[0]} /> : null}
       {dismissedLoaded && !dismissed.has('tour') ? <Tour onDone={() => dismiss('tour')} /> : null}
       {step ? <NextStep step={step} /> : null}

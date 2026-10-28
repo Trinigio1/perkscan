@@ -1,5 +1,5 @@
 /** Change this whenever SYSTEM_PROMPT or the parsing rules change, so accuracy can be compared per version. */
-export const PROMPT_VERSION = '2026-11-10';
+export const PROMPT_VERSION = '2026-11-11';
 
 // Instructions for the extraction model. Kept stable (no dates or ids) so the
 // request prefix is identical across emails.
@@ -34,6 +34,7 @@ Rules:
 - Dates: YYYY-MM-DD. Resolve relative dates ("expires in 7 days", "this Sunday") against the email's Date header.
 - Money: plain numbers, no symbols (e.g. 25 or 19.99), with the ISO currency code in the currency field (USD, TTD, CAD, ...). "TT$" is TTD; a currency code next to the amount wins ("$144.51 TTD" is TTD); a bare "$" from a US store is USD. If the currency can't be told, use null.
 - purchase_type: what the receipt is mainly for. Use phone_bill for mobile plan payments and phone for buying a phone itself. Guess the type from the merchant for card alerts (Uber Eats -> food_delivery, Uber -> rideshare, an airline -> flight). For flights, car rentals and hotels, put the departure / pick-up / check-in date in travel_date.
+- discounts (receipts only): every line that took money off this order, as written: promo codes ("Promo EATS25 -$6.20" -> code "EATS25", amount 6.2), coupons, gift cards and store credit used to pay ("Kohl's Cash -$10", "Gift card $25.00"), rewards and membership savings ("Uber One savings $3.49"). Amounts are positive numbers. Empty if nothing was taken off. Never include card numbers.
 - warranty_months: only if the receipt states a warranty length ("1-year limited warranty" -> 12). Never guess one from the product.
 - card_last_four: only the 4 digits shown for the payment card (e.g. "Visa ending in 1234" -> "1234"). Never a full card number.
 - membership: when the email treats the reader as a member of a paid membership ("as an Uber One member", "your Prime benefits", "$0 delivery fee with your DashPass"), its name. Null for ads inviting them to join or try one.

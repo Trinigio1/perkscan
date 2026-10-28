@@ -14,6 +14,7 @@ import { CONFIDENCE_HELP, confidenceOf } from '@/domain/confidence';
 import { offerEstimate } from '@/domain/estimate';
 import { muteKeyOf } from '@/domain/mutes';
 import { formatMoney, lastDayLabel, relativeDays } from '@/domain/format';
+import { usedFromReceiptNote } from '@/domain/usedFromReceipts';
 import { offerIcon, OFFER_TYPE_LABELS } from '@/domain/visuals';
 import { track } from '@/lib/analytics';
 import { muteStore } from '@/lib/cards';
@@ -37,6 +38,8 @@ export default function OfferDetail() {
   const [error, setError] = useState<string | null>(null);
 
   const opp = data.opportunities.find((o) => o.id === id);
+  // "Spotted on your Oct 20 Uber Eats receipt", when a receipt showed it used.
+  const usedNote = opp ? usedFromReceiptNote(opp.id, data.recovered, data.receipts) : null;
   if (!opp) {
     return (
       <Screen edges={[]}>
@@ -210,7 +213,10 @@ export default function OfferDetail() {
             ) : null}
           </>
         ) : (
-          <Button title="Undo" kind="secondary" icon="arrow-undo" loading={busy === 'reopen'} disabled={!!busy} onPress={() => act('reopen', 'reopen', null, 'Moved back to active')} />
+          <>
+            {usedNote ? <T variant="caption" muted center>{usedNote}. Not right? Undo puts it back.</T> : null}
+            <Button title="Undo" kind="secondary" icon="arrow-undo" loading={busy === 'reopen'} disabled={!!busy} onPress={() => act('reopen', 'reopen', null, 'Moved back to active')} />
+          </>
         )}
       </View>
 

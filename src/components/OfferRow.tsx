@@ -15,7 +15,8 @@ import { CreditRow } from './CreditRow';
 import { Badge, IconBubble, Row, T } from './ui';
 
 /** A promo, gift card, trial, return window or settlement found in email. */
-export function OfferRow({ opp, now }: { opp: Opportunity; now: Date }) {
+/** `note` is shown with "Used", e.g. "Spotted on your Oct 20 Uber Eats receipt". */
+export function OfferRow({ opp, now, note }: { opp: Opportunity; now: Date; note?: string }) {
   const c = useColors();
   const { benefitById } = useLookups();
   const { data } = useData();
@@ -30,7 +31,7 @@ export function OfferRow({ opp, now }: { opp: Opportunity; now: Date }) {
 
   let status = OFFER_TYPE_LABELS[opp.type] ?? 'Offer';
   let statusColor = c.textMuted;
-  if (done) status = 'Used';
+  if (done) status = note ? `Used · ${note}` : 'Used';
   else if (opp.status === 'dismissed') status = 'Dismissed';
   else if (missed && expires) {
     status = `Expired ${lastDayLabel(opp.expires_at!)}`;
@@ -107,7 +108,7 @@ export function OpportunityRow({
   /** Show the Claim button under the row. */
   claim?: boolean;
 }) {
-  const row = opp.type === 'card_credit' ? <CreditRow opp={opp} benefit={benefit} recovered={recovered} subtitle={subtitle} now={now} /> : <OfferRow opp={opp} now={now} />;
+  const row = opp.type === 'card_credit' ? <CreditRow opp={opp} benefit={benefit} recovered={recovered} subtitle={subtitle} now={now} /> : <OfferRow opp={opp} now={now} note={subtitle} />;
   const missed = !!opp.expires_at && new Date(opp.expires_at) <= now;
   const target = !missed && claim ? claimTarget({ opp, benefit }) : null;
   if (!target) return row;

@@ -8,6 +8,7 @@ import { formatBag, formatMoney, getHomeCurrency } from '@/domain/format';
 import { includedWhenYouNeedIt } from '@/domain/included';
 import { KIND_LABELS, moneyList, type MoneyKind, type MoneyView } from '@/domain/money';
 import { groupByStore } from '@/domain/relevance';
+import { usedFromReceiptNote } from '@/domain/usedFromReceipts';
 import type { Opportunity } from '@/domain/types';
 import { useData, useLookups } from '@/lib/data';
 import { useRelevance } from '@/lib/relevance';
@@ -48,7 +49,7 @@ export default function Money() {
       opp={o}
       benefit={o.benefit_id ? benefitById.get(o.benefit_id) : undefined}
       recovered={recoveredByOpp.get(o.id) ?? 0}
-      subtitle={userCardLabel(o.user_card_id) || undefined}
+      subtitle={userCardLabel(o.user_card_id) || (view === 'used' ? usedFromReceiptNote(o.id, data.recovered, data.receipts) : null) || undefined}
       now={now}
     />
   );

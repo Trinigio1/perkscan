@@ -21,6 +21,8 @@ export const EVENTS = {
   claim_started: { kind: ['price_adjustment', 'refund', 'duplicate_charge', 'return', 'settlement', 'card_claim', 'use'] },
   deal_claimed: {},
   claim_checked: { result: ['arrived', 'not_yet', 'didnt_work'] },
+  // "Did you use this on your Oct 20 order?" answered (a receipt showed a discount that might be the offer).
+  used_from_receipt: { result: ['yes', 'no'] },
   deal_feedback: { action: ['saved', 'dismissed', 'didnt_work'] },
   interests_saved: { count: 'small_int' },
   gmail_token_created: {},

@@ -49,6 +49,14 @@ export const CardSeenSchema = z.object({
 
 export const ALERT_STATUSES = ['approved', 'pending', 'declined', 'reversed'] as const;
 
+/** A code, gift card, store credit or reward taken off the total on a receipt. */
+export const DiscountSchema = z.object({
+  description: z.string().describe('The line as written, e.g. "Promo code EATS25", "Kohl\'s Cash", "Gift card", "Uber One savings"'),
+  code: z.string().nullable().describe('The promo code if the receipt shows one, else null'),
+  amount: z.number().nullable().describe('The amount taken off, as a positive number'),
+});
+const DISCOUNTS_HELP = 'Every promo code, coupon, gift card, store credit, reward or membership saving applied on this receipt; empty if none';
+
 export const ReceiptSchema = z.object({
   total: z.number().nullable(),
   currency: CURRENCY,
@@ -70,6 +78,10 @@ export const ReceiptSchema = z.object({
     .nullable()
     .optional() // older stored replies and store receipts may leave it out
     .describe('Only for bank card alerts: approved, pending (an authorization), declined, or reversed (refund/reversal). Null for store receipts'),
+  discounts: z
+    .array(DiscountSchema)
+    .optional() // replies stored before discounts were read leave it out
+    .describe(DISCOUNTS_HELP),
 });
 
 export const KINDS = ['receipt', 'card_alert', 'promo', 'gift_card_or_store_credit', 'loyalty', 'trial_or_subscription', 'settlement', 'other'] as const;
@@ -106,6 +118,7 @@ export const ModelOutputSchema = ParsedEmailSchema.extend({
   receipt: ReceiptSchema.extend({
     warranty_months: z.number().nullable().describe('Warranty length in months, only if the receipt states one (e.g. "2-year warranty" -> 24)'),
     alert_status: z.string().nullable().describe('Only for bank card alerts: approved, pending (an authorization), declined, or reversed (refund/reversal). Null for store receipts'),
+    discounts: z.array(DiscountSchema).describe(DISCOUNTS_HELP),
   })
     .nullable()
     .describe('For purchase receipts, order confirmations and bank card purchase alerts'),
@@ -184,6 +197,15 @@ export function normalizeParsed(p: ParsedEmail): ParsedEmail {
             price: money(i.price),
             quantity: i.quantity !== null && i.quantity > 0 && i.quantity < 1000 ? Math.round(i.quantity) : null,
           })),
+          discounts: (p.receipt.discounts ?? [])
+            .slice(0, 10)
+            .map((d) => ({
+              description: text(d.description, 80) ?? 'Discount',
+              code: d.code && /^[A-Za-z0-9-]{3,40}$/.test(d.code.trim()) ? d.code.trim() : null,
+              // Some receipts write discounts as negative amounts ("-$6.20").
+              amount: money(d.amount === null ? null : Math.abs(d.amount)),
+            }))
+            .filter((d) => d.amount !== null || d.code !== null),
         }
       : null,
     offers: p.offers.slice(0, 10).map((o) => ({

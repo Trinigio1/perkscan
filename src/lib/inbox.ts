@@ -105,6 +105,12 @@ export async function rematchReceipts(): Promise<void> {
   await invokeProcess('rematch').catch(() => {});
 }
 
+/** Answers "Did you use this on your Oct 20 Uber Eats order?". Yes marks it used with what the receipt took off. */
+export async function answerUsedGuess(id: string, used: boolean) {
+  const { error } = await supabase.rpc('answer_used_guess', { p_opportunity_id: id, p_used: used });
+  if (error) throw new Error(error.message);
+}
+
 export async function markOpportunity(id: string, action: 'used' | 'dismiss' | 'reopen', amount: number | null = null) {
   const { error } = await supabase.rpc('mark_opportunity', { p_opportunity_id: id, p_action: action, p_amount: amount });
   if (error) throw new Error(error.message);

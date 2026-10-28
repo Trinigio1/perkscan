@@ -18,6 +18,8 @@ export interface ReceiptRow {
   order_number: string | null;
   return_by: string | null;
   category: string | null;
+  /** Codes, gift cards, credits and rewards applied on the receipt: how PerkScan notices you used one. */
+  discounts?: { description: string; code: string | null; amount: number | null }[];
 }
 
 export interface OpportunityRow {
@@ -395,6 +397,7 @@ export function toRows(p: ParsedEmail, today: string, defaultCurrency = 'USD', f
       order_number: r.order_number,
       return_by: returnBy,
       category: null,
+      discounts: r.discounts ?? [],
     };
     // Return windows aren't PerkScan's value (the store's own order page shows them): the receipt is kept for
     // card protections and price drops, but no reminder is created.

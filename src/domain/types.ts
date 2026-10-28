@@ -123,6 +123,11 @@ export interface Opportunity {
   min_spend?: number | null;
   /** "$15 off $75": the amount off when it needs a minimum spend: a discount, not money in hand. */
   discount_amount?: number | null;
+  /** A receipt showed a discount that might be this: PerkScan asks "Did you use it?". */
+  used_guess_receipt_id?: string | null;
+  used_guess_amount?: number | null;
+  /** The receipt line, e.g. "Promotion". */
+  used_guess_line?: string | null;
   /** When the email it came from was sent (YYYY-MM-DD…), for retiring old codes with no end date. */
   sent_on?: string | null;
   created_at: string;
@@ -175,6 +180,10 @@ export interface Recovered {
   amount: number;
   currency: string;
   recovered_at: string;
+  /** 'auto' when PerkScan saw it used on a receipt. */
+  marked_by?: 'user' | 'auto';
+  /** The receipt that showed it used. */
+  source_receipt_id?: string | null;
 }
 
 export interface BenefitUsage {

@@ -2,6 +2,7 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import { matchAndApply } from '../matching/apply.ts';
 import { doubleChargeRow, isDoubleCharge, priceAdjustment, statedWarranty, type ExtraRow, type PriceProgramIn, type PurchaseIn } from '../matching/programs.ts';
 import { findDuplicate, mergeFields, MERGE_WINDOW_DAYS, orderKey, type ExistingReceipt } from './merge.ts';
+import { usageFrom, type OpenItem } from './usage.ts';
 import { cardSighting } from './cards.ts';
 import { readNote, toRows, type ReceiptRow, type RefundRule } from './opportunities.ts';
 import { costUsd, parseEmail, type ModelCall } from './parse.ts';
@@ -129,9 +130,12 @@ export async function processMessages(db: SupabaseClient, ids: string[], call: M
         if (had?.source_message_id !== id) duplicates += 1;
       } else throw new Error(`opportunities: ${error.message}`);
     }
+    // A receipt that shows one of your codes or credits being applied: that item is used.
+    const usage = receiptId && rows.receipt?.kind === 'receipt' && !isTest ? await applyUsage(db, claimed.user_id as string, receiptId, rows.receipt) : { used: 0, asked: 0 };
+    const usedNote = usage.used ? `Marked ${usage.used} of your offers as used` : usage.asked ? 'Asked whether you used one of your offers' : null;
     const note = isTest
       ? `Connection test worked: found ${rows.opportunities.map((o) => `“${o.title}”`).join(', ') || 'the test email'} (not added to your money)`
-      : readNote({ created, duplicates, ...rows.skipped });
+      : usedNote ?? readNote({ created, duplicates, ...rows.skipped });
     if (isTest) created = rows.opportunities.length;
 
     // A card the user holds, as the email shows it (issuer, name, last 4): suggested if not added yet.
@@ -208,6 +212,47 @@ const shiftDay = (d: string, days: number) => {
 };
 
 /** Inserts a receipt, or merges it into the alert/receipt already stored for the same purchase. Returns its id. */
+/**
+ * Matches a receipt's discount lines to the user's open codes, gift cards and credits (see usage.ts):
+ * a clear match is marked used, a possible one is asked about on Home (never replacing an earlier question).
+ */
+async function applyUsage(db: SupabaseClient, userId: string, receiptId: string, row: ReceiptRow): Promise<{ used: number; asked: number }> {
+  const out = { used: 0, asked: 0 };
+  if (!row.discounts?.length) return out;
+  const { data, error } = await db
+    .from('opportunities')
+    .select('id, type, title, merchant, code, value_estimate, currency, expires_at, created_at, used_guess_receipt_id, used_guess_declined_at, inbound_messages(sent_at)')
+    .eq('user_id', userId)
+    .eq('status', 'open')
+    .in('type', ['promo', 'gift_card', 'store_credit', 'travel_credit', 'certificate'])
+    .limit(500);
+  if (error) {
+    console.warn('usage: open items', error.message);
+    return out;
+  }
+  type Loaded = Omit<OpenItem, 'seen_on'> & { created_at: string; used_guess_receipt_id: string | null; inbound_messages?: { sent_at: string | null } | null };
+  const rows = (data ?? []) as unknown as Loaded[];
+  const items: OpenItem[] = rows.map(({ inbound_messages: msg, created_at, ...o }) => ({ ...o, value_estimate: o.value_estimate === null ? null : Number(o.value_estimate), seen_on: msg?.sent_at ?? created_at }));
+  const matches = usageFrom({ merchant: row.merchant, purchase_date: row.purchase_date, currency: row.currency, discounts: row.discounts }, items);
+  for (const m of matches) {
+    if (m.how === 'used') {
+      const { data: done, error: e } = await db.rpc('_mark_used_from_receipt', { p_opportunity_id: m.id, p_amount: m.amount, p_receipt_id: receiptId, p_line: m.line });
+      if (e) console.warn('usage: mark used', e.message);
+      else if (done) out.used += 1;
+    } else {
+      const { data: asked, error: e } = await db
+        .from('opportunities')
+        .update({ used_guess_receipt_id: receiptId, used_guess_amount: m.amount, used_guess_line: m.line })
+        .eq('id', m.id)
+        .is('used_guess_receipt_id', null)
+        .select('id');
+      if (e) console.warn('usage: ask', e.message);
+      else if (asked?.length) out.asked += 1;
+    }
+  }
+  return out;
+}
+
 const RECEIPT_FIELDS = 'id, kind, pending, merchant, total, currency, purchase_date, last_four, order_number';
 const asExisting = (c: ExistingReceipt & { total: number | string | null }): ExistingReceipt => ({ ...c, total: c.total === null ? null : Number(c.total) });
 

@@ -30,7 +30,11 @@ const fakeModel: ModelCall = async (input) => {
   }
   const base = { receipt: null, offers: [] as unknown[] };
   let out: Record<string, unknown>;
-  if (input.includes('SPRING20')) {
+  if (input.includes('PROMO SPRING20 APPLIED')) {
+    out = { ...base, kind: 'receipt', merchant: 'Acme Outfitters', summary: 'Order from Acme, $81.59', receipt: { total: 81.59, currency: 'USD', purchase_type: 'clothing', travel_date: null, purchase_date: new Date().toISOString().slice(0, 10), card_last_four: null, order_number: 'A-77', return_by: null, return_window_days: null, items: [], discounts: [{ description: 'Promo SPRING20', code: 'SPRING20', amount: 20.4 }] } };
+  } else if (input.includes('PROMO MART RECEIPT')) {
+    out = { ...base, kind: 'receipt', merchant: 'Promo Mart', summary: 'Order from Promo Mart, $40', receipt: { total: 40, currency: 'USD', purchase_type: 'other', travel_date: null, purchase_date: new Date().toISOString().slice(0, 10), card_last_four: null, order_number: 'PM-1', return_by: null, return_window_days: null, items: [], discounts: [{ description: 'Promotion', code: null, amount: 5 }, { description: 'Member savings', code: null, amount: 2 }] } };
+  } else if (input.includes('SPRING20')) {
     out = { ...base, kind: 'promo', merchant: 'Acme Outfitters', summary: '20% off code from Acme', interest: 'fashion', offers: [{ type: 'promo', currency: null, title: '20% off your next order', amount: null, percent_off: 20, code: 'SPRING20', expires_on: '2099-04-30', min_spend: null, points: null, claim_url: null, details: null }] };
   } else if (input.includes('Thanks for your order')) {
     out = { ...base, kind: 'receipt', merchant: 'Acme Outfitters', summary: 'Order from Acme, $101.99', receipt: { total: 101.99, currency: 'USD', purchase_type: 'electronics', travel_date: null, purchase_date: new Date().toISOString().slice(0, 10), card_last_four: '4242', order_number: 'A-1', return_by: null, return_window_days: 30, items: [{ name: 'Trail Runner Shoes', price: 89.99, quantity: 1 }] } };
@@ -231,6 +235,30 @@ Deno.test('inbox pipeline end to end', async () => {
     await post(ingest, { reread: true, messages: [{ id: 'g-2', from: 'Acme <orders@acme.com>', subject: 'Your order', date: '2026-04-05', text: RECEIPT_TEXT }] }, token);
     await post(ingest, { messages: [{ id: 'g-ship', from: 'Acme <orders@acme.com>', subject: 'Shipped: Trail Runner Shoes', date: '2026-04-06', text: RECEIPT_TEXT }] }, token);
     assert((await acmeReceipts()) === 1, `still one receipt after a re-read and a shipped email: ${await acmeReceipts()}`);
+
+    // Used, from receipts: the receipt shows the SPRING20 code PerkScan found → marked used by itself.
+    const openSpring = ((await admin.from('opportunities').select('id').eq('user_id', alice.id).eq('code', 'SPRING20').eq('status', 'open')).data ?? []).map((o) => o.id as string);
+    assert(openSpring.length > 0, 'an open SPRING20 to use');
+    await post(ingest, { messages: [{ id: 'g-used', from: 'Acme <orders@acme.com>', subject: 'Your Acme receipt', date: new Date().toISOString(), text: 'PROMO SPRING20 APPLIED' }] }, token);
+    const springRec = await admin.from('recovered').select('opportunity_id, amount, marked_by, source_receipt_id').in('opportunity_id', openSpring);
+    assert(springRec.data?.length === 1, `one SPRING20 marked used by the receipt: ${JSON.stringify(springRec.data)}`);
+    const rec = springRec.data[0]!;
+    assert(Number(rec.amount) === 20.4 && rec.marked_by === 'auto' && !!rec.source_receipt_id, `saved what the receipt shows: ${JSON.stringify(rec)}`);
+    const spring = await admin.from('opportunities').select('status').eq('id', rec.opportunity_id).single();
+    assert(spring.data?.status === 'claimed', `and it's no longer to use: ${JSON.stringify(spring.data)}`);
+
+    // A discount with no code at a store with one open offer → asked, not assumed. Membership savings are ignored.
+    const mart = await admin.from('opportunities').insert({ user_id: alice.id, type: 'promo', title: '$5 off your next order', merchant: 'Promo Mart', status: 'open', dedupe_key: `promo:promomart:${Date.now()}`, currency: 'USD' }).select('id').single();
+    await post(ingest, { messages: [{ id: 'g-mart', from: 'Promo Mart <orders@promomart.example>', subject: 'Your receipt', date: new Date().toISOString(), text: 'PROMO MART RECEIPT' }] }, token);
+    const asked = await alice.client.from('opportunities').select('status, used_guess_receipt_id, used_guess_amount, used_guess_line').eq('id', mart.data!.id).single();
+    assert(asked.data?.status === 'open' && !!asked.data.used_guess_receipt_id && Number(asked.data.used_guess_amount) === 5 && asked.data.used_guess_line === 'Promotion', `asked, not assumed: ${JSON.stringify(asked.data)}`);
+    const yes = await alice.client.rpc('answer_used_guess', { p_opportunity_id: mart.data!.id, p_used: true });
+    assert(!yes.error && yes.data?.status === 'claimed', `yes marks it used: ${yes.error?.message}`);
+    const martRec = await alice.client.from('recovered').select('amount, marked_by').eq('opportunity_id', mart.data!.id).single();
+    assert(Number(martRec.data?.amount) === 5 && martRec.data?.marked_by === 'user', `saved $5: ${JSON.stringify(martRec.data)}`);
+    // Only the service role can mark used from a receipt.
+    const sneaky = await alice.client.rpc('_mark_used_from_receipt', { p_opportunity_id: mart.data!.id, p_amount: 999, p_receipt_id: mart.data!.id, p_line: 'x' });
+    assert(!!sneaky.error, 'not callable from the app');
 
     // A store the user hid: its marketing isn't stored or read, but its receipts are.
     await alice.client.from('store_mutes').insert({ store_key: 'promoshop', name: 'Promo Shop' });

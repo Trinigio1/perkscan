@@ -7,11 +7,12 @@ import { followUpQuestion, type ClaimTarget } from '@/domain/claimTarget';
 import { mailtoLink, type ClaimHelp } from '@/domain/claims';
 import { formatMoney, relativeDays } from '@/domain/format';
 import type { Opportunity } from '@/domain/types';
+import { orderPhrase, type UsedQuestion } from '@/domain/usedFromReceipts';
 import { track } from '@/lib/analytics';
 import { cancelClaim, snoozeClaimCheck, startClaim } from '@/lib/claims';
 import { markCredit } from '@/lib/credits';
 import { useData } from '@/lib/data';
-import { markOpportunity } from '@/lib/inbox';
+import { answerUsedGuess, markOpportunity } from '@/lib/inbox';
 import { useToast } from '@/lib/toast';
 import { radius, space, useColors } from '@/theme';
 import { Button, IconBubble, Panel, Row, T } from './ui';
@@ -247,6 +248,50 @@ export function ArrivalCheck({ opp }: { opp: Opportunity }) {
         )}
       </Row>
       <T variant="caption" faint style={{ color: c.textFaint }}>Only money you actually got counts toward your total.</T>
+    </Panel>
+  );
+}
+
+/**
+ * "Did you use 25% off on your Oct 20 Uber Eats order?": a receipt showed a discount that might be this
+ * offer. Yes adds what it saved to Used; No stops asking about it.
+ */
+export function UsedCheck({ question: q }: { question: UsedQuestion }) {
+  const toast = useToast();
+  const { refresh } = useData();
+  const [busy, setBusy] = useState<'yes' | 'no' | null>(null);
+  const answer = async (used: boolean) => {
+    setBusy(used ? 'yes' : 'no');
+    try {
+      await answerUsedGuess(q.opp.id, used);
+      track('used_from_receipt', { result: used ? 'yes' : 'no' });
+      await refresh();
+      const saved = q.amount ?? q.opp.value_estimate;
+      toast(used ? (saved !== null ? `Nice — ${formatMoney(saved, { currency: q.opp.currency })} saved` : 'Marked as used') : 'Got it, kept it to use', { tone: used ? 'success' : 'info' });
+    } catch (e) {
+      toast((e as Error).message, { tone: 'info' });
+      setBusy(null);
+    }
+  };
+  return (
+    <Panel style={{ gap: space.sm }}>
+      <Row gap={space.md} style={{ alignItems: 'flex-start' }}>
+        <IconBubble icon="receipt" tone="green" size={36} />
+        <View style={{ flex: 1, gap: 2 }}>
+          <T variant="subheading">Did you use this {orderPhrase(q.receipt)}?</T>
+          <T variant="caption" muted numberOfLines={2}>{q.opp.title}</T>
+          {q.opp.used_guess_line || q.amount !== null ? (
+            <T variant="caption" muted numberOfLines={1}>
+              The receipt shows: {q.opp.used_guess_line ?? 'a discount'}
+              {q.amount !== null ? ` −${formatMoney(q.amount, { currency: q.opp.currency })}` : ''}
+            </T>
+          ) : null}
+        </View>
+      </Row>
+      <Row gap={space.sm} style={{ flexWrap: 'wrap' }}>
+        <Button title="Yes, I used it" size="sm" icon="checkmark" loading={busy === 'yes'} disabled={!!busy} onPress={() => answer(true)} />
+        <Button title="No" size="sm" kind="secondary" loading={busy === 'no'} disabled={!!busy} onPress={() => answer(false)} />
+      </Row>
     </Panel>
   );
 }
