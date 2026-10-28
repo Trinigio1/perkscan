@@ -1,5 +1,5 @@
 /** Change this whenever SYSTEM_PROMPT or the parsing rules change, so accuracy can be compared per version. */
-export const PROMPT_VERSION = '2026-11-11';
+export const PROMPT_VERSION = '2026-11-12';
 
 // Instructions for the extraction model. Kept stable (no dates or ids) so the
 // request prefix is identical across emails.
@@ -27,6 +27,7 @@ Rules:
 - Travel credits: a credit or voucher already in the reader's account for future travel (airline "eCredit", "future flight credit", "trip credit", "travel bank" funds, a travel voucher, a cruise or hotel credit) is type "travel_credit": amount and currency as stated, the use-by date in expires_on, any credit/voucher number in code (letters, digits and dashes only), and after_cancellation true only if the email says it was issued because the airline cancelled or significantly changed the flight. A cash refund the reader can still ask for is "refund", not "travel_credit".
 - Certificates: a free night award, companion certificate or fare, upgrade certificate or similar reward with a use-by date is type "certificate": title like "Free night award (up to 35,000 points)", amount null unless a dollar value is stated, expires_on the use-by date.
 - card: when the email is from a bank or card issuer about the reader's own credit or charge card (statement ready, payment due or received, autopay, card alert, card benefits or rewards summary, new card on the way), fill issuer, product (the card's name as written, e.g. "Freedom Unlimited", "Platinum Card"; null if not named) and last_four (only the 4 digits shown). Otherwise card is null. Never a full card or account number. Store marketing that only offers a card the reader may not have is not a card.
+- Where an offer works: delivery apps and big stores often limit codes. Put the named restaurants or stores in valid_at ("ALDI", "Shake Shack, Chipotle"), a kind of store ("Grocery and convenience stores"), or "Participating restaurants" when the email says only some qualify. first_order_only is true for "first order", "new customers" or "first grocery order" offers.
 - Minimum spend: "Spend $75, save $15", "$5 off orders over $20": put the minimum in min_spend.
 - Currency: an offer stated in another currency ("60 EUR off", "€30 off") uses that currency, not the email's usual one.
 - Free trials: title like "Trial ends — cancel to avoid charge", amount = the price that will be charged after the trial if stated. If the email gives the trial's length instead of its end date ("your 7-day free trial has started", "free for 1 month"), expires_on = the email's Date plus that length.

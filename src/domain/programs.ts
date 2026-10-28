@@ -1,6 +1,6 @@
 // "Hidden money": the programs catalog, filtered to where you live and grouped by what to do.
 
-export type ProgramKind = 'loyalty' | 'price_adjust' | 'unclaimed' | 'library' | 'refund_rule' | 'deadline_rule';
+export type ProgramKind = 'loyalty' | 'price_adjust' | 'unclaimed' | 'library' | 'refund_rule' | 'deadline_rule' | 'free_perk';
 
 export interface Program {
   id: string;
@@ -13,6 +13,11 @@ export interface Program {
   url: string;
   merchants: string[];
   window_days: number | null;
+  /** Interest ids it matters for. */
+  interests: string[];
+  /** Card issuers whose cardholders get it; empty = anyone. */
+  issuers: string[];
+  student_only: boolean;
   status: 'active' | 'TODO_VERIFY';
   last_verified: string | null;
   sort_order: number;

@@ -21,6 +21,10 @@ export type PurchaseType = (typeof PURCHASE_TYPES)[number];
 
 const CURRENCY = z.string().nullable().describe('ISO currency code of the amounts, e.g. USD or TTD');
 
+const WHERE_HELP =
+  'Where the offer can be used, if the email limits it: named restaurants or stores ("ALDI", "Shake Shack, Chipotle"), a kind of store ("Grocery and convenience stores"), or "Participating restaurants" when it says only some qualify. Null if it works everywhere or the email doesn\'t say';
+const FIRST_ORDER_HELP = 'True if only for a first order or new customers, false if the email says any order, null if not stated';
+
 export const OfferSchema = z.object({
   type: z.enum(OFFER_TYPES),
   currency: CURRENCY,
@@ -38,6 +42,12 @@ export const OfferSchema = z.object({
     .nullable()
     .optional() // replies stored before travel credits were read leave it out
     .describe('travel_credit only: true if the email says the credit was issued because the airline cancelled or significantly changed the flight'),
+  valid_at: z
+    .string()
+    .nullable()
+    .optional() // replies stored before this was read leave it out
+    .describe(WHERE_HELP),
+  first_order_only: z.boolean().nullable().optional().describe(FIRST_ORDER_HELP),
 });
 
 /** A payment card the email shows the reader holds: a statement, payment notice, card alert or benefits email. */
@@ -126,6 +136,8 @@ export const ModelOutputSchema = ParsedEmailSchema.extend({
     .array(
       OfferSchema.extend({
         after_cancellation: z.boolean().nullable().describe('travel_credit only: true if the email says the credit was issued because the airline cancelled or significantly changed the flight'),
+        valid_at: z.string().nullable().describe(WHERE_HELP),
+        first_order_only: z.boolean().nullable().describe(FIRST_ORDER_HELP),
       }),
     )
     .describe('Every distinct offer, credit, code, trial or settlement in the email; empty if none'),
@@ -221,6 +233,8 @@ export function normalizeParsed(p: ParsedEmail): ParsedEmail {
       claim_url: o.claim_url && /^https:\/\/[^\s]+$/i.test(o.claim_url) ? o.claim_url.slice(0, 300) : null,
       details: text(o.details, 200),
       after_cancellation: o.type === 'travel_credit' ? o.after_cancellation ?? null : null,
+      valid_at: text(o.valid_at ?? null, 120),
+      first_order_only: typeof o.first_order_only === 'boolean' ? o.first_order_only : null,
     })),
     card: normalizeCard(p.card ?? null),
     interest: p.interest && (INTEREST_IDS as readonly string[]).includes(p.interest) ? p.interest : null,

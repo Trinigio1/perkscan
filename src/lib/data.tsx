@@ -48,6 +48,8 @@ export interface AppData {
   dealFeedback: DealFeedback[];
   /** Cards the user's email shows they hold (not hidden with "Not mine"). */
   cardSightings: CardSighting[];
+  /** "I have it" / "Not for me" on suggested perks, by program id. */
+  perkFeedback: { program_id: string; action: 'have' | 'dismissed' }[];
   /** Stores the user hid: their offers and deals aren't shown (receipts still count). */
   storeMutes: { store_key: string; name: string | null }[];
   /** What the reader saw in each email lately, for memberships the user hasn't added. Never the email text. */
@@ -72,7 +74,10 @@ interface DataState {
   refresh: () => Promise<RefreshResult>;
 }
 
-const empty: AppData = { profile: null, cards: [], benefits: [], userCards: [], opportunities: [], recovered: [], usage: [], receipts: [], studentOffers: [], studentClaims: [], school: null, myPerks: [], programs: [], senderDomains: [], schoolHints: [], events: [], deals: [], dealFeedback: [], cardSightings: [], memberEmails: [], storeMutes: [], scout: { sources: 0, lastChecked: null }, storeStats: [], storePairs: [] };
+// Before the free-perks columns exist (database not updated yet), the catalog still loads without them.
+const OLD_PROGRAM_COLUMNS = 'id, kind, name, provider, countries, summary, how_to, url, merchants, window_days, status, last_verified, sort_order';
+
+const empty: AppData = { profile: null, cards: [], benefits: [], userCards: [], opportunities: [], recovered: [], usage: [], receipts: [], studentOffers: [], studentClaims: [], school: null, myPerks: [], programs: [], senderDomains: [], schoolHints: [], events: [], deals: [], dealFeedback: [], cardSightings: [], perkFeedback: [], memberEmails: [], storeMutes: [], scout: { sources: 0, lastChecked: null }, storeStats: [], storePairs: [] };
 const DataContext = createContext<DataState>({ data: empty, loading: true, error: null, refresh: async () => ({ data: null, error: null }) });
 
 function must<T>(what: string, res: { data: T | null; error: { message: string; code?: string } | null }): T {
@@ -96,7 +101,7 @@ async function load(userId: string): Promise<AppData> {
   const since = new Date(Date.now() - 180 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
   const yearAgo = new Date(Date.now() - 365 * 24 * 60 * 60 * 1000).toISOString();
   const today = new Date().toISOString().slice(0, 10);
-  const [profile, cards, benefits, userCards, opportunities, recovered, usage, receipts, studentOffers, studentClaims, myPerks, programs, senders, events, dealFeedback, cardSightings, mutes] = await Promise.all([
+  const [profile, cards, benefits, userCards, opportunities, recovered, usage, receipts, studentOffers, studentClaims, myPerks, programs, senders, events, dealFeedback, cardSightings, mutes, perkFeedback] = await Promise.all([
     supabase
       .from('profiles')
       .select('*')
@@ -117,7 +122,7 @@ async function load(userId: string): Promise<AppData> {
     supabase.from('student_offers').select('*').order('sort_order'),
     supabase.from('student_offer_claims').select('offer_id'),
     supabase.from('user_perks').select('id, university_id, title, details, url, suggest, created_at').order('created_at'),
-    supabase.from('perk_programs').select('id, kind, name, provider, countries, summary, how_to, url, merchants, window_days, status, last_verified, sort_order').order('sort_order'),
+    supabase.from('perk_programs').select(`${OLD_PROGRAM_COLUMNS}, interests, issuers, student_only`).order('sort_order'),
     supabase.from('inbound_messages').select('from_domain, summary, membership_seen, received_at').not('from_domain', 'is', null).gte('received_at', yearAgo).limit(1000),
     supabase
       .from('local_events')
@@ -127,6 +132,7 @@ async function load(userId: string): Promise<AppData> {
     supabase.from('deal_feedback').select('deal_id, action'),
     supabase.from('card_sightings').select('id, issuer, product, last_four, times_seen, last_seen').is('dismissed_at', null).order('last_seen', { ascending: false }).limit(50),
     supabase.from('store_mutes').select('store_key, name'),
+    supabase.from('perk_feedback').select('program_id, action'),
   ]);
 
   // numeric columns arrive as numbers from PostgREST; normalize defensively.
@@ -214,7 +220,9 @@ async function load(userId: string): Promise<AppData> {
     // Optional like the rest of Student mode: missing table (database not updated) just means none.
     myPerks: (myPerks.data ?? []) as UserPerk[],
     // Optional too: a database without the catalog yet just means no hidden-money suggestions.
-    programs: (programs.data ?? []) as Program[],
+    programs: ((programs.error ? (await supabase.from('perk_programs').select(OLD_PROGRAM_COLUMNS).order('sort_order')).data : programs.data) ?? []).map(
+      (p) => ({ interests: [], issuers: [], student_only: false, ...p }) as Program,
+    ),
     senderDomains,
     schoolHints,
     // Optional: a database without the events table yet just means nothing coming up.
@@ -226,6 +234,8 @@ async function load(userId: string): Promise<AppData> {
     cardSightings: (cardSightings.data ?? []) as CardSighting[],
     // Optional: a database without this table yet just means nothing hidden.
     storeMutes: (mutes.data ?? []) as AppData['storeMutes'],
+    // Optional: a database without this table yet just means no feedback.
+    perkFeedback: (perkFeedback.data ?? []) as AppData['perkFeedback'],
     memberEmails: sentRows.map((m) => ({ membership: m.membership_seen ?? null, summary: m.summary, date: m.received_at })),
     scout: { sources: (sources.data ?? []).length, lastChecked: checked[checked.length - 1] ?? null },
     // Optional: a database without these yet just means no "people like you".

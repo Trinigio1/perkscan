@@ -2,7 +2,7 @@
 
 export const EXPORT_TABLES = [
   'profiles', 'user_cards', 'benefit_usage', 'opportunities', 'recovered', 'receipts', 'inbound_messages',
-  'ingest_tokens', 'parse_feedback', 'student_offer_claims', 'user_perks', 'deal_feedback', 'deal_sightings', 'card_sightings', 'store_mutes',
+  'ingest_tokens', 'parse_feedback', 'student_offer_claims', 'user_perks', 'deal_feedback', 'deal_sightings', 'card_sightings', 'store_mutes', 'perk_feedback',
 ] as const;
 export type ExportTable = (typeof EXPORT_TABLES)[number];
 

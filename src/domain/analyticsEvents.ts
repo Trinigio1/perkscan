@@ -23,6 +23,8 @@ export const EVENTS = {
   claim_checked: { result: ['arrived', 'not_yet', 'didnt_work'] },
   // "Did you use this on your Oct 20 order?" answered (a receipt showed a discount that might be the offer).
   used_from_receipt: { result: ['yes', 'no'] },
+  // Hidden value in Deals: a perk opened / marked "I have it" / "Not for me".
+  perk_for_you: { action: ['open', 'have', 'dismissed', 'undo'], group: ['yours', 'claim'] },
   deal_feedback: { action: ['saved', 'dismissed', 'didnt_work'] },
   interests_saved: { count: 'small_int' },
   gmail_token_created: {},

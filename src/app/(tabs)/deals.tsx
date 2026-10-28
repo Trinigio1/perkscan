@@ -4,16 +4,20 @@ import { useEffect, useMemo, useState } from 'react';
 import { Pressable, RefreshControl, ScrollView, View } from 'react-native';
 import { EventRow, SuggestionRow } from '@/components/ComingUp';
 import { DealRow } from '@/components/DealRow';
+import { PerkForYouRow } from '@/components/ForYou';
 import { OpportunityRow } from '@/components/OfferRow';
 import { Button, Chip, Empty, IconBubble, Panel, Row, Screen, SectionHeader, T } from '@/components/ui';
 import { countryByCode } from '@/domain/countries';
 import { INTERESTS, groupByInterest, interestLabel, type RankedDeal } from '@/domain/deals';
 import { emailOffersFor } from '@/domain/interests';
+import { openStudentOffers } from '@/domain/suggestions';
+import { tasteLine } from '@/domain/taste';
 import { track } from '@/lib/analytics';
 import { useAuth } from '@/lib/auth';
 import { updateProfile } from '@/lib/cards';
 import { myEvents, useData, useLookups } from '@/lib/data';
 import { useDeals } from '@/lib/deals';
+import { usePerksForYou } from '@/lib/forYou';
 import { useDismissed, useSuggestions } from '@/lib/suggestions';
 import { useToast } from '@/lib/toast';
 import { space, useColors } from '@/theme';
@@ -35,7 +39,12 @@ export default function Deals() {
   const toast = useToast();
   const { session } = useAuth();
   const { data, refresh } = useData();
-  const { forYou, popular, picked, suggested } = useDeals();
+  const { forYou, popular, picked, suggested, taste } = useDeals();
+  // Hidden value: what your cards, memberships, school and stores already give you.
+  const perks = usePerksForYou();
+  const [allPerks, setAllPerks] = useState(false);
+  const learned = tasteLine(taste);
+  const studentPerks = data.profile?.is_student || data.school ? openStudentOffers({ studentOffers: data.studentOffers, studentClaims: data.studentClaims, school: data.school, country: data.profile?.country ?? null }).length : 0;
   const { list: forYouTips, hide } = useSuggestions();
   const [dismissed, dismiss, dismissedLoaded] = useDismissed();
   const [refreshing, setRefreshing] = useState(false);
@@ -52,8 +61,8 @@ export default function Deals() {
     if (!focus) return null;
     const seen = new Set<string>();
     const deals = [...forYou, ...popular].filter((d) => d.tags.includes(focus as RankedDeal['tags'][number]) && !seen.has(d.deal.id) && seen.add(d.deal.id));
-    return { deals, email: emailFor.get(focus) ?? emailOffersFor(focus, data.opportunities, now) };
-  }, [focus, forYou, popular, emailFor, data.opportunities, now]);
+    return { deals, email: emailFor.get(focus) ?? emailOffersFor(focus, data.opportunities, now), perks: perks.filter((p) => p.interest === focus) };
+  }, [focus, forYou, popular, emailFor, data.opportunities, now, perks]);
   const countFor = (i: string) => (groups.find((g) => g.interest === i)?.deals.length ?? 0) + (emailFor.get(i)?.length ?? 0);
 
   useEffect(() => {
@@ -109,6 +118,15 @@ export default function Deals() {
       ))}
     </Panel>
   );
+  const perkList = (items: typeof perks) => (
+    <Panel style={{ paddingVertical: space.xs }}>
+      {items.map((p, i) => (
+        <View key={p.key} style={i > 0 ? { borderTopWidth: 1, borderTopColor: c.border } : undefined}>
+          <PerkForYouRow item={p} />
+        </View>
+      ))}
+    </Panel>
+  );
   const interestIcon = (i: string) => INTERESTS.find((x) => x.id === i)?.icon;
   const comingUp = [...events.slice(0, 3).map((e) => ({ kind: 'event' as const, e })), ...forYouTips.slice(0, 2).map((s) => ({ kind: 'tip' as const, s }))];
 
@@ -123,6 +141,34 @@ export default function Deals() {
           <T variant="label" color={c.accent}>{picked.length ? 'Edit' : 'Choose'}</T>
         </Row>
       </Pressable>
+
+      {learned ? (
+        <Row gap={space.sm}>
+          <Ionicons name="trending-up" size={14} color={c.textMuted} />
+          <T variant="caption" muted style={{ flex: 1 }}>Learned from what you save and use: {learned}</T>
+        </Row>
+      ) : null}
+
+      {/* Hidden value: perks you already have access to through your cards, memberships, school and stores. */}
+      {!focused && (perks.length || studentPerks) ? (
+        <View style={{ gap: space.sm }}>
+          <SectionHeader title="Already yours" action={perks.length > 4 ? (allPerks ? 'Show less' : `See all ${perks.length}`) : undefined} onAction={() => setAllPerks(!allPerks)} />
+          <T variant="caption" muted>Perks you have access to through your cards, memberships, school and the stores you use. Most people never claim them.</T>
+          {studentPerks ? (
+            <Panel onPress={() => router.push('/student')} style={{ paddingVertical: space.md }}>
+              <Row gap={space.md}>
+                <IconBubble icon="school" tone="purple" size={36} />
+                <View style={{ flex: 1, gap: 2 }}>
+                  <T variant="subheading">{studentPerks} student perk{studentPerks === 1 ? '' : 's'} with your school email</T>
+                  <T variant="caption" muted numberOfLines={1}>{data.school?.name ?? 'Student prices and free software'}</T>
+                </View>
+                <Ionicons name="chevron-forward" size={18} color={c.textFaint} />
+              </Row>
+            </Panel>
+          ) : null}
+          {perks.length ? perkList(allPerks ? perks : perks.slice(0, 4)) : null}
+        </View>
+      ) : null}
 
       {!country ? (
         <Empty icon="location" title="Where do you live?" body="Deals depend on where you shop." action={<Button title="Set country" onPress={() => router.push('/country')} />} />
@@ -146,13 +192,19 @@ export default function Deals() {
               {emailList(focused.email)}
             </View>
           ) : null}
+          {focused.perks.length ? (
+            <View style={{ gap: space.sm }}>
+              <T variant="heading">Already yours</T>
+              {perkList(focused.perks)}
+            </View>
+          ) : null}
           {focused.deals.length ? (
             <View style={{ gap: space.sm }}>
               <T variant="heading">Near you</T>
               {dealList(focused.deals, focus!)}
             </View>
           ) : null}
-          {!focused.deals.length && !focused.email.length ? (
+          {!focused.deals.length && !focused.email.length && !focused.perks.length ? (
             <Empty icon={interestIcon(focus!) ?? 'pricetags'} title={`Nothing for ${interestLabel(focus!).toLowerCase()} right now`} body="PerkScan checks stores near you and your email every day. New ones show up here." />
           ) : null}
         </>

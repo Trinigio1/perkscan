@@ -40,6 +40,10 @@ export interface OpportunityRow {
   min_spend: number | null;
   /** "$15 off $75": the amount off when it needs a minimum spend, so it's a discount, not money you have. */
   discount_amount: number | null;
+  /** Where it works, if the email limits it ("ALDI", "Participating restaurants"). */
+  valid_at?: string | null;
+  /** Only for a first order or new customers. */
+  first_order_only?: boolean | null;
 }
 
 export interface Rows {
@@ -155,6 +159,8 @@ function offerRow(o: Offer, merchant: string | null, currency: string, flightRef
     percent_off: o.percent_off,
     min_spend: minSpend,
     discount_amount: discount,
+    valid_at: o.valid_at ?? null,
+    first_order_only: o.first_order_only ?? null,
   };
 }
 

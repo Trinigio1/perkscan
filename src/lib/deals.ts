@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
 import { interestProfile, peopleLikeYou, rankDeals, suggestedInterests, type DealFeedback, type Interest, type InterestProfile, type RankedDeal } from '@/domain/deals';
 import { isMutedStore } from '@/domain/mutes';
+import { learnTaste, type Taste } from '@/domain/taste';
 import { storeKey } from '@/domain/deals';
 import { track } from './analytics';
 import { useData } from './data';
@@ -15,12 +16,13 @@ export async function sendDealFeedback(dealId: string, action: DealFeedback['act
 }
 
 /** Deals for the signed-in user, ranked by how well they match. */
-export function useDeals(): { forYou: RankedDeal[]; popular: RankedDeal[]; profile: InterestProfile; suggested: Interest[]; picked: string[] } {
+export function useDeals(): { forYou: RankedDeal[]; popular: RankedDeal[]; profile: InterestProfile; suggested: Interest[]; picked: string[]; taste: Taste } {
   const { data } = useData();
   return useMemo(() => {
     const picked = data.profile?.interests ?? [];
     const profile = interestProfile({ picked, receipts: data.receipts, opportunities: data.opportunities, senderDomains: data.senderDomains });
     const mutes = data.storeMutes.map((m) => m.store_key);
+    const taste = learnTaste({ dealFeedback: data.dealFeedback, deals: data.deals, opportunities: data.opportunities, perkFeedback: data.perkFeedback, programs: data.programs });
     const ranked = rankDeals(data.deals.filter((d) => !isMutedStore(storeKey(d.merchant), mutes)), {
       country: data.profile?.country ?? null,
       region: data.profile?.region ?? null,
@@ -28,7 +30,8 @@ export function useDeals(): { forYou: RankedDeal[]; popular: RankedDeal[]; profi
       profile,
       feedback: data.dealFeedback,
       likeYou: peopleLikeYou(profile, data.storeStats, data.storePairs),
+      taste,
     });
-    return { ...ranked, profile, suggested: suggestedInterests(profile), picked };
+    return { ...ranked, profile, suggested: suggestedInterests(profile), picked, taste };
   }, [data]);
 }

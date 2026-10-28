@@ -188,6 +188,8 @@ export interface DealsFor {
   feedback: DealFeedback[];
   /** From peopleLikeYou(). */
   likeYou?: Map<string, { via: string; share: number }>;
+  /** What you've shown you like and don't (learnTaste in taste.ts). */
+  taste?: { liked: [string, number][]; disliked: [string, number][] };
 }
 
 export interface RankedDeal {
@@ -255,6 +257,12 @@ export function rankDeals(deals: Deal[], who: DealsFor): { forYou: RankedDeal[];
     const spentTag = [...tags].sort((a, b) => (inferred.get(b) ?? 0) - (inferred.get(a) ?? 0))[0];
     const spend = spentTag ? inferred.get(spentTag) ?? 0 : 0;
 
+    // Learned from what you save, use and hide.
+    const liked = new Map(who.taste?.liked ?? []);
+    const disliked = new Map(who.taste?.disliked ?? []);
+    const likedTag = tags.find((t) => liked.has(t));
+    const dislikedTag = tags.find((t) => disliked.has(t) && !liked.has(t));
+
     let match = 0;
     let why: string | null = null;
     if (shop) {
@@ -273,7 +281,12 @@ export function rankDeals(deals: Deal[], who: DealsFor): { forYou: RankedDeal[];
       match += Math.min(15, spend * 5);
       why ??= `You spend on ${interestLabel(spentTag!).toLowerCase()}`;
     }
+    if (likedTag) {
+      match += Math.min(20, liked.get(likedTag)! * 6);
+      why ??= `Like ${interestLabel(likedTag).toLowerCase()} deals you saved or used`;
+    }
     let penalty = 0;
+    if (dislikedTag) penalty += Math.min(25, -disliked.get(dislikedTag)! * 10);
     if (followed) penalty += 15;
     if (dismissedStores.has(storeKey(d.merchant))) penalty += 20;
 

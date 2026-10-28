@@ -15,6 +15,7 @@ import { offerEstimate } from '@/domain/estimate';
 import { muteKeyOf } from '@/domain/mutes';
 import { formatMoney, lastDayLabel, relativeDays } from '@/domain/format';
 import { usedFromReceiptNote } from '@/domain/usedFromReceipts';
+import { whereItWorks } from '@/domain/whereItWorks';
 import { offerIcon, OFFER_TYPE_LABELS } from '@/domain/visuals';
 import { track } from '@/lib/analytics';
 import { muteStore } from '@/lib/cards';
@@ -40,6 +41,8 @@ export default function OfferDetail() {
   const opp = data.opportunities.find((o) => o.id === id);
   // "Spotted on your Oct 20 Uber Eats receipt", when a receipt showed it used.
   const usedNote = opp ? usedFromReceiptNote(opp.id, data.recovered, data.receipts) : null;
+  // Where the code works, or a heads-up when a delivery app's email doesn't say.
+  const where = opp ? whereItWorks(opp) : { line: null, caveat: null };
   if (!opp) {
     return (
       <Screen edges={[]}>
@@ -147,6 +150,13 @@ export default function OfferDetail() {
           </T>
         ) : null}
         {opp.description ? <T muted center>{opp.description}</T> : null}
+        {where.line ? (
+          <Row gap={6} style={{ justifyContent: 'center' }}>
+            <Ionicons name="location-outline" size={14} color={c.warn} />
+            <T variant="label" color={c.warn}>{where.line}</T>
+          </Row>
+        ) : null}
+        {where.caveat ? <T variant="caption" muted center>{where.caveat}</T> : null}
         {opp.code ? (
           <Pressable
             onPress={async () => {

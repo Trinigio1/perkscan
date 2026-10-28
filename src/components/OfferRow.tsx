@@ -6,6 +6,7 @@ import { offerEstimate } from '@/domain/estimate';
 import { isInAppDeal } from '@/domain/inApp';
 import { formatMoney, lastDayLabel, relativeDays } from '@/domain/format';
 import type { CardBenefit, Opportunity } from '@/domain/types';
+import { whereItWorks } from '@/domain/whereItWorks';
 import { offerIcon, OFFER_TYPE_LABELS } from '@/domain/visuals';
 import { useData, useLookups } from '@/lib/data';
 import { space, useColors } from '@/theme';
@@ -26,6 +27,8 @@ export function OfferRow({ opp, now, note }: { opp: Opportunity; now: Date; note
   const { icon, tone } = offerIcon(opp.type);
   const expires = opp.expires_at ? new Date(opp.expires_at) : null;
   const done = opp.status === 'claimed';
+  // "Only at ALDI · first order only": shown before you try the code.
+  const where = whereItWorks(opp);
   const missed = opp.status === 'expired' || (opp.status === 'open' && !!expires && expires <= now);
   const soon = !done && !missed && !!expires && expires.getTime() - now.getTime() <= 7 * 86_400_000;
 
@@ -66,6 +69,7 @@ export function OfferRow({ opp, now, note }: { opp: Opportunity; now: Date; note
         <View style={{ flex: 1, gap: 2 }}>
           <T variant="subheading" numberOfLines={2}>{opp.title}</T>
           {opp.merchant ? <T variant="caption" muted numberOfLines={1}>{opp.merchant}</T> : null}
+          {where.line && !done ? <T variant="caption" color={c.warn} numberOfLines={1}>{where.line}</T> : null}
           <T variant="caption" color={statusColor} numberOfLines={1}>{status}</T>
         </View>
         <View style={{ alignItems: 'flex-end', gap: 4, maxWidth: 110 }}>

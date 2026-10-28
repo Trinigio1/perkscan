@@ -123,6 +123,10 @@ export interface Opportunity {
   min_spend?: number | null;
   /** "$15 off $75": the amount off when it needs a minimum spend: a discount, not money in hand. */
   discount_amount?: number | null;
+  /** Where it works, if the email limits it ("ALDI", "Participating restaurants"). */
+  valid_at?: string | null;
+  /** Only for a first order or new customers. */
+  first_order_only?: boolean | null;
   /** A receipt showed a discount that might be this: PerkScan asks "Did you use it?". */
   used_guess_receipt_id?: string | null;
   used_guess_amount?: number | null;
