@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import { useEffect } from "react";
 import { Appearance, useColorScheme } from "react-native";
 import {
   StatusBar as ExpoStatusBar,
@@ -38,17 +38,17 @@ function styleToBarColor(
   return resolved === "light" ? "#FFFFFF" : "#000000";
 }
 
-export const StatusBar = React.forwardRef<any, StatusBarProps>(
-  function StatusBar({ style = "auto", ...props }, ref) {
-    const colorScheme = useColorScheme();
+// expo-status-bar 58 (SDK 58) takes no ref and dropped the background-color, translucent and
+// network-indicator setters (edge-to-edge made them meaningless), so only what it still has is wrapped.
+export function StatusBar({ style = "auto", ...props }: StatusBarProps) {
+  const colorScheme = useColorScheme();
 
-    useEffect(() => {
-      postColorToParent(styleToBarColor(style, colorScheme));
-    }, [style, colorScheme]);
+  useEffect(() => {
+    postColorToParent(styleToBarColor(style, colorScheme));
+  }, [style, colorScheme]);
 
-    return <ExpoStatusBar ref={ref} style={style} {...props} />;
-  }
-);
+  return <ExpoStatusBar style={style} {...props} />;
+}
 
 export const setStatusBarStyle = (style: StatusBarStyle, animated?: boolean) =>
   ExpoSB.setStatusBarStyle(style, animated);
@@ -57,16 +57,5 @@ export const setStatusBarHidden = (
   hidden: boolean,
   animation?: StatusBarAnimation
 ) => ExpoSB.setStatusBarHidden(hidden, animation);
-
-export const setStatusBarBackgroundColor = (
-  backgroundColor: string,
-  animated?: boolean
-) => ExpoSB.setStatusBarBackgroundColor(backgroundColor as any, animated);
-
-export const setStatusBarNetworkActivityIndicatorVisible = (visible: boolean) =>
-  ExpoSB.setStatusBarNetworkActivityIndicatorVisible(visible);
-
-export const setStatusBarTranslucent = (translucent: boolean) =>
-  ExpoSB.setStatusBarTranslucent(translucent);
 
 export type { StatusBarStyle, StatusBarAnimation, StatusBarProps };
