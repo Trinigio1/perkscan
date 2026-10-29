@@ -91,12 +91,21 @@ export default function ConnectBank() {
         </Panel>
       ))}
 
-      {error ? <ErrorNote message={error} /> : null}
+      {/* Before Plaid's keys are set on the server, say so plainly and offer email instead. */}
+      {error && /set up/i.test(error) ? (
+        <Panel style={{ gap: space.sm }}>
+          <T variant="subheading">Bank connection is coming soon</T>
+          <T variant="caption" muted>It isn’t switched on yet. Email works now: receipts, card alerts, codes and refunds.</T>
+          <Button title="Connect Gmail" icon="mail" onPress={() => router.push('/connect-gmail')} />
+        </Panel>
+      ) : error ? (
+        <ErrorNote message={error} />
+      ) : null}
       <View style={{ gap: space.xs }}>
         <Button title={list?.length ? 'Connect another bank' : 'Connect a bank'} icon="add" loading={busy === 'connect'} disabled={!!busy} onPress={connect} />
         <T variant="caption" faint center>Opens your bank’s sign-in through Plaid. PerkScan never sees your bank password.</T>
       </View>
-      {list?.length ? <Button title="See what PerkScan found" kind="secondary" icon="sparkles" onPress={() => router.push('/scan')} /> : null}
+      <Button title="See what PerkScan found" kind="secondary" icon="sparkles" onPress={() => router.push('/scan')} />
       <Button title="Use email instead" kind="ghost" onPress={() => router.push('/connect-gmail')} />
     </Screen>
   );

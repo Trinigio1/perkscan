@@ -58,7 +58,7 @@ export default function Scan() {
         <T variant="label" color={c.heroMuted}>{total > 0 ? 'Ready for you now' : 'Your first scan'}</T>
         <T variant="display" color={c.heroText}>{total > 0 ? formatMoney(total, { currency: 'USD' }) : lines.length ? `${lines.length} things found` : 'Still looking'}</T>
         <T color={c.heroText}>
-          {total > 0 ? 'Money you can still get: owed to you, credits open now, and charges you’re paying twice.' : lines.length ? 'Here’s what PerkScan found so far.' : 'Your bank is sending your purchases. This fills in within a few minutes.'}
+          {total > 0 ? 'Money you can still get: owed to you, credits open now, and charges you’re paying twice.' : lines.length ? 'Here’s what PerkScan found so far.' : 'Connect your bank or email and this fills in by itself.'}
         </T>
       </Hero>
 

@@ -41,6 +41,7 @@ const EXPLORE: { icon: IconName; label: string; href: Href }[] = [
   { icon: 'mail-open', label: 'What PerkScan read', href: '/inbox' },
   { icon: 'repeat', label: 'Subscriptions', href: '/subscriptions' },
   { icon: 'pricetags', label: 'What you pay for', href: '/paying-for' },
+  { icon: 'sparkles', label: 'What you’re missing', href: '/scan' },
   { icon: 'airplane', label: 'Card perks', href: '/perks' },
   { icon: 'card', label: 'Your cards', href: '/cards' },
   { icon: 'storefront', label: 'Before you pay', href: '/checkout' },
