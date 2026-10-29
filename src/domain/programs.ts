@@ -21,6 +21,9 @@ export interface Program {
   status: 'active' | 'TODO_VERIFY';
   last_verified: string | null;
   sort_order: number;
+  /** 'scout': found by PerkScan on the store's own site, with the page's words in `evidence`. */
+  origin?: 'catalog' | 'scout';
+  evidence?: string | null;
 }
 
 export const PROGRAM_SECTIONS: { kind: ProgramKind; title: string }[] = [

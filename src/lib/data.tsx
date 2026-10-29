@@ -126,7 +126,7 @@ async function load(userId: string): Promise<AppData> {
     supabase.from('student_offers').select('*').order('sort_order'),
     supabase.from('student_offer_claims').select('offer_id'),
     supabase.from('user_perks').select('id, university_id, title, details, url, suggest, created_at').order('created_at'),
-    supabase.from('perk_programs').select(`${OLD_PROGRAM_COLUMNS}, interests, issuers, student_only`).order('sort_order'),
+    supabase.from('perk_programs').select(`${OLD_PROGRAM_COLUMNS}, interests, issuers, student_only, origin, evidence`).order('sort_order'),
     supabase.from('inbound_messages').select('from_domain, summary, membership_seen, received_at').not('from_domain', 'is', null).gte('received_at', yearAgo).limit(1000),
     supabase
       .from('local_events')
@@ -231,8 +231,14 @@ async function load(userId: string): Promise<AppData> {
     // Optional like the rest of Student mode: missing table (database not updated) just means none.
     myPerks: (myPerks.data ?? []) as UserPerk[],
     // Optional too: a database without the catalog yet just means no hidden-money suggestions.
-    programs: ((programs.error ? (await supabase.from('perk_programs').select(OLD_PROGRAM_COLUMNS).order('sort_order')).data : programs.data) ?? []).map(
-      (p) => ({ interests: [], issuers: [], student_only: false, ...p }) as Program,
+    // Older databases: without the perk scout's columns, then without the perks-for-you ones.
+    programs: (
+      (programs.error
+        ? ((await supabase.from('perk_programs').select(`${OLD_PROGRAM_COLUMNS}, interests, issuers, student_only`).order('sort_order')).data ??
+          (await supabase.from('perk_programs').select(OLD_PROGRAM_COLUMNS).order('sort_order')).data)
+        : programs.data) ?? []
+    ).map(
+      (p) => ({ interests: [], issuers: [], student_only: false, origin: 'catalog', evidence: null, ...p }) as Program,
     ),
     senderDomains,
     schoolHints,

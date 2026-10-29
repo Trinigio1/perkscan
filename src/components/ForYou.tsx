@@ -33,6 +33,14 @@ const fromLine = (item: ForYouItem) =>
       ? `${item.from} · for cardholders`
       : `${item.from} · free`;
 
+const hostOf = (url: string | null) => {
+  try {
+    return url ? new URL(url).hostname.replace(/^www\./, "") : "the store’s site";
+  } catch {
+    return "the store’s site";
+  }
+};
+
 /** One perk for you: what it is, why it's here, and Get it / I have it / Not for me. */
 export function PerkForYouRow({ item }: { item: ForYouItem }) {
   const c = useColors();
@@ -98,6 +106,11 @@ export function PerkForYouRow({ item }: { item: ForYouItem }) {
               style={{ marginTop: 2 }}
             >
               {item.summary}
+            </T>
+          ) : null}
+          {open && item.evidence ? (
+            <T variant="caption" faint style={{ marginTop: 2 }}>
+              Found by PerkScan on {hostOf(item.url)}: “{item.evidence}”
             </T>
           ) : null}
         </View>

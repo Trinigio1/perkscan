@@ -1,19 +1,22 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { json } from '../_shared/http.ts';
 import type { ModelCall } from '../_shared/inbox/parse.ts';
+import { runPerkScout, type PerkScoutReport } from '../_shared/perkscout/run.ts';
 import { runPriceWatch, type PriceWatchReport } from '../_shared/pricewatch/run.ts';
 import { discoverStores, type DiscoverReport } from '../_shared/scout/discover.ts';
 import { runScout, type ScoutOptions } from '../_shared/scout/run.ts';
 
 // POST /functions/v1/scout   (called hourly by pg_cron, see _invoke_scout)
 // Authorization: Bearer <SCOUT_SECRET>
-// {}                         -> look up a couple of new stores, then read the sources due for a check
+// {}                         -> look up a couple of new stores, check prices and perks, then read the sources due for a check
 // { "only": ["courts_tt"] }  -> just these sources, now
 
 export interface ScoutDeps {
   db: SupabaseClient; // service role
   secret: string | null;
   model: ModelCall | null;
+  /** Reads a store's rewards page (a different question from the promotions model). */
+  perkModel?: ModelCall | null;
   options: ScoutOptions;
 }
 
@@ -59,8 +62,17 @@ export function scoutHandler(deps: ScoutDeps) {
         console.error('price watch failed', e);
       }
     }
+    // Free perk programs at stores people buy from that the catalog doesn't cover yet.
+    let perks: PerkScoutReport[] = [];
+    if (!only && deps.perkModel) {
+      try {
+        perks = await runPerkScout(deps.db, deps.perkModel, { model: deps.options.model, monthlyBudgetUsd: deps.options.monthlyBudgetUsd, fetch: deps.options.fetch });
+      } catch (e) {
+        console.error('perk scout failed', e);
+      }
+    }
     try {
-      return json({ discovered, prices, sources: await runScout(deps.db, deps.model, { ...deps.options, only }) });
+      return json({ discovered, prices, perks, sources: await runScout(deps.db, deps.model, { ...deps.options, only }) });
     } catch (e) {
       console.error('scout failed', e);
       return json({ error: 'Scout run failed' }, 500);

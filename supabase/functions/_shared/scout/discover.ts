@@ -59,8 +59,21 @@ async function getText(fetchImpl: Fetch, url: string, maxBytes: number): Promise
 
 export type FindResult = { url: string; via: 'sitemap' | 'common path' } | { url: null; reason: string };
 
-/** Looks for a store's promotions page on its own website. */
-export async function findPromoPage(domain: string, fetchImpl: Fetch = fetch): Promise<FindResult> {
+/** What kind of page to look for on a site: how to pick it from the sitemap, where else to try, and how to tell it's right. */
+export interface PageSpec {
+  best: (urls: string[], site: string) => string | null;
+  commonPaths: string[];
+  /** Words the page should use, and how many times at least. */
+  words: RegExp;
+  minWords: number;
+  /** For "no … page found". */
+  what: string;
+}
+
+const PROMO_SPEC: PageSpec = { best: bestPromoUrl, commonPaths: COMMON_PATHS, words: PROMO_WORDS, minWords: 3, what: 'promotions' };
+
+/** Looks for a page of one kind on a store's own website: its sitemap first, then common addresses. */
+export async function findSitePage(domain: string, spec: PageSpec, fetchImpl: Fetch = fetch): Promise<FindResult> {
   for (const origin of [`https://www.${domain}`, `https://${domain}`]) {
     const robots = await getText(fetchImpl, `${origin}/robots.txt`, 500_000);
     if (robots !== null && !robotsAllows(robots, '/')) return { url: null, reason: 'robots.txt disallows the site' };
@@ -81,24 +94,27 @@ export async function findPromoPage(domain: string, fetchImpl: Fetch = fetch): P
         if (sub) pages.push(...sitemapLocs(sub).pages);
       }
     }
-    const fromMap = bestPromoUrl(pages, origin);
-    if (fromMap && robotsAllows(robots ?? '', new URL(fromMap).pathname) && (await looksLikePromotions(fromMap, fetchImpl))) {
+    const fromMap = spec.best(pages, origin);
+    if (fromMap && robotsAllows(robots ?? '', new URL(fromMap).pathname) && (await looksRight(fromMap, spec, fetchImpl))) {
       return { url: fromMap, via: 'sitemap' };
     }
 
     // 2. Common addresses.
-    for (const path of COMMON_PATHS) {
+    for (const path of spec.commonPaths) {
       if (robots !== null && !robotsAllows(robots, path)) continue;
-      if (await looksLikePromotions(`${origin}${path}`, fetchImpl)) return { url: `${origin}${path}`, via: 'common path' };
+      if (await looksRight(`${origin}${path}`, spec, fetchImpl)) return { url: `${origin}${path}`, via: 'common path' };
     }
     if (robots !== null) break; // the site answered; no need to try the other origin
   }
-  return { url: null, reason: 'no promotions page found' };
+  return { url: null, reason: `no ${spec.what} page found` };
 }
 
-async function looksLikePromotions(url: string, fetchImpl: Fetch): Promise<boolean> {
+/** Looks for a store's promotions page on its own website. */
+export const findPromoPage = (domain: string, fetchImpl: Fetch = fetch): Promise<FindResult> => findSitePage(domain, PROMO_SPEC, fetchImpl);
+
+async function looksRight(url: string, spec: PageSpec, fetchImpl: Fetch): Promise<boolean> {
   const page = await readPage(url, fetchImpl);
-  return page.ok && (page.text.match(PROMO_WORDS)?.length ?? 0) >= 3;
+  return page.ok && (page.text.match(spec.words)?.length ?? 0) >= spec.minWords;
 }
 
 export interface DiscoverReport {

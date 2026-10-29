@@ -63,7 +63,8 @@
     "test:inbox": "deno test -A --config supabase/functions/deno.json supabase/tests/inbox_e2e.test.ts",
     "test:scout": "deno test -A --config supabase/functions/deno.json supabase/tests/scout_e2e.test.ts",
     "eval": "npx -y deno@2.9.6 run --allow-read=eval --allow-write=eval/results --allow-env --allow-net=api.anthropic.com --config supabase/functions/deno.json eval/run.ts",
-    "schools:us": "tsx scripts/import-us-schools.ts"
+    "schools:us": "tsx scripts/import-us-schools.ts",
+    "perks:review": "tsx scripts/review-perks.ts"
   },
   "private": true,
   "jest": {

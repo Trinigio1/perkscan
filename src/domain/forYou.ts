@@ -49,6 +49,8 @@ export interface ForYouItem {
   kind: Program['kind'] | 'card_perk';
   /** The interest it's most about, if any. */
   interest: string | null;
+  /** Found by PerkScan on the store's own site: the page's words it rests on, shown with it. */
+  evidence?: string | null;
 }
 
 const issuerWords = (s: string) => {
@@ -145,6 +147,7 @@ export function perksForYou(d: ForYouInput): ForYouItem[] {
       userCardId: null,
       kind: p.kind,
       interest: interest.id ?? p.interests[0] ?? null,
+      evidence: p.origin === 'scout' ? (p.evidence ?? null) : null,
     });
   }
 
