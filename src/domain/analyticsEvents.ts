@@ -25,6 +25,7 @@ export const EVENTS = {
   used_from_receipt: { result: ['yes', 'no'] },
   // Hidden value in Deals: a perk opened / marked "I have it" / "Not for me".
   perk_for_you: { action: ['open', 'have', 'dismissed', 'undo'], group: ['yours', 'claim'] },
+  perk_setup: { action: ['done', 'skipped', 'undo'] },
   deal_feedback: { action: ['saved', 'dismissed', 'didnt_work'] },
   interests_saved: { count: 'small_int' },
   gmail_token_created: {},

@@ -5,6 +5,7 @@ import { ArrivalCheck, UsedCheck } from '@/components/Claims';
 import { DealRow } from '@/components/DealRow';
 import { Found, NextStep, Tour } from '@/components/FirstRun';
 import { Hero } from '@/components/Hero';
+import { TurnOnPanel } from '@/components/PaidFor';
 import { MembershipNudge, PayingTwicePanel } from '@/components/PayingTwice';
 import { SpottedCardPanel, useSpottedCards } from '@/components/SpottedCards';
 import { OpportunityRow } from '@/components/OfferRow';
@@ -15,12 +16,14 @@ import { foundMoney, nextStep, toCheckCount, worthCelebrating } from '@/domain/f
 import { addToBag, formatBag, getHomeCurrency, sumBags, type MoneyBag } from '@/domain/format';
 import { nextToUse, owedToYou, setupSteps } from '@/domain/money';
 import { includedWhenYouNeedIt, includedWorth } from '@/domain/included';
+import { allSetup } from '@/domain/paidFor';
 import { scoreByCurrency } from '@/domain/score';
 import { usedQuestions } from '@/domain/usedFromReceipts';
 import { greeting } from '@/domain/visuals';
 import { useData, useLookups } from '@/lib/data';
 import { useDeals } from '@/lib/deals';
 import { useMembershipHints, useMySubscriptions } from '@/lib/memberships';
+import { usePaidFor } from '@/lib/paidFor';
 import { useRelevance } from '@/lib/relevance';
 import { openStudentOffers } from '@/domain/suggestions';
 import { useDismissed } from '@/lib/suggestions';
@@ -37,6 +40,7 @@ const EXPLORE: { icon: IconName; label: string; href: Href }[] = [
   { icon: 'search', label: 'Hidden money', href: '/hidden-money' },
   { icon: 'mail-open', label: 'What PerkScan read', href: '/inbox' },
   { icon: 'repeat', label: 'Subscriptions', href: '/subscriptions' },
+  { icon: 'pricetags', label: 'What you pay for', href: '/paying-for' },
   { icon: 'airplane', label: 'Card perks', href: '/perks' },
   { icon: 'card', label: 'Your cards', href: '/cards' },
   { icon: 'storefront', label: 'Before you pay', href: '/checkout' },
@@ -62,6 +66,9 @@ export default function Home() {
   const topDeals = (deals.forYou.length ? deals.forYou : deals.popular).slice(0, 3);
   const statusOf = useCallback((id: string) => benefitById.get(id)?.status, [benefitById]);
   const { relevanceOf } = useRelevance();
+  // Perks included in what you pay that only work once you turn them on.
+  const toTurnOn = allSetup(usePaidFor());
+  const turnOnKey = `turn-on:${toTurnOn.length}`;
 
   const { now, home, totals, owed, soon, toCheck, found, arrivals, discounts, usedAsks } = useMemo(() => {
     const at = new Date();
@@ -194,6 +201,7 @@ export default function Home() {
       {step ? <NextStep step={step} /> : null}
       {spotted[0] ? <SpottedCardPanel spotted={spotted[0]} more={spotted.length - 1} /> : null}
       <PayingTwicePanel />
+      {dismissedLoaded && toTurnOn.length && !dismissed.has(turnOnKey) ? <TurnOnPanel items={toTurnOn} onHide={() => dismiss(turnOnKey)} /> : null}
       {studentSavings.length ? (
         <Panel onPress={() => router.push('/subscriptions')} style={{ gap: 4 }}>
           <T variant="caption" color={c.accentStrong}>Your subscriptions</T>

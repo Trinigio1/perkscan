@@ -50,6 +50,10 @@ export interface AppData {
   cardSightings: CardSighting[];
   /** "I have it" / "Not for me" on suggested perks, by program id. */
   perkFeedback: { program_id: string; action: 'have' | 'dismissed' }[];
+  /** "Done" / "Not for me" on perks that need turning on, per card or membership. */
+  perkSetup: { user_card_id: string; benefit_id: string; status: 'done' | 'skipped' }[];
+  /** This year's receipts that took money off (membership savings, codes), with those lines. */
+  discountReceipts: { id: string; merchant: string; total: number | null; currency: string; purchase_date: string | null; purchase_type: string | null; discounts: { description: string; code: string | null; amount: number | null }[] }[];
   /** Stores the user hid: their offers and deals aren't shown (receipts still count). */
   storeMutes: { store_key: string; name: string | null }[];
   /** What the reader saw in each email lately, for memberships the user hasn't added. Never the email text. */
@@ -77,7 +81,7 @@ interface DataState {
 // Before the free-perks columns exist (database not updated yet), the catalog still loads without them.
 const OLD_PROGRAM_COLUMNS = 'id, kind, name, provider, countries, summary, how_to, url, merchants, window_days, status, last_verified, sort_order';
 
-const empty: AppData = { profile: null, cards: [], benefits: [], userCards: [], opportunities: [], recovered: [], usage: [], receipts: [], studentOffers: [], studentClaims: [], school: null, myPerks: [], programs: [], senderDomains: [], schoolHints: [], events: [], deals: [], dealFeedback: [], cardSightings: [], perkFeedback: [], memberEmails: [], storeMutes: [], scout: { sources: 0, lastChecked: null }, storeStats: [], storePairs: [] };
+const empty: AppData = { profile: null, cards: [], benefits: [], userCards: [], opportunities: [], recovered: [], usage: [], receipts: [], studentOffers: [], studentClaims: [], school: null, myPerks: [], programs: [], senderDomains: [], schoolHints: [], events: [], deals: [], dealFeedback: [], cardSightings: [], perkFeedback: [], perkSetup: [], discountReceipts: [], memberEmails: [], storeMutes: [], scout: { sources: 0, lastChecked: null }, storeStats: [], storePairs: [] };
 const DataContext = createContext<DataState>({ data: empty, loading: true, error: null, refresh: async () => ({ data: null, error: null }) });
 
 function must<T>(what: string, res: { data: T | null; error: { message: string; code?: string } | null }): T {
@@ -101,7 +105,7 @@ async function load(userId: string): Promise<AppData> {
   const since = new Date(Date.now() - 180 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
   const yearAgo = new Date(Date.now() - 365 * 24 * 60 * 60 * 1000).toISOString();
   const today = new Date().toISOString().slice(0, 10);
-  const [profile, cards, benefits, userCards, opportunities, recovered, usage, receipts, studentOffers, studentClaims, myPerks, programs, senders, events, dealFeedback, cardSightings, mutes, perkFeedback] = await Promise.all([
+  const [profile, cards, benefits, userCards, opportunities, recovered, usage, receipts, studentOffers, studentClaims, myPerks, programs, senders, events, dealFeedback, cardSightings, mutes, perkFeedback, perkSetup, discountReceipts] = await Promise.all([
     supabase
       .from('profiles')
       .select('*')
@@ -133,6 +137,13 @@ async function load(userId: string): Promise<AppData> {
     supabase.from('card_sightings').select('id, issuer, product, last_four, times_seen, last_seen').is('dismissed_at', null).order('last_seen', { ascending: false }).limit(50),
     supabase.from('store_mutes').select('store_key, name'),
     supabase.from('perk_feedback').select('program_id, action'),
+    supabase.from('perk_setup').select('user_card_id, benefit_id, status'),
+    supabase
+      .from('receipts')
+      .select('id, merchant, total, currency, purchase_date, purchase_type, discounts')
+      .gte('purchase_date', yearStart.slice(0, 10))
+      .neq('discounts', '[]')
+      .limit(1000),
   ]);
 
   // numeric columns arrive as numbers from PostgREST; normalize defensively.
@@ -236,6 +247,13 @@ async function load(userId: string): Promise<AppData> {
     storeMutes: (mutes.data ?? []) as AppData['storeMutes'],
     // Optional: a database without this table yet just means no feedback.
     perkFeedback: (perkFeedback.data ?? []) as AppData['perkFeedback'],
+    // Optional too: before these are in the database, nothing to turn on is answered and no savings show.
+    perkSetup: (perkSetup.data ?? []) as AppData['perkSetup'],
+    discountReceipts: ((discountReceipts.data ?? []) as AppData['discountReceipts']).map((r) => ({
+      ...r,
+      total: num(r.total),
+      discounts: (Array.isArray(r.discounts) ? r.discounts : []).map((x) => ({ ...x, amount: num(x.amount) })),
+    })),
     memberEmails: sentRows.map((m) => ({ membership: m.membership_seen ?? null, summary: m.summary, date: m.received_at })),
     scout: { sources: (sources.data ?? []).length, lastChecked: checked[checked.length - 1] ?? null },
     // Optional: a database without these yet just means no "people like you".
