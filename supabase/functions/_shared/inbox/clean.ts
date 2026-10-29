@@ -115,14 +115,40 @@ export function fromDomain(from: string | null | undefined): string | null {
   return parts.slice(-keep).join('.');
 }
 
-/** The exact text sent to the model. The sender is reduced to a domain. */
-export function buildModelInput(email: RawEmail): string {
+/** A valid IANA time zone, else UTC (a bad value must never break reading). */
+const zone = (tz: string | null | undefined) => {
+  try {
+    new Intl.DateTimeFormat('en-US', { timeZone: tz || 'UTC' });
+    return tz || 'UTC';
+  } catch {
+    return 'UTC';
+  }
+};
+
+/** The calendar day an instant falls on where the user lives (YYYY-MM-DD): an order at 9pm in Miami is that day, not the next UTC day. */
+export function localDay(iso: string, tz?: string | null): string {
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return iso.slice(0, 10);
+  return new Intl.DateTimeFormat('en-CA', { timeZone: zone(tz), year: 'numeric', month: '2-digit', day: '2-digit' }).format(d);
+}
+
+/** "2026-10-28 21:30 (America/New_York)": the email's Date in the user's own time zone. */
+export function localDateTime(iso: string, tz?: string | null): string {
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return iso;
+  const z = zone(tz);
+  const time = new Intl.DateTimeFormat('en-GB', { timeZone: z, hour: '2-digit', minute: '2-digit', hour12: false }).format(d);
+  return `${localDay(iso, z)} ${time} (${z})`;
+}
+
+/** The exact text sent to the model. The sender is reduced to a domain; the date is in the user's time zone. */
+export function buildModelInput(email: RawEmail, tz?: string | null): string {
   const body = email.html && (!email.text || email.text.trim().length < 40) ? htmlToText(email.html) : email.text ?? '';
   const cleaned = cleanEmailText(body);
   const header = [
     email.subject ? `Subject: ${email.subject.trim()}` : null,
     fromDomain(email.from) ? `From domain: ${fromDomain(email.from)}` : null,
-    email.date ? `Date: ${email.date}` : null,
+    email.date ? `Date: ${localDateTime(email.date, tz)}` : null,
   ]
     .filter(Boolean)
     .join('\n');

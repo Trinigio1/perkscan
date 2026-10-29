@@ -66,6 +66,9 @@ export async function storeMessages(
   }
 
   const mutes = source === 'email' ? await mutedStores(db, userId) : new Set<string>();
+  // Dates are written in the user's own time zone, so "tonight's order" lands on the right day.
+  const { data: prof } = await db.from('profiles').select('timezone').eq('id', userId).maybeSingle();
+  const tz = (prof?.timezone as string | undefined) ?? null;
   for (const m of messages) {
     const body = [m.subject, m.text, m.html].filter(Boolean).join('\n');
     if (containsSecurityCode(body)) {
@@ -89,7 +92,7 @@ export async function storeMessages(
     }
     const externalId = m.id ?? (source === 'email' ? null : await textId(source, m.text ?? m.html ?? ''));
     // Store only the cleaned text the model needs (links removed, card numbers masked).
-    const raw = buildModelInput({ subject: m.subject, from: m.from, date: m.date ?? new Date().toISOString(), text: m.text, html: m.html });
+    const raw = buildModelInput({ subject: m.subject, from: m.from, date: m.date ?? new Date().toISOString(), text: m.text, html: m.html }, tz);
     const { data, error } = await db
       .from('inbound_messages')
       .insert({

@@ -1,4 +1,4 @@
-import { buildModelInput, cleanEmailText, decodeEntities, fromDomain, htmlToText, luhnValid, maskCardNumbers, MAX_MODEL_CHARS } from '../clean.ts';
+import { buildModelInput, cleanEmailText, decodeEntities, fromDomain, htmlToText, localDateTime, localDay, luhnValid, maskCardNumbers, MAX_MODEL_CHARS } from '../clean.ts';
 import { PROMO_HTML, RECEIPT_TEXT } from '../__fixtures__/emails.ts';
 
 describe('htmlToText', () => {
@@ -74,5 +74,21 @@ describe('buildModelInput', () => {
     const input = buildModelInput({ text: 'x '.repeat(20_000) });
     expect(input.length).toBeLessThanOrEqual(MAX_MODEL_CHARS + 20);
     expect(input.endsWith('[truncated]')).toBe(true);
+  });
+});
+
+describe('dates in the reader\'s time zone', () => {
+  it('puts an evening order in Miami on that day, not the next UTC day', () => {
+    expect(localDay('2026-10-29T01:30:00Z', 'America/New_York')).toBe('2026-10-28');
+    expect(localDateTime('2026-10-29T01:30:00Z', 'America/New_York')).toBe('2026-10-28 21:30 (America/New_York)');
+  });
+  it('falls back to UTC for a missing or bad time zone', () => {
+    expect(localDay('2026-10-29T01:30:00Z', null)).toBe('2026-10-29');
+    expect(localDateTime('2026-10-29T01:30:00Z', 'Not/AZone')).toBe('2026-10-29 01:30 (UTC)');
+  });
+  it('writes the local date into what the reader sees', () => {
+    expect(buildModelInput({ subject: 'Your order', from: 'DoorDash <no-reply@doordash.com>', date: '2026-10-29T01:30:00Z', text: 'Thanks for your order' }, 'America/New_York')).toContain(
+      'Date: 2026-10-28 21:30 (America/New_York)',
+    );
   });
 });

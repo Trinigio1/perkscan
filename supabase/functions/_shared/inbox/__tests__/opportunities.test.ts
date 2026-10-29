@@ -1,4 +1,4 @@
-import { isOrderUpdate, isPrice, notAPerk, notMoneyOwed, offerWords, readNote, toRows } from '../opportunities.ts';
+import { isOrderUpdate, isPrice, nameFromDomain, notAPerk, notMoneyOwed, offerWords, readNote, toRows } from '../opportunities.ts';
 import type { Offer, ParsedEmail } from '../schema.ts';
 
 const TODAY = '2026-04-10';
@@ -138,6 +138,19 @@ describe('toRows', () => {
       expect(notAPerk({ title, details: null })).toBe(false);
     }
     expect(toRows(email({ offers: [offer({ title: 'Apply for Robinhood Gold Card (3% cash back)', amount: null, expires_on: '2099-01-01' })] }), TODAY).skipped.notMoney).toBe(1);
+  });
+
+  it('leaves out codes meant for other people', () => {
+    expect(notAPerk({ title: '15% off a Trading Combine for new traders using your referral code', details: null })).toBe(true);
+    expect(notAPerk({ title: '20% off your first three Costco orders', details: null })).toBe(false);
+  });
+
+  it('names the store from the sender when the email doesn’t', () => {
+    expect(nameFromDomain('doordash.com')).toBe('DoorDash');
+    expect(nameFromDomain('crumbl.com')).toBe('Crumbl');
+    expect(nameFromDomain('lyftmail.com')).toBe('Lyft');
+    const rows = toRows(email({ merchant: null, offers: [offer({ title: '30% off 10 orders', code: 'MORE30', percent_off: 30, expires_on: '2099-11-11' })] }), TODAY, 'USD', null, { fromDomain: 'doordash.com' });
+    expect(rows.opportunities[0]!.merchant).toBe('DoorDash');
   });
 
   it('never counts a price or a referral reward as money', () => {

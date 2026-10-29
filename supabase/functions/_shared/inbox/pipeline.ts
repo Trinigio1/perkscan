@@ -4,6 +4,7 @@ import { doubleChargeRow, isDoubleCharge, priceAdjustment, statedWarranty, type 
 import { findDuplicate, mergeFields, MERGE_WINDOW_DAYS, orderKey, type ExistingReceipt } from './merge.ts';
 import { usageFrom, type OpenItem } from './usage.ts';
 import { cardSighting } from './cards.ts';
+import { localDay } from './clean.ts';
 import { readNote, toRows, type ReceiptRow, type RefundRule } from './opportunities.ts';
 import { costUsd, parseEmail, type ModelCall } from './parse.ts';
 import { PROMPT_VERSION } from './prompt.ts';
@@ -87,13 +88,14 @@ export async function processMessages(db: SupabaseClient, ids: string[], call: M
       continue;
     }
 
-    const { data: profile } = await db.from('profiles').select('home_currency, country, share_deals').eq('id', claimed.user_id).maybeSingle();
+    const { data: profile } = await db.from('profiles').select('home_currency, country, share_deals, timezone').eq('id', claimed.user_id).maybeSingle();
     const home = (profile?.home_currency as string | undefined) ?? 'USD';
     // US users get pointed to the DOT refund rule when an airline cancels and hands out a credit.
     const flightRule = parsed.data.offers.some((o) => o.after_cancellation) && (home === 'USD' || profile?.country === 'US') ? await refundRule(db, 'us_dot_flight_refunds') : null;
     const fromDomainOf = (claimed.from_domain as string | null) ?? null;
     const rows = toRows(parsed.data, today, home, flightRule, {
-      sentOn: (claimed.sent_at as string | null)?.slice(0, 10) ?? null,
+      // The day the email was sent where the user lives (an evening order in Miami isn't tomorrow's).
+      sentOn: claimed.sent_at ? localDay(claimed.sent_at as string, (profile?.timezone as string | null) ?? null) : null,
       fromDomain: fromDomainOf,
       subject: (claimed.subject as string | null) ?? null,
     });

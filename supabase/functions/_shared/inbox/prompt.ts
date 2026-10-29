@@ -1,5 +1,5 @@
 /** Change this whenever SYSTEM_PROMPT or the parsing rules change, so accuracy can be compared per version. */
-export const PROMPT_VERSION = '2026-11-12';
+export const PROMPT_VERSION = '2026-11-13';
 
 // Instructions for the extraction model. Kept stable (no dates or ids) so the
 // request prefix is identical across emails.
@@ -18,7 +18,7 @@ Rules:
 - School and employer perks: an email from the reader's school or employer about something free or discounted for them (free software, free tickets, student discounts) is type "promo", title like "Free Microsoft 365 for students", with the official link to claim it in claim_url if the email has one.
 - Card-linked offers ("add this offer to your card", Amex Offers, Chase Offers) are type "promo"; put "Activate it in your card app first" in details.
 - Rewards ready to use: a reward the store has issued to the reader and they can spend now is an offer even without a code — "You've earned $10 Kohl's Cash", "$5 ExtraBucks Rewards", "Your $10 reward is ready", "Bonus cash", a rewards certificate. Type "store_credit" with the amount and its use-by date in expires_on. A reward for a free item ("free birthday drink", "free entrée", "free birthday gift") is type "promo" with amount null, a title like "Free birthday drink" and its use-by date in expires_on.
-- Not offers at all: invitations to apply for a credit card or open an account, payment for an interview or survey, and discounts for signing up to texts or emails. Leave them out of offers.
+- Not offers at all: codes or links for other people to use ("your referral code gives new customers 15% off"), invitations to apply for a credit card or open an account, payment for an interview or survey, and discounts for signing up to texts or emails. Leave them out of offers.
 - Prices are not money: "Broadway's Beaches for $59", "plans from $9.99", "now only $5" are what the reader would pay. If you include one, amount is null.
 - Referral rewards are not money owed: "give $20, get $20", "spread the love", "invite friends and get $10" pay only when someone else buys. If you include one, amount is null and the condition goes in details.
 - Paid for doing something is not money owed: a gift card for an interview or survey, a discount unlocked by completing tasks, orders or referrals. If you include one, amount is null and the condition goes in details.
@@ -32,7 +32,7 @@ Rules:
 - Currency: an offer stated in another currency ("60 EUR off", "€30 off") uses that currency, not the email's usual one.
 - Free trials: title like "Trial ends — cancel to avoid charge", amount = the price that will be charged after the trial if stated. If the email gives the trial's length instead of its end date ("your 7-day free trial has started", "free for 1 month"), expires_on = the email's Date plus that length.
 - Settlements: only include claim_url if the email itself contains the official claim site.
-- Dates: YYYY-MM-DD. Resolve relative dates ("expires in 7 days", "this Sunday") against the email's Date header.
+- Dates: YYYY-MM-DD. The Date header is in the reader's own time zone; resolve relative dates ("expires in 7 days", "this Sunday", "tonight's order") against it. A receipt's purchase_date is the order date it shows, else the Date header's day.
 - Money: plain numbers, no symbols (e.g. 25 or 19.99), with the ISO currency code in the currency field (USD, TTD, CAD, ...). "TT$" is TTD; a currency code next to the amount wins ("$144.51 TTD" is TTD); a bare "$" from a US store is USD. If the currency can't be told, use null.
 - purchase_type: what the receipt is mainly for. Use phone_bill for mobile plan payments and phone for buying a phone itself. Guess the type from the merchant for card alerts (Uber Eats -> food_delivery, Uber -> rideshare, an airline -> flight). For flights, car rentals and hotels, put the departure / pick-up / check-in date in travel_date.
 - discounts (receipts only): every line that took money off this order, as written: promo codes ("Promo EATS25 -$6.20" -> code "EATS25", amount 6.2), coupons, gift cards and store credit used to pay ("Kohl's Cash -$10", "Gift card $25.00"), rewards and membership savings ("Uber One savings $3.49"). Amounts are positive numbers. Empty if nothing was taken off. Never include card numbers.

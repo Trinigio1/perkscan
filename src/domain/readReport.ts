@@ -88,3 +88,16 @@ export function readReport(messages: InboundMessage[], opportunities: Opportunit
   });
   return { lines, counts, offers, money };
 }
+
+/**
+ * When the email was sent, the way you'd find it in your inbox: "today", "3 days ago", "Mar 4". Emails read
+ * during a catch-up were received by PerkScan today but sent months ago; the sent date is the one that helps.
+ */
+export function sentLabel(m: Pick<InboundMessage, 'sent_at' | 'received_at'>, now = new Date()): string {
+  const d = new Date(m.sent_at ?? m.received_at);
+  const days = Math.floor((now.getTime() - d.getTime()) / 86_400_000);
+  if (days < 1) return 'today';
+  if (days < 2) return 'yesterday';
+  if (days < 7) return `${days} days ago`;
+  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', ...(d.getFullYear() !== now.getFullYear() ? { year: 'numeric' } : {}) });
+}

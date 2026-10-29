@@ -41,7 +41,7 @@ const num = (v: unknown) => (v === null || v === undefined ? null : Number(v));
 export async function listForReview(messageId?: string): Promise<ReviewItem[]> {
   let q = supabase
     .from('inbound_messages')
-    .select('id, source, received_at, parse_status, parse_error, kind, summary, from_domain')
+    .select('id, source, received_at, sent_at, parse_status, parse_error, kind, summary, from_domain')
     .in('parse_status', ['parsed', 'ignored'])
     .order('received_at', { ascending: false })
     .limit(100);

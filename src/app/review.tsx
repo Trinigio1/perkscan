@@ -5,7 +5,7 @@ import { RefreshControl, View } from 'react-native';
 import { ReadSummary } from '@/components/ReadSummary';
 import { Badge, Button, Empty, ErrorNote, Note, Panel, ProgressBar, Row, Screen, Segmented, T } from '@/components/ui';
 import { accuracyPercent, reviewsNeeded, topMistakes, type Accuracy } from '@/domain/accuracy';
-import { relativeDays } from '@/domain/format';
+import { sentLabel } from '@/domain/readReport';
 import { getAccuracy, listForReview, submitReview, type ReviewItem } from '@/lib/feedback';
 import { useToast } from '@/lib/toast';
 import { space, useColors } from '@/theme';
@@ -132,7 +132,7 @@ export default function Review() {
             <Row gap={space.sm}>
               <Ionicons name={m.source === 'email' ? 'mail-outline' : 'chatbubble-outline'} size={16} color={c.textMuted} />
               <T variant="subheading" style={{ flex: 1 }} numberOfLines={2}>{m.summary ?? 'Message'}</T>
-              <T variant="caption" faint>{relativeDays(new Date(m.received_at), new Date())}</T>
+              <T variant="caption" faint>{sentLabel(m)}</T>
             </Row>
             <ReadSummary offers={item.offers} purchases={item.purchases} />
             {item.review ? (

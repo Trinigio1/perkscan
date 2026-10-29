@@ -4,8 +4,8 @@ import { useCallback, useMemo, useState } from 'react';
 import { RefreshControl, View } from 'react-native';
 import { Button, Empty, ErrorNote, IconBubble, Note, Panel, Row, Screen, T } from '@/components/ui';
 import type { IconName } from '@/components/ui';
-import { formatBag, relativeDays } from '@/domain/format';
-import { readReport, type ReadOutcome } from '@/domain/readReport';
+import { formatBag } from '@/domain/format';
+import { readReport, sentLabel, type ReadOutcome } from '@/domain/readReport';
 import type { InboundMessage } from '@/domain/types';
 import type { IconTone } from '@/domain/visuals';
 import { useData } from '@/lib/data';
@@ -153,7 +153,7 @@ export default function Inbox() {
                 <View style={{ alignItems: 'flex-end' }}>
                   <Row gap={4}>
                     <Ionicons name={m.source === 'email' ? 'mail-outline' : 'chatbubble-outline'} size={12} color={c.textFaint} />
-                    <T variant="caption" faint>{relativeDays(new Date(m.received_at), new Date())}</T>
+                    <T variant="caption" faint>{sentLabel(m)}</T>
                   </Row>
                   {outcome === 'found' ? <Ionicons name="checkmark-circle" size={16} color={c.accent} /> : null}
                 </View>

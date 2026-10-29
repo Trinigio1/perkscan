@@ -168,6 +168,8 @@ export interface InboundMessage {
   from_domain: string | null;
   /** Why it gave what it gave ("Already found in an earlier email"), from the reader. */
   read_note?: string | null;
+  /** When the email itself was sent (received_at is when PerkScan got it, e.g. during a catch-up). */
+  sent_at?: string | null;
 }
 
 export interface IngestToken {

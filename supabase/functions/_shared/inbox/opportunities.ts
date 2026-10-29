@@ -290,6 +290,8 @@ export function earnedByDoing(o: Pick<Offer, 'title' | 'details'>): boolean {
 export function notAPerk(o: Pick<Offer, 'title' | 'details'>): boolean {
   const text = `${o.title} ${o.details ?? ''}`;
   return (
+    // A code for other people to use ("your referral code gives new traders 15% off"): not yours to spend.
+    /\b(your|my) (referral|invite|invitation|friend) (code|link)\b|\bshare your (code|link)\b/i.test(text) ||
     /\b(apply|applying|application)\b|\bopen (a |an )?(new )?(account|card)\b|\bget approved\b/i.test(o.title) ||
     /\b(interview|survey|focus group|research study|case study)\b/i.test(text) ||
     /\b(sign(ing)? up|connect|subscrib(e|ing)|opt(ing)? in|join)\b[^.]{0,25}\b(texts?|sms|text messages|emails?|newsletter)\b/i.test(o.title)
@@ -332,8 +334,23 @@ export function isOrderUpdate(subject: string | null | undefined): boolean {
   return !!subject && ORDER_UPDATE.test(subject) && !ORDER_CONFIRMED.test(subject);
 }
 
+/** Known brands whose name isn't just their domain ("doordash.com" -> "DoorDash", "lyftmail.com" -> "Lyft"). */
+const BRAND_NAMES: Record<string, string> = {
+  doordash: 'DoorDash', ubereats: 'Uber Eats', uber: 'Uber', lyftmail: 'Lyft', lyft: 'Lyft', grubhub: 'Grubhub', instacart: 'Instacart',
+  amazon: 'Amazon', walmart: 'Walmart', target: 'Target', bestbuy: 'Best Buy', cvs: 'CVS', ulta: 'Ulta', hollisterco: 'Hollister',
+  bankofamerica: 'Bank of America', americanexpress: 'American Express', aexp: 'American Express', capitalone: 'Capital One',
+};
+
+/** A store name from the sender's domain, for an email that doesn't name its store: "crumbl.com" -> "Crumbl". */
+export function nameFromDomain(domain: string | null | undefined): string | null {
+  const root = (domain ?? '').toLowerCase().split('.').filter(Boolean).slice(-2)[0];
+  if (!root || root.length < 3) return null;
+  return BRAND_NAMES[root] ?? root[0]!.toUpperCase() + root.slice(1);
+}
+
 export function toRows(p: ParsedEmail, today: string, defaultCurrency = 'USD', flightRefundRule: RefundRule | null = null, ctx: EmailContext = {}): Rows {
-  const merchant = p.merchant;
+  // Every offer says which store it's for: the email's own name for it, else its sender ("doordash.com" -> DoorDash).
+  const merchant = p.merchant ?? nameFromDomain(ctx.fromDomain);
   const store = storeOf(ctx.fromDomain ?? null, merchant);
   const sentOn = ctx.sentOn && ctx.sentOn <= today ? ctx.sentOn : today;
   const emailCurrency = p.receipt?.currency ?? defaultCurrency;
@@ -378,7 +395,7 @@ export function toRows(p: ParsedEmail, today: string, defaultCurrency = 'USD', f
         currency: r.currency ?? defaultCurrency,
         purchase_type: r.purchase_type,
         travel_date: r.travel_date,
-        purchase_date: r.purchase_date ?? today,
+        purchase_date: r.purchase_date ?? sentOn,
         last_four: r.card_last_four,
         items: [],
         order_number: null,

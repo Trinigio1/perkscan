@@ -1,5 +1,5 @@
 import { opp } from '../__fixtures__/opportunities';
-import { readReport } from '../readReport';
+import { readReport, sentLabel } from '../readReport';
 import type { InboundMessage } from '../types';
 
 const msg = (m: Partial<InboundMessage> & { id: string }): InboundMessage => ({
@@ -51,5 +51,15 @@ describe('readReport reasons', () => {
       'PerkScan couldn’t read this one because of a problem on our side (The compiled grammar is too large, which would cause performance issues). Send it again with the Gmail script’s resendUnread.',
       '$7 off (also: 1 expired before it arrived)',
     ]);
+  });
+});
+
+describe('sentLabel', () => {
+  const now = new Date('2026-10-29T15:00:00Z');
+  it('shows when the email was sent, not when PerkScan got it during a catch-up', () => {
+    expect(sentLabel({ sent_at: '2026-03-04T10:00:00Z', received_at: '2026-10-27T10:00:00Z' }, now)).toBe('Mar 4');
+    expect(sentLabel({ sent_at: '2026-10-27T10:00:00Z', received_at: '2026-10-27T10:00:00Z' }, now)).toBe('2 days ago');
+    expect(sentLabel({ sent_at: null, received_at: '2026-10-29T09:00:00Z' }, now)).toBe('today');
+    expect(sentLabel({ sent_at: '2025-12-20T10:00:00Z', received_at: '2026-10-27T10:00:00Z' }, now)).toBe('Dec 20, 2025');
   });
 });
