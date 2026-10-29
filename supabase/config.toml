@@ -432,3 +432,7 @@ verify_jwt = false
 [functions.scout]
 # Called by pg_cron with SCOUT_SECRET, not a user session.
 verify_jwt = false
+
+[functions.bank-webhook]
+# Called by Plaid, not a user session: every request is verified by Plaid's signature instead.
+verify_jwt = false

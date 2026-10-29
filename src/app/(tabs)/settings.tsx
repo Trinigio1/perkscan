@@ -103,6 +103,7 @@ export default function Settings() {
       <Group title="Find money">
         <ListRow icon="mail" tone="blue" title="Gmail" subtitle="Read emails you label “PerkScan”" onPress={() => router.push('/connect-gmail')} />
         <ListRow icon="chatbubbles" tone="green" title="Texts" subtitle="Bank alerts and offers by SMS" onPress={() => router.push('/connect-texts')} />
+        <ListRow icon="business" tone="teal" title="Bank" subtitle="Every card purchase, read-only" onPress={() => router.push('/connect-bank')} />
         <ListRow icon="clipboard" tone="orange" title="Add a text" onPress={() => router.push('/add-text')} />
         <ListRow icon="file-tray-full" tone="gray" title="What PerkScan read" onPress={() => router.push('/inbox')} />
         <ListRow icon="eye-off-outline" tone="gray" title="Hidden stores" onPress={() => router.push('/hidden-stores')} />

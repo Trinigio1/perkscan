@@ -4,7 +4,10 @@ import { track } from './analytics';
 import { supabase } from './supabase';
 
 /** Tables where users may only read some columns (token secrets are never readable). */
-const COLUMNS: Partial<Record<ExportTable, string>> = { ingest_tokens: 'id, label, created_at, last_used_at, revoked_at' };
+const COLUMNS: Partial<Record<ExportTable, string>> = {
+  ingest_tokens: 'id, label, created_at, last_used_at, revoked_at',
+  bank_connections: 'id, provider, institution_name, status, last_synced_at, last_error, created_at',
+};
 
 /** Collects everything the user can read about themselves (row-level security limits it to their rows). */
 export async function exportMyData(email: string | null): Promise<{ json: string; fileName: string }> {

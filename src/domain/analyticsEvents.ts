@@ -26,6 +26,7 @@ export const EVENTS = {
   // Hidden value in Deals: a perk opened / marked "I have it" / "Not for me".
   perk_for_you: { action: ['open', 'have', 'dismissed', 'undo'], group: ['yours', 'claim'] },
   perk_setup: { action: ['done', 'skipped', 'undo'] },
+  bank_connect: { step: ['opened', 'done', 'disconnected'] },
   deal_feedback: { action: ['saved', 'dismissed', 'didnt_work'] },
   interests_saved: { count: 'small_int' },
   gmail_token_created: {},
