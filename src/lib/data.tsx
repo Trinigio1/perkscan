@@ -4,6 +4,7 @@ import { setHomeCurrency, shortCardName } from '@/domain/format';
 import { domainStoreKey, interestProfile, storeKey, type Deal, type DealFeedback, type StorePair, type StoreStat } from '@/domain/deals';
 import { relevantEvents, type LocalEvent } from '@/domain/events';
 import { planMoments, type Moment } from '@/domain/moments';
+import { planRecapMoment } from '@/domain/proof';
 import { isMutedOffer } from '@/domain/mutes';
 import { isStale, isVagueElsewhere, yourStores } from '@/domain/relevance';
 import type { Program } from '@/domain/programs';
@@ -351,7 +352,9 @@ export function myEvents(d: AppData): LocalEvent[] {
 /** Nudges at the right moment: credits back on the day they reset, your bank's events on their first day, your birthday month. */
 export function myMoments(d: AppData): Moment[] {
   const shops = interestProfile({ picked: d.profile?.interests ?? [], receipts: d.receipts, opportunities: d.opportunities, senderDomains: d.senderDomains }).shops;
-  return planMoments(
+  const now = new Date();
+  const recap = planRecapMoment(d.opportunities, d.recovered, now, d.profile?.home_currency?.trim() || 'USD');
+  const moments = planMoments(
     {
       userCards: d.userCards,
       cards: d.cards,
@@ -363,6 +366,7 @@ export function myMoments(d: AppData): Moment[] {
       shops,
       birthMonth: d.profile?.birth_month ?? null,
     },
-    new Date(),
+    now,
   );
+  return recap ? [...moments, recap] : moments;
 }

@@ -1,5 +1,5 @@
 import { opp, rec } from '../__fixtures__/opportunities';
-import { allSetup, needsSetup, paidFor, paidForTotals, type ReceiptWithDiscounts } from '../paidFor';
+import { allSetup, membershipSavingsIn, needsSetup, paidFor, paidForTotals, type ReceiptWithDiscounts } from '../paidFor';
 import type { CardBenefit } from '../types';
 
 const NOW = new Date(2026, 9, 22, 12); // October 22, 2026
@@ -120,5 +120,16 @@ describe('paidFor', () => {
     const list = paidFor(base, NOW);
     expect(list.map((p) => p.userCardId)).toEqual(['gold', 'prime', 'uber', 'cfu']);
     expect(paidForTotals(list)).toEqual({ fees: { USD: 560 }, gotBack: { USD: 39.99 } });
+  });
+});
+
+describe('membershipSavingsIn', () => {
+  it('adds the savings lines of your memberships in a month', () => {
+    const rs = [
+      receipt({ purchase_date: '2026-10-03', discounts: [{ description: 'Uber One savings', code: null, amount: 3.49 }, { description: 'Promo', code: 'X', amount: 5 }] }),
+      receipt({ purchase_date: '2026-10-20', discounts: [{ description: 'DashPass savings', code: null, amount: 2 }] }),
+      receipt({ purchase_date: '2026-09-30', discounts: [{ description: 'Uber One savings', code: null, amount: 9 }] }),
+    ];
+    expect(membershipSavingsIn(rs, ['uber_one'], 'USD', new Date(2026, 9, 1), new Date(2026, 10, 1))).toEqual({ total: 3.49, receipts: 1 });
   });
 });

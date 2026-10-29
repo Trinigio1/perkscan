@@ -61,6 +61,23 @@ const SAVINGS_LINE: Record<string, RegExp> = {
   ...Object.fromEntries(SERVICES.filter((s) => s.membership && s.membership !== 'amazon_prime').map((s) => [s.membership!, s.match])),
 };
 
+/** Member savings printed on receipts between two dates, for the memberships you have (by card id). */
+export function membershipSavingsIn(receipts: ReceiptWithDiscounts[], membershipIds: string[], currency: string, from: Date, to: Date): { total: number; receipts: number } {
+  const lines = membershipIds.map((id) => SAVINGS_LINE[id]).filter((re): re is RegExp => !!re);
+  let total = 0;
+  let count = 0;
+  for (const r of receipts) {
+    if (!r.purchase_date || r.currency !== currency) continue;
+    const t = new Date(`${r.purchase_date}T12:00:00`).getTime();
+    if (t < from.getTime() || t >= to.getTime()) continue;
+    const saved = (r.discounts ?? []).filter((x) => x.amount !== null && x.amount > 0 && lines.some((re) => re.test(x.description)));
+    if (!saved.length) continue;
+    total += saved.reduce((n, x) => n + x.amount!, 0);
+    count += 1;
+  }
+  return { total: Math.round(total * 100) / 100, receipts: count };
+}
+
 /** Words that mean a perk only works after you do something. */
 const NEEDS_SETUP = /\benroll|\bactivate|\blink (it|your)|\badd (the|your) [\w\s’'®]+ to your\b|\bpick one\b|\bsign up\b|\bregister\b/i;
 

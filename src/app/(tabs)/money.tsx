@@ -7,6 +7,7 @@ import { Button, Chip, Empty, Panel, Row, Screen, Segmented, T } from '@/compone
 import { formatBag, formatMoney, getHomeCurrency } from '@/domain/format';
 import { includedWhenYouNeedIt } from '@/domain/included';
 import { KIND_LABELS, moneyList, type MoneyKind, type MoneyView } from '@/domain/money';
+import { savedBySource, sourceLine } from '@/domain/proof';
 import { groupByStore } from '@/domain/relevance';
 import { usedFromReceiptNote } from '@/domain/usedFromReceipts';
 import type { Opportunity } from '@/domain/types';
@@ -87,6 +88,9 @@ export default function Money() {
           <T muted>{hasTotal ? TOTAL_LABEL[view] : `${shown.count === 1 ? 'item' : 'items'} ${TOTAL_LABEL[view]}`}</T>
         </Row>
       ) : null}
+
+      {/* Used this year, by where it came from: the proof in one line. */}
+      {view === 'used' && hasTotal ? <UsedSources /> : null}
 
       {list.kinds.length > 1 ? (
         <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginHorizontal: -space.lg }} contentContainerStyle={{ gap: space.sm, paddingHorizontal: space.lg }}>
@@ -217,4 +221,14 @@ export default function Money() {
       ) : null}
     </Screen>
   );
+}
+
+function UsedSources() {
+  const { data } = useData();
+  const home = data.profile?.home_currency?.trim() || getHomeCurrency();
+  const lines = useMemo(() => {
+    const now = new Date();
+    return savedBySource(data.opportunities, data.recovered, new Date(now.getFullYear(), 0, 1), new Date(now.getFullYear() + 1, 0, 1));
+  }, [data.opportunities, data.recovered]);
+  return lines.length > 1 ? <T variant="caption" muted>{sourceLine(lines, home)}</T> : null;
 }

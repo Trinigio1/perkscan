@@ -13,7 +13,7 @@ import type { Opportunity, Recovered } from '@/domain/types';
 const PREF_KEY = 'reminders_enabled';
 const CHANNEL = 'credit-reminders';
 // 'credit-' was the Phase 1 prefix; still cancel those so old reminders don't linger.
-const PREFIXES = ['remind-', 'credit-', 'digest-', 'renew-', 'event-', 'birthday-'];
+const PREFIXES = ['remind-', 'credit-', 'digest-', 'renew-', 'event-', 'birthday-', 'recap-'];
 
 /**
  * Expo Go on Android ships without parts of expo-notifications, and importing it there crashes the app.

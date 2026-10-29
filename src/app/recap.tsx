@@ -1,11 +1,13 @@
 import { Ionicons } from '@expo/vector-icons';
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
 import { Pressable } from 'react-native';
 import { Hero } from '@/components/Hero';
 import { Button, Panel, Row, Screen, T } from '@/components/ui';
 import { monthlyRecap } from '@/domain/digest';
 import { formatBag, formatMoney, getHomeCurrency, type MoneyBag } from '@/domain/format';
+import { membershipSavingsIn } from '@/domain/paidFor';
+import { savedBySource, spottedOnReceipts } from '@/domain/proof';
 import { track } from '@/lib/analytics';
 import { useData } from '@/lib/data';
 import { space, useColors } from '@/theme';
@@ -16,14 +18,25 @@ const nonZero = (b: MoneyBag) => Object.values(b).some((v) => v > 0);
 export default function Recap() {
   const c = useColors();
   const { data } = useData();
-  const [offset, setOffset] = useState(0); // 0 = this month, -1 = last month, ...
+  // The 1st-of-the-month notification opens last month's recap.
+  const params = useLocalSearchParams<{ offset?: string }>();
+  const [offset, setOffset] = useState(Math.min(0, Math.max(-24, Number(params.offset) || 0))); // 0 = this month, -1 = last month, ...
   useEffect(() => track('recap_viewed'), []);
   const home = data.profile?.home_currency?.trim() || getHomeCurrency();
-  const { month, r } = useMemo(() => {
+  const { month, r, sources, spotted, members } = useMemo(() => {
     const now = new Date();
     const m = new Date(now.getFullYear(), now.getMonth() + offset, 1);
-    return { month: m, r: monthlyRecap(data.opportunities, data.recovered, m, now) };
-  }, [data, offset]);
+    const end = new Date(m.getFullYear(), m.getMonth() + 1, 1);
+    const memberships = data.userCards.map((u) => data.cards.find((c) => c.id === u.card_id)).filter((c) => c?.kind === 'membership').map((c) => c!.id);
+    return {
+      month: m,
+      r: monthlyRecap(data.opportunities, data.recovered, m, now),
+      sources: savedBySource(data.opportunities, data.recovered, m, end),
+      spotted: spottedOnReceipts(data.recovered, m, end),
+      // The membership's own savings on receipts: real, but not PerkScan's doing, so never in the total.
+      members: membershipSavingsIn(data.discountReceipts, memberships, home, m, end),
+    };
+  }, [data, offset, home]);
   const label = month.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
 
   return (
@@ -50,6 +63,22 @@ export default function Recap() {
         ) : null}
       </Hero>
 
+      {sources.length > 1 ? (
+        <Panel style={{ gap: space.sm }}>
+          <T variant="subheading">Where it came from</T>
+          {sources.map((l) => (
+            <Row key={l.kind}>
+              <T style={{ flex: 1 }}>{l.label}</T>
+              <T variant="caption" muted>{l.count}×</T>
+              <T variant="label" style={{ minWidth: 72, textAlign: 'right' }}>{formatBag(l.total, home)}</T>
+            </Row>
+          ))}
+          {spotted ? <T variant="caption" muted>{spotted} spotted on your receipts by PerkScan, no tapping needed.</T> : null}
+        </Panel>
+      ) : spotted ? (
+        <T variant="caption" muted>{spotted} spotted on your receipts by PerkScan, no tapping needed.</T>
+      ) : null}
+
       {r.used.length ? (
         <Panel style={{ gap: space.sm }}>
           <T variant="subheading">What you used</T>
@@ -73,6 +102,12 @@ export default function Recap() {
           <T muted>Nothing with a dollar value expired unused. Nice.</T>
         )}
       </Panel>
+
+      {members.total > 0 ? (
+        <T variant="caption" muted>
+          Also: your memberships saved {formatMoney(members.total, { currency: home })} on {members.receipts} receipt{members.receipts === 1 ? '' : 's'}. That’s the membership at work, so it’s not in your total.
+        </T>
+      ) : null}
 
       {nonZero(r.recovered) ? <Button title="Share my total" icon="share-outline" kind="secondary" onPress={() => router.push('/share')} /> : null}
     </Screen>
