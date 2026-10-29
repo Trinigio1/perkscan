@@ -47,9 +47,9 @@ export function Tour({ onDone }: { onDone: () => void }) {
 const STEP_COPY: Record<SetupStep['id'], { icon: IconName; title: string; body: string; button: string }> = {
   cards: { icon: 'card', title: 'Add your cards', body: 'PerkScan shows every credit and perk your cards come with.', button: 'Add cards' },
   inbox: {
-    icon: 'mail',
-    title: 'Connect your email',
-    body: 'Codes, gift cards, refunds and card alerts hiding in your inbox show up here by themselves.',
+    icon: 'business',
+    title: 'Connect your bank or email',
+    body: 'See what you’re missing in about a minute: credits, refunds, double charges and the right card for each purchase.',
     button: 'Connect',
   },
 };

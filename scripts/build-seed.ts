@@ -6,6 +6,7 @@ import type { ZodType } from 'zod';
 import {
   dealSourceFileSchema, dealSourcesToSql, eventFileSchema, eventsToSql, programFileSchema, programsToSql, settlementFileSchema, settlementsToSql, studentFileSchema, studentToSql, universitiesToSql, universityFileSchema, unknownUniversityIds,
 } from '../src/domain/catalogSchema';
+import { earnFileSchema, earnToSql } from '../src/domain/earnSchema';
 import { seedFileSchema, seedToSql } from '../src/domain/seedSchema';
 
 const root = resolve(__dirname, '..');
@@ -30,6 +31,7 @@ const settlements = load('seed/settlements.json', settlementFileSchema);
 const programs = load('seed/programs.json', programFileSchema);
 const events = load('seed/events.json', eventFileSchema);
 const dealSources = load('seed/deal_sources.json', dealSourceFileSchema);
+const earn = load('seed/earn_rates.json', earnFileSchema);
 const ttSchools = load('seed/universities.json', universityFileSchema);
 const usSchools = load('seed/universities_us.json', universityFileSchema);
 const universities = { universities: [...ttSchools.universities, ...usSchools.universities] };
@@ -58,6 +60,8 @@ const sql = seedToSql(cards).replace(/commit;\n$/, [
   ...eventsToSql(events),
   '-- Pages the scout reads for deals and promotions (seed/deal_sources.json)',
   ...dealSourcesToSql(dealSources),
+  '-- What each card earns where (seed/earn_rates.json)',
+  ...earnToSql(earn, new Set(cards.cards.map((c) => c.id))),
   'commit;',
   '',
 ].join('\n'));
@@ -95,5 +99,6 @@ const feesTodo = cards.cards.filter((c) => c.annual_fee === null).length;
 console.log(`Wrote ${output}`);
 console.log(`${cards.cards.length} cards, ${benefits.length} benefits — ${todo} benefits and ${feesTodo} annual fees still TODO_VERIFY.`);
 console.log(`${universities.universities.length} schools, ${students.offers.length} student offers, ${settlements.settlements.length} settlements.`);
+console.log(`${earn.cards.length} cards with earn rates (${earn.cards.reduce((n, c) => n + c.rates.length, 0)} rates).`);
 console.log(`${events.events.length} events (${events.events.filter((e) => e.status === 'expected').length} expected).`);
 console.log(`${programs.programs.length} programs — ${programs.programs.filter((p) => p.status === 'TODO_VERIFY').length} still TODO_VERIFY.`);

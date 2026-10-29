@@ -48,6 +48,8 @@ const TYPES: [RegExp, string][] = [
   [/LODGING|HOTEL/, 'hotel'],
   [/RENTAL_CAR/, 'car_rental'],
   [/GROCER/, 'groceries'],
+  [/GAS(_|$)|FUEL/, 'fuel'],
+  [/PHARMAC/, 'pharmacy'],
   [/RESTAURANT|FAST_FOOD|COFFEE|FOOD_AND_DRINK/, 'restaurant'],
   [/ELECTRONICS/, 'electronics'],
   [/CLOTHING/, 'clothing'],

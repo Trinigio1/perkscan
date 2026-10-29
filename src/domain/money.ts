@@ -169,7 +169,7 @@ export interface SetupStep {
   id: 'cards' | 'inbox';
   title: string;
   done: boolean;
-  route: '/add-card' | '/connect-gmail';
+  route: '/add-card' | '/connect-bank';
 }
 
 /** What a new user still has to do before PerkScan can find anything. */
@@ -177,6 +177,6 @@ export function setupSteps(d: { userCards: unknown[]; receipts: unknown[]; oppor
   const readSomething = d.receipts.length > 0 || d.opportunities.some((o) => !!o.source_message_id);
   return [
     { id: 'cards', title: 'Add your cards', done: d.userCards.length > 0, route: '/add-card' },
-    { id: 'inbox', title: 'Connect your email or texts', done: readSomething, route: '/connect-gmail' },
+    { id: 'inbox', title: 'Connect your bank or email', done: readSomething, route: '/connect-bank' },
   ];
 }

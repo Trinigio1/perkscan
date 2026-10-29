@@ -10,13 +10,15 @@ import { remainingValue } from './score';
 import type { Card, CardBenefit, Opportunity, Receipt, UserCard } from './types';
 
 export type SpendCategory =
-  | 'delivery_rides' | 'dining' | 'groceries' | 'travel' | 'car_rental'
+  | 'delivery_rides' | 'dining' | 'groceries' | 'gas' | 'drugstores' | 'travel' | 'car_rental'
   | 'electronics' | 'shopping' | 'phone_bill' | 'subscriptions' | 'other';
 
 export const SPEND_LABELS: Record<SpendCategory, string> = {
   delivery_rides: 'Delivery & rides',
   dining: 'Dining',
   groceries: 'Groceries',
+  gas: 'Gas',
+  drugstores: 'Drugstore',
   travel: 'Flights & hotels',
   car_rental: 'Car rental',
   electronics: 'Electronics',
@@ -31,6 +33,7 @@ const FROM_PURCHASE: Record<string, SpendCategory> = {
   flight: 'travel', hotel: 'travel', travel_other: 'travel', car_rental: 'car_rental',
   electronics: 'electronics', appliance: 'electronics', phone: 'electronics',
   clothing: 'shopping', other_goods: 'shopping', phone_bill: 'phone_bill', subscription: 'subscriptions', service: 'subscriptions',
+  fuel: 'gas', pharmacy: 'drugstores',
 };
 
 /** Protection kinds (from benefit ids "<card>__<kind>") that matter for each kind of purchase. */
@@ -45,6 +48,8 @@ const PROTECTIONS: Partial<Record<SpendCategory, string[]>> = {
 const KEYWORDS: [RegExp, SpendCategory][] = [
   [/uber eats|doordash|grubhub|deliveroo|food ?drop|bento/i, 'delivery_rides'],
   [/\buber\b|lyft|taxi|\bride/i, 'delivery_rides'],
+  [/\bshell\b|exxon|mobil\b|chevron|\bbp\b|sunoco|wawa|marathon petro|valero|speedway|circle k|racetrac|costco gas|gas station/i, 'gas'],
+  [/\bcvs\b|walgreens|rite aid|duane reade|pharmacy/i, 'drugstores'],
   [/airline|airways|caribbean air|\bair\b|hotel|resort|airbnb|expedia|booking\.com|marriott|hilton/i, 'travel'],
   [/hertz|avis|budget|enterprise|rent a car|car rental/i, 'car_rental'],
   [/massy|pricesmart|hi-?lo|supermarket|grocer|xtra foods|whole foods|walmart/i, 'groceries'],
@@ -60,6 +65,11 @@ export function guessCategory(merchant: string, receipts: Receipt[]): SpendCateg
   const past = receipts.find((r) => r.purchase_type && sameMerchant(r.merchant, merchant));
   if (past?.purchase_type && FROM_PURCHASE[past.purchase_type]) return FROM_PURCHASE[past.purchase_type]!;
   return KEYWORDS.find(([re]) => re.test(merchant))?.[1] ?? 'other';
+}
+
+/** A purchase's kind from its receipt (what the reader or bank said it was), else from the store's name. */
+export function categoryFromPurchase(merchant: string, purchaseType: string | null): SpendCategory {
+  return (purchaseType && FROM_PURCHASE[purchaseType]) || (KEYWORDS.find(([re]) => re.test(merchant))?.[1] ?? 'other');
 }
 
 /** Stores PerkScan has seen (receipts, offers) or that card credits name, for suggestions. */

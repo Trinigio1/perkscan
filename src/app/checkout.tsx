@@ -7,6 +7,7 @@ import { Disclaimer } from '@/components/Disclaimer';
 import { OfferRow } from '@/components/OfferRow';
 import { Button, Chip, Empty, Panel, Row, Screen, T } from '@/components/ui';
 import { checkoutStack, guessCategory, knownMerchants, SPEND_LABELS, type CardPick, type Reason, type SpendCategory } from '@/domain/checkout';
+import { bestEarn, capLabel, type EarnPick } from '@/domain/earn';
 import { formatMoney } from '@/domain/format';
 import { track } from '@/lib/analytics';
 import { useData, useLookups } from '@/lib/data';
@@ -52,6 +53,11 @@ export default function Checkout() {
           })
         : null,
     [merchant, category, data, recoveredByOpp],
+  );
+  // Which card earns the most here, from the issuers' own rates.
+  const earn = useMemo(
+    () => (merchant && category ? bestEarn(merchant, category, { userCards: data.userCards, cards: data.cards, rates: data.earnRates, rewards: data.cardRewards }) : null),
+    [merchant, category, data.userCards, data.cards, data.earnRates, data.cardRewards],
   );
   const now = new Date();
 
@@ -125,6 +131,24 @@ export default function Checkout() {
               ))}
             </Panel>
           )}
+
+          {earn && earn.picks.length ? (
+            <Panel style={{ gap: space.sm }}>
+              <T variant="overline" muted>Most rewards</T>
+              {earn.best ? <EarnLine p={earn.best} label={userCardLabel(earn.best.userCardId)} highlight /> : <T muted>Your cards earn about the same here.</T>}
+              {earn.picks.filter((p) => p !== earn.best).map((p) => (
+                <View key={p.userCardId} style={{ borderTopWidth: 1, borderTopColor: c.border, paddingTop: space.sm }}>
+                  <EarnLine p={p} label={userCardLabel(p.userCardId)} />
+                </View>
+              ))}
+              {earn.maybe.map((p) => (
+                <T key={`${p.userCardId}-${p.rate.category}`} variant="caption" muted>
+                  Maybe {p.label} with {userCardLabel(p.userCardId)}, if {p.rate.needs}.
+                </T>
+              ))}
+              <T variant="caption" faint>From each issuer’s own rates. Points count only at the cash value the issuer states.</T>
+            </Panel>
+          ) : null}
 
           <View style={{ gap: space.sm }}>
             <T variant="heading">Use with it</T>
@@ -209,6 +233,22 @@ function CardChoice({ pick, label, highlight }: { pick: CardPick; label: string;
           <T variant="caption" style={{ flex: 1 }} color={r.tone === 'warn' ? c.warn : undefined}>{r.text}</T>
         </Row>
       ))}
+    </View>
+  );
+}
+
+function EarnLine({ p, label, highlight }: { p: EarnPick; label: string; highlight?: boolean }) {
+  const c = useColors();
+  const extra = [p.valueLabel, capLabel(p.rate), p.rate.needs ? `with ${p.rate.needs}` : null].filter(Boolean).join(' · ');
+  return (
+    <View style={{ gap: 2 }}>
+      <Row gap={space.sm}>
+        <T variant={highlight ? 'subheading' : 'label'} style={{ flex: 1 }} numberOfLines={1}>{label}</T>
+        <T variant={highlight ? 'subheading' : 'label'} color={highlight ? c.accentStrong : c.text}>{p.label}</T>
+      </Row>
+      {highlight ? <T variant="caption" color={c.accentStrong}>Earns the most here</T> : null}
+      {extra ? <T variant="caption" muted>{extra}</T> : null}
+      {p.rate.note ? <T variant="caption" faint>{p.rate.note}</T> : null}
     </View>
   );
 }

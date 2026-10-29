@@ -27,6 +27,7 @@ export const EVENTS = {
   perk_for_you: { action: ['open', 'have', 'dismissed', 'undo'], group: ['yours', 'claim'] },
   perk_setup: { action: ['done', 'skipped', 'undo'] },
   bank_connect: { step: ['opened', 'done', 'disconnected'] },
+  scan_viewed: { lines: 'small_int' },
   deal_feedback: { action: ['saved', 'dismissed', 'didnt_work'] },
   interests_saved: { count: 'small_int' },
   gmail_token_created: {},

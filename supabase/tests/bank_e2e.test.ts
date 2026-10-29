@@ -40,7 +40,7 @@ const fakeFetch = async (url: string, init?: RequestInit) => {
     case '/item/public_token/exchange':
       return ok({ access_token: 'access-sandbox-secret-token', item_id: 'item-1' });
     case '/accounts/get':
-      return ok({ accounts: [{ account_id: 'acc-cc', name: 'Premium Rewards', mask: '6042', type: 'credit', subtype: 'credit card' }, { account_id: 'acc-chk', name: 'Checking', mask: '1234', type: 'depository', subtype: 'checking' }], item: { institution_id: 'ins_1' } });
+      return ok({ accounts: [{ account_id: 'acc-cc', name: 'Premium Rewards', mask: '6042', type: 'credit', subtype: 'credit card' }, { account_id: 'acc-cc2', name: 'Customized Cash Rewards', mask: '7777', type: 'credit', subtype: 'credit card' }, { account_id: 'acc-chk', name: 'Checking', mask: '1234', type: 'depository', subtype: 'checking' }], item: { institution_id: 'ins_1' } });
     case '/institutions/get_by_id':
       return ok({ institution: { name: 'Bank of America' } });
     case '/transactions/sync': {
@@ -108,6 +108,9 @@ Deno.test('connect a bank, bring in purchases, merge with emailed receipts, stay
     assert(conn!.institution_name === 'Bank of America' && conn!.status === 'active' && conn!.cursor, `connection: ${JSON.stringify(conn)}`);
     const { data: secret } = await admin.from('bank_secrets').select('access_token').eq('connection_id', conn!.id).single();
     assert((secret!.access_token as string).startsWith('v1:') && !(secret!.access_token as string).includes('access-sandbox'), 'token stored encrypted');
+    // A credit card in the bank the user hasn't added is suggested; the one they have and the checking account aren't.
+    const { data: spotted } = await admin.from('card_sightings').select('issuer, product, last_four').eq('user_id', uid);
+    assert(spotted!.length === 1 && spotted![0]!.last_four === '7777' && spotted![0]!.product === 'Customized Cash Rewards', `card suggested: ${JSON.stringify(spotted)}`);
     const { data: accts } = await admin.from('bank_accounts').select('mask').eq('connection_id', conn!.id);
     assert(accts!.every((a) => /^\d{4}$/.test(a.mask as string)), 'accounts keep only last four');
 

@@ -1,6 +1,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { findDuplicate, MERGE_WINDOW_DAYS, mergeFields, type ExistingReceipt } from '../inbox/merge.ts';
 import type { ReceiptRow } from '../inbox/opportunities.ts';
+import { purchaseExtras } from '../inbox/pipeline.ts';
 import { matchAndApply } from '../matching/apply.ts';
 import { PlaidError } from './plaid.ts';
 import type { BankProvider, SyncPage } from './provider.ts';
@@ -108,13 +109,17 @@ export async function syncConnection(db: SupabaseClient, provider: BankProvider,
   }
 
   const touched: string[] = [];
+  const fresh: string[] = [];
   let added = 0;
   let updated = 0;
   for (const t of [...page.added, ...page.modified]) {
     const r = await saveTxn(db, userId, t, accounts);
     if (!r) continue;
     touched.push(r.id);
-    if (r.added) added += 1;
+    if (r.added) {
+      added += 1;
+      fresh.push(r.id);
+    }
     else updated += 1;
   }
   // Gone at the bank (a pending charge that dropped, or one replaced by its settled version).
@@ -130,7 +135,19 @@ export async function syncConnection(db: SupabaseClient, provider: BankProvider,
       removed += 1;
     }
   }
-  if (touched.length) await matchAndApply(db, userId, [...new Set(touched)]);
+  if (touched.length) {
+    // Same checks an emailed card alert gets: a price-drop window at stores with a price-adjustment
+    // policy, and a possible double charge. Then which card, credits used and protections.
+    const { data: profile } = await db.from('profiles').select('country').eq('id', userId).maybeSingle();
+    const today = new Date().toISOString().slice(0, 10);
+    for (const id of fresh) {
+      for (const o of await purchaseExtras(db, userId, id, null, (profile?.country as string | null) ?? null, today)) {
+        const { error: oErr } = await db.from('opportunities').insert({ ...o, user_id: userId, source_receipt_id: id });
+        if (oErr && oErr.code !== '23505') throw new Error(`opportunities: ${oErr.message}`);
+      }
+    }
+    await matchAndApply(db, userId, [...new Set(touched)]);
+  }
   await db.from('bank_connections').update({ cursor: page.nextCursor, last_synced_at: new Date().toISOString(), status: 'active', last_error: null }).eq('id', connectionId);
   return { added, updated, removed, status: 'ok' };
 }
@@ -148,6 +165,15 @@ export async function connect(db: SupabaseClient, provider: BankProvider, key: C
   const id = conn.id as string;
   const { error: sErr } = await db.from('bank_secrets').upsert({ connection_id: id, access_token: await seal(accessToken, key), updated_at: new Date().toISOString() });
   if (sErr) throw new Error(`bank_secrets: ${sErr.message}`);
+  // Credit cards in the connection the user hasn't added yet: suggested like cards seen in email, so one
+  // tap adds the card and its credits. Only the name and last four digits.
+  const { data: have } = await db.from('user_cards').select('last_four').eq('user_id', userId);
+  const known = new Set(((have ?? []) as { last_four: string | null }[]).map((u) => u.last_four));
+  for (const a of accounts) {
+    if (a.type !== 'credit' || !a.mask || !/^\d{4}$/.test(a.mask) || known.has(a.mask)) continue;
+    const { error: cErr } = await db.rpc('_record_card_sighting', { p_user: userId, p_issuer: (institutionName ?? 'Your bank').slice(0, 60), p_product: a.name.slice(0, 80), p_last_four: a.mask, p_message: null });
+    if (cErr) console.warn('card sighting', cErr.message);
+  }
   if (accounts.length) {
     const rows = accounts.map((a) => ({ connection_id: id, account_id: a.account_id, user_id: userId, name: a.name.slice(0, 80), mask: a.mask && /^\d{2,4}$/.test(a.mask) ? a.mask : null, type: a.type, subtype: a.subtype }));
     const { error: aErr } = await db.from('bank_accounts').upsert(rows, { onConflict: 'connection_id,account_id' });

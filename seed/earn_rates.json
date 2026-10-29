@@ -1,0 +1,1028 @@
+{
+  "_readme": "Earn rates per card, each from the issuer’s own page (source_url), checked on last_verified. Cards with points or miles have a cash value only when the issuer states one; otherwise PerkScan shows the rate but never turns it into dollars. \"needs\" marks rates that depend on something at checkout (Apple Pay, a chosen or rotating category).",
+  "last_verified": "2026-10-29",
+  "cards": [
+    {
+      "card_id": "boa_premium_rewards",
+      "reward": {
+        "kind": "points",
+        "cents_per_unit": 1,
+        "value_basis": "Bank of America: points are worth 1¢ each as cash rewards",
+        "value_source_url": "https://www.bankofamerica.com/credit-cards/products/premium-rewards-credit-card/"
+      },
+      "rates": [
+        {
+          "category": "travel",
+          "rate": 2,
+          "source_url": "https://www.bankofamerica.com/credit-cards/products/premium-rewards-credit-card/"
+        },
+        {
+          "category": "dining",
+          "rate": 2,
+          "source_url": "https://www.bankofamerica.com/credit-cards/products/premium-rewards-credit-card/"
+        },
+        {
+          "category": "everything",
+          "rate": 1.5,
+          "source_url": "https://www.bankofamerica.com/credit-cards/products/premium-rewards-credit-card/"
+        }
+      ],
+      "note": "Preferred Rewards members earn 25%–75% more points."
+    },
+    {
+      "card_id": "boa_customized_cash",
+      "reward": {
+        "kind": "cash",
+        "cents_per_unit": null,
+        "value_basis": null,
+        "value_source_url": "https://www.bankofamerica.com/credit-cards/products/cash-back-credit-card/cash-back-category-choices/"
+      },
+      "rates": [
+        {
+          "category": "groceries",
+          "rate": 2,
+          "cap": 2500,
+          "cap_period": "quarter",
+          "note": "Grocery stores and wholesale clubs; the $2,500 a quarter is shared with your 3% category",
+          "source_url": "https://www.bankofamerica.com/credit-cards/products/cash-back-credit-card/cash-back-category-choices/"
+        },
+        {
+          "category": "choice",
+          "rate": 3,
+          "cap": 2500,
+          "cap_period": "quarter",
+          "needs": "the category you picked (gas, online shopping, dining, travel, drugstores or home improvement)",
+          "source_url": "https://www.bankofamerica.com/credit-cards/products/cash-back-credit-card/cash-back-category-choices/"
+        },
+        {
+          "category": "everything",
+          "rate": 1,
+          "source_url": "https://www.bankofamerica.com/credit-cards/products/cash-back-credit-card/cash-back-category-choices/"
+        }
+      ]
+    },
+    {
+      "card_id": "amex_gold",
+      "reward": {
+        "kind": "points",
+        "cents_per_unit": 0.6,
+        "value_basis": "American Express: 0.6¢ per point as a statement credit (worth more for some travel)",
+        "value_source_url": "https://www.americanexpress.com/en-us/credit-cards/credit-intel/american-express-points-value/"
+      },
+      "rates": [
+        {
+          "category": "dining",
+          "rate": 4,
+          "cap": 50000,
+          "cap_period": "year",
+          "note": "Restaurants worldwide, incl. U.S. takeout and delivery",
+          "source_url": "https://www.americanexpress.com/en-us/credit-cards/credit-intel/gold-card-rewards-points/"
+        },
+        {
+          "category": "groceries",
+          "rate": 4,
+          "cap": 25000,
+          "cap_period": "year",
+          "note": "U.S. supermarkets; not superstores or warehouse clubs",
+          "source_url": "https://www.americanexpress.com/en-us/credit-cards/credit-intel/gold-card-rewards-points/"
+        },
+        {
+          "category": "flights",
+          "rate": 3,
+          "note": "Booked directly with airlines or through AmexTravel.com",
+          "source_url": "https://www.americanexpress.com/en-us/credit-cards/credit-intel/gold-card-rewards-points/"
+        },
+        {
+          "category": "everything",
+          "rate": 1,
+          "source_url": "https://www.americanexpress.com/en-us/credit-cards/credit-intel/gold-card-rewards-points/"
+        }
+      ]
+    },
+    {
+      "card_id": "amex_platinum",
+      "reward": {
+        "kind": "points",
+        "cents_per_unit": 0.6,
+        "value_basis": "American Express: 0.6¢ per point as a statement credit (worth more for some travel)",
+        "value_source_url": "https://www.americanexpress.com/en-us/credit-cards/credit-intel/american-express-points-value/"
+      },
+      "rates": [
+        {
+          "category": "flights",
+          "rate": 5,
+          "cap": 500000,
+          "cap_period": "year",
+          "note": "Booked directly with airlines or through American Express Travel",
+          "source_url": "https://www.americanexpress.com/us/credit-cards/card/platinum/"
+        },
+        {
+          "category": "portal_hotels",
+          "rate": 5,
+          "merchants": [
+            "american express travel",
+            "amex travel"
+          ],
+          "note": "Prepaid hotels booked through American Express Travel",
+          "source_url": "https://www.americanexpress.com/us/credit-cards/card/platinum/"
+        },
+        {
+          "category": "everything",
+          "rate": 1,
+          "source_url": "https://www.americanexpress.com/us/credit-cards/card/platinum/"
+        }
+      ]
+    },
+    {
+      "card_id": "amex_blue_cash_preferred",
+      "reward": {
+        "kind": "cash",
+        "cents_per_unit": null,
+        "value_basis": null,
+        "value_source_url": "https://www.americanexpress.com/us/credit-cards/card/blue-cash-preferred/"
+      },
+      "rates": [
+        {
+          "category": "groceries",
+          "rate": 6,
+          "cap": 6000,
+          "cap_period": "year",
+          "note": "U.S. supermarkets; not superstores or warehouse clubs",
+          "source_url": "https://www.americanexpress.com/us/credit-cards/card/blue-cash-preferred/"
+        },
+        {
+          "category": "streaming",
+          "rate": 6,
+          "note": "Select U.S. streaming subscriptions",
+          "source_url": "https://www.americanexpress.com/us/credit-cards/card/blue-cash-preferred/"
+        },
+        {
+          "category": "gas",
+          "rate": 3,
+          "note": "U.S. gas stations",
+          "source_url": "https://www.americanexpress.com/us/credit-cards/card/blue-cash-preferred/"
+        },
+        {
+          "category": "transit",
+          "rate": 3,
+          "note": "Rideshare, taxis, trains, parking, tolls, buses",
+          "source_url": "https://www.americanexpress.com/us/credit-cards/card/blue-cash-preferred/"
+        },
+        {
+          "category": "everything",
+          "rate": 1,
+          "source_url": "https://www.americanexpress.com/us/credit-cards/card/blue-cash-preferred/"
+        }
+      ]
+    },
+    {
+      "card_id": "amex_blue_cash_everyday",
+      "reward": {
+        "kind": "cash",
+        "cents_per_unit": null,
+        "value_basis": null,
+        "value_source_url": "https://www.americanexpress.com/us/credit-cards/card/blue-cash-everyday/"
+      },
+      "rates": [
+        {
+          "category": "groceries",
+          "rate": 3,
+          "cap": 6000,
+          "cap_period": "year",
+          "note": "U.S. supermarkets",
+          "source_url": "https://www.americanexpress.com/us/credit-cards/card/blue-cash-everyday/"
+        },
+        {
+          "category": "online_retail",
+          "rate": 3,
+          "cap": 6000,
+          "cap_period": "year",
+          "note": "U.S. online shopping for physical goods",
+          "source_url": "https://www.americanexpress.com/us/credit-cards/card/blue-cash-everyday/"
+        },
+        {
+          "category": "gas",
+          "rate": 3,
+          "cap": 6000,
+          "cap_period": "year",
+          "note": "U.S. gas stations",
+          "source_url": "https://www.americanexpress.com/us/credit-cards/card/blue-cash-everyday/"
+        },
+        {
+          "category": "everything",
+          "rate": 1,
+          "source_url": "https://www.americanexpress.com/us/credit-cards/card/blue-cash-everyday/"
+        }
+      ]
+    },
+    {
+      "card_id": "amex_green",
+      "reward": {
+        "kind": "points",
+        "cents_per_unit": 0.6,
+        "value_basis": "American Express: 0.6¢ per point as a statement credit (worth more for some travel)",
+        "value_source_url": "https://www.americanexpress.com/en-us/credit-cards/credit-intel/american-express-points-value/"
+      },
+      "rates": [
+        {
+          "category": "dining",
+          "rate": 3,
+          "source_url": "https://global.americanexpress.com/card-benefits/detail/earn-membership-rewards-points/amex-green"
+        },
+        {
+          "category": "transit",
+          "rate": 3,
+          "note": "Rideshare, taxis, trains, parking, tolls, buses",
+          "source_url": "https://global.americanexpress.com/card-benefits/detail/earn-membership-rewards-points/amex-green"
+        },
+        {
+          "category": "travel",
+          "rate": 3,
+          "source_url": "https://global.americanexpress.com/card-benefits/detail/earn-membership-rewards-points/amex-green"
+        },
+        {
+          "category": "everything",
+          "rate": 1,
+          "source_url": "https://global.americanexpress.com/card-benefits/detail/earn-membership-rewards-points/amex-green"
+        }
+      ]
+    },
+    {
+      "card_id": "amex_delta_gold",
+      "reward": {
+        "kind": "miles",
+        "cents_per_unit": null,
+        "value_basis": null,
+        "value_source_url": null
+      },
+      "rates": [
+        {
+          "category": "merchant",
+          "rate": 2,
+          "merchants": [
+            "delta",
+            "delta air lines"
+          ],
+          "source_url": "https://www.americanexpress.com/us/credit-cards/card/delta-skymiles-gold-american-express-card/"
+        },
+        {
+          "category": "dining",
+          "rate": 2,
+          "source_url": "https://www.americanexpress.com/us/credit-cards/card/delta-skymiles-gold-american-express-card/"
+        },
+        {
+          "category": "everything",
+          "rate": 1,
+          "source_url": "https://www.americanexpress.com/us/credit-cards/card/delta-skymiles-gold-american-express-card/"
+        }
+      ]
+    },
+    {
+      "card_id": "amex_hilton_surpass",
+      "reward": {
+        "kind": "points",
+        "cents_per_unit": null,
+        "value_basis": null,
+        "value_source_url": null
+      },
+      "rates": [
+        {
+          "category": "merchant",
+          "rate": 12,
+          "merchants": [
+            "hilton"
+          ],
+          "note": "Hilton hotels and resorts, booked directly with Hilton",
+          "source_url": "https://www.americanexpress.com/us/credit-cards/card/hilton-honors-surpass/"
+        },
+        {
+          "category": "dining",
+          "rate": 6,
+          "note": "U.S. restaurants",
+          "source_url": "https://www.americanexpress.com/us/credit-cards/card/hilton-honors-surpass/"
+        },
+        {
+          "category": "groceries",
+          "rate": 6,
+          "note": "U.S. supermarkets",
+          "source_url": "https://www.americanexpress.com/us/credit-cards/card/hilton-honors-surpass/"
+        },
+        {
+          "category": "gas",
+          "rate": 6,
+          "note": "U.S. gas stations",
+          "source_url": "https://www.americanexpress.com/us/credit-cards/card/hilton-honors-surpass/"
+        },
+        {
+          "category": "online_retail",
+          "rate": 4,
+          "note": "U.S. online retail",
+          "source_url": "https://www.americanexpress.com/us/credit-cards/card/hilton-honors-surpass/"
+        },
+        {
+          "category": "everything",
+          "rate": 3,
+          "source_url": "https://www.americanexpress.com/us/credit-cards/card/hilton-honors-surpass/"
+        }
+      ]
+    },
+    {
+      "card_id": "chase_sapphire_preferred",
+      "reward": {
+        "kind": "points",
+        "cents_per_unit": 1,
+        "value_basis": "Chase: points are worth 1¢ each as cash back",
+        "value_source_url": "https://www.chase.com/personal/credit-cards/education/basics/how-chase-ultimate-rewards-works"
+      },
+      "rates": [
+        {
+          "category": "portal",
+          "rate": 5,
+          "merchants": [
+            "chase travel"
+          ],
+          "note": "Booked through Chase Travel",
+          "source_url": "https://creditcards.chase.com/rewards-credit-cards/sapphire/preferred"
+        },
+        {
+          "category": "dining",
+          "rate": 3,
+          "note": "Incl. takeout and eligible delivery",
+          "source_url": "https://creditcards.chase.com/rewards-credit-cards/sapphire/preferred"
+        },
+        {
+          "category": "online_groceries",
+          "rate": 3,
+          "note": "Online groceries; not Target, Walmart or wholesale clubs",
+          "source_url": "https://creditcards.chase.com/rewards-credit-cards/sapphire/preferred"
+        },
+        {
+          "category": "streaming",
+          "rate": 3,
+          "note": "Select streaming services",
+          "source_url": "https://creditcards.chase.com/rewards-credit-cards/sapphire/preferred"
+        },
+        {
+          "category": "gas",
+          "rate": 3,
+          "note": "Gas and EV charging",
+          "source_url": "https://media.chase.com/news/Meet-the-New-Chase-Sapphire-Preferred"
+        },
+        {
+          "category": "travel",
+          "rate": 2,
+          "source_url": "https://creditcards.chase.com/rewards-credit-cards/sapphire/preferred"
+        },
+        {
+          "category": "everything",
+          "rate": 1,
+          "source_url": "https://creditcards.chase.com/rewards-credit-cards/sapphire/preferred"
+        }
+      ]
+    },
+    {
+      "card_id": "chase_sapphire_reserve",
+      "reward": {
+        "kind": "points",
+        "cents_per_unit": 1,
+        "value_basis": "Chase: points are worth 1¢ each as cash back",
+        "value_source_url": "https://www.chase.com/personal/credit-cards/education/basics/how-chase-ultimate-rewards-works"
+      },
+      "rates": [
+        {
+          "category": "portal",
+          "rate": 8,
+          "merchants": [
+            "chase travel"
+          ],
+          "note": "Booked through Chase Travel",
+          "source_url": "https://creditcards.chase.com/rewards-credit-cards/sapphire/reserve"
+        },
+        {
+          "category": "flights",
+          "rate": 4,
+          "note": "Booked directly with the airline",
+          "source_url": "https://creditcards.chase.com/rewards-credit-cards/sapphire/reserve"
+        },
+        {
+          "category": "hotels",
+          "rate": 4,
+          "note": "Booked directly with the hotel",
+          "source_url": "https://creditcards.chase.com/rewards-credit-cards/sapphire/reserve"
+        },
+        {
+          "category": "dining",
+          "rate": 3,
+          "note": "Incl. takeout and eligible delivery",
+          "source_url": "https://creditcards.chase.com/rewards-credit-cards/sapphire/reserve"
+        },
+        {
+          "category": "everything",
+          "rate": 1,
+          "source_url": "https://creditcards.chase.com/rewards-credit-cards/sapphire/reserve"
+        }
+      ]
+    },
+    {
+      "card_id": "chase_freedom_unlimited",
+      "reward": {
+        "kind": "cash",
+        "cents_per_unit": null,
+        "value_basis": null,
+        "value_source_url": "https://creditcards.chase.com/cash-back-credit-cards/freedom/unlimited"
+      },
+      "rates": [
+        {
+          "category": "portal",
+          "rate": 5,
+          "merchants": [
+            "chase travel"
+          ],
+          "source_url": "https://creditcards.chase.com/cash-back-credit-cards/freedom/unlimited"
+        },
+        {
+          "category": "dining",
+          "rate": 3,
+          "note": "Incl. takeout and eligible delivery",
+          "source_url": "https://creditcards.chase.com/cash-back-credit-cards/freedom/unlimited"
+        },
+        {
+          "category": "drugstores",
+          "rate": 3,
+          "source_url": "https://creditcards.chase.com/cash-back-credit-cards/freedom/unlimited"
+        },
+        {
+          "category": "everything",
+          "rate": 1.5,
+          "source_url": "https://creditcards.chase.com/cash-back-credit-cards/freedom/unlimited"
+        }
+      ]
+    },
+    {
+      "card_id": "chase_freedom_flex",
+      "reward": {
+        "kind": "cash",
+        "cents_per_unit": null,
+        "value_basis": null,
+        "value_source_url": "https://creditcards.chase.com/cash-back-credit-cards/freedom/flex"
+      },
+      "rates": [
+        {
+          "category": "portal",
+          "rate": 5,
+          "merchants": [
+            "chase travel"
+          ],
+          "source_url": "https://creditcards.chase.com/cash-back-credit-cards/freedom/flex"
+        },
+        {
+          "category": "dining",
+          "rate": 3,
+          "source_url": "https://creditcards.chase.com/cash-back-credit-cards/freedom/flex"
+        },
+        {
+          "category": "drugstores",
+          "rate": 3,
+          "source_url": "https://creditcards.chase.com/cash-back-credit-cards/freedom/flex"
+        },
+        {
+          "category": "rotating",
+          "rate": 5,
+          "cap": 1500,
+          "cap_period": "quarter",
+          "needs": "this quarter’s categories, activated each quarter",
+          "source_url": "https://creditcards.chase.com/cash-back-credit-cards/freedom/flex"
+        },
+        {
+          "category": "everything",
+          "rate": 1,
+          "source_url": "https://creditcards.chase.com/cash-back-credit-cards/freedom/flex"
+        }
+      ]
+    },
+    {
+      "card_id": "chase_prime_visa",
+      "reward": {
+        "kind": "cash",
+        "cents_per_unit": null,
+        "value_basis": null,
+        "value_source_url": "https://creditcards.chase.com/cash-back-credit-cards/amazon-prime-rewards"
+      },
+      "rates": [
+        {
+          "category": "merchant",
+          "rate": 5,
+          "merchants": [
+            "amazon",
+            "whole foods",
+            "audible"
+          ],
+          "needs": "an eligible Prime membership",
+          "source_url": "https://creditcards.chase.com/cash-back-credit-cards/amazon-prime-rewards"
+        },
+        {
+          "category": "portal",
+          "rate": 5,
+          "merchants": [
+            "chase travel"
+          ],
+          "source_url": "https://creditcards.chase.com/cash-back-credit-cards/amazon-prime-rewards"
+        },
+        {
+          "category": "gas",
+          "rate": 2,
+          "source_url": "https://creditcards.chase.com/cash-back-credit-cards/amazon-prime-rewards"
+        },
+        {
+          "category": "dining",
+          "rate": 2,
+          "source_url": "https://creditcards.chase.com/cash-back-credit-cards/amazon-prime-rewards"
+        },
+        {
+          "category": "transit",
+          "rate": 2,
+          "note": "Local transit and commuting, incl. rideshare",
+          "source_url": "https://creditcards.chase.com/cash-back-credit-cards/amazon-prime-rewards"
+        },
+        {
+          "category": "everything",
+          "rate": 1,
+          "source_url": "https://creditcards.chase.com/cash-back-credit-cards/amazon-prime-rewards"
+        }
+      ]
+    },
+    {
+      "card_id": "chase_united_explorer",
+      "reward": {
+        "kind": "miles",
+        "cents_per_unit": null,
+        "value_basis": null,
+        "value_source_url": null
+      },
+      "rates": [
+        {
+          "category": "dining",
+          "rate": 2,
+          "source_url": "https://creditcards.chase.com/travel-credit-cards/united/united-explorer"
+        },
+        {
+          "category": "hotels",
+          "rate": 2,
+          "note": "Booked directly with the hotel",
+          "source_url": "https://creditcards.chase.com/travel-credit-cards/united/united-explorer"
+        },
+        {
+          "category": "everything",
+          "rate": 1,
+          "source_url": "https://creditcards.chase.com/travel-credit-cards/united/united-explorer"
+        }
+      ]
+    },
+    {
+      "card_id": "chase_marriott_boundless",
+      "reward": {
+        "kind": "points",
+        "cents_per_unit": null,
+        "value_basis": null,
+        "value_source_url": null
+      },
+      "rates": [
+        {
+          "category": "merchant",
+          "rate": 6,
+          "merchants": [
+            "marriott"
+          ],
+          "note": "Marriott Bonvoy hotels",
+          "source_url": "https://creditcards.chase.com/travel-credit-cards/marriott-bonvoy/boundless"
+        },
+        {
+          "category": "groceries",
+          "rate": 3,
+          "cap": 6000,
+          "cap_period": "year",
+          "note": "Grocery, gas and dining share the $6,000 a year",
+          "source_url": "https://creditcards.chase.com/travel-credit-cards/marriott-bonvoy/boundless"
+        },
+        {
+          "category": "gas",
+          "rate": 3,
+          "cap": 6000,
+          "cap_period": "year",
+          "source_url": "https://creditcards.chase.com/travel-credit-cards/marriott-bonvoy/boundless"
+        },
+        {
+          "category": "dining",
+          "rate": 3,
+          "cap": 6000,
+          "cap_period": "year",
+          "source_url": "https://creditcards.chase.com/travel-credit-cards/marriott-bonvoy/boundless"
+        },
+        {
+          "category": "everything",
+          "rate": 2,
+          "source_url": "https://creditcards.chase.com/travel-credit-cards/marriott-bonvoy/boundless"
+        }
+      ]
+    },
+    {
+      "card_id": "capital_one_venture_x",
+      "reward": {
+        "kind": "miles",
+        "cents_per_unit": null,
+        "value_basis": null,
+        "value_source_url": null
+      },
+      "rates": [
+        {
+          "category": "portal_hotels",
+          "rate": 10,
+          "merchants": [
+            "capital one travel"
+          ],
+          "note": "Hotels and rental cars booked through Capital One Travel",
+          "source_url": "https://www.capitalone.com/credit-cards/venture-x/"
+        },
+        {
+          "category": "portal",
+          "rate": 5,
+          "merchants": [
+            "capital one travel"
+          ],
+          "note": "Flights and vacation rentals booked through Capital One Travel",
+          "source_url": "https://www.capitalone.com/credit-cards/venture-x/"
+        },
+        {
+          "category": "everything",
+          "rate": 2,
+          "source_url": "https://www.capitalone.com/credit-cards/venture-x/"
+        }
+      ]
+    },
+    {
+      "card_id": "capital_one_venture",
+      "reward": {
+        "kind": "miles",
+        "cents_per_unit": null,
+        "value_basis": null,
+        "value_source_url": null
+      },
+      "rates": [
+        {
+          "category": "portal_hotels",
+          "rate": 5,
+          "merchants": [
+            "capital one travel"
+          ],
+          "note": "Hotels, vacation rentals and rental cars booked through Capital One Travel",
+          "source_url": "https://www.capitalone.com/credit-cards/venture/"
+        },
+        {
+          "category": "everything",
+          "rate": 2,
+          "source_url": "https://www.capitalone.com/credit-cards/venture/"
+        }
+      ]
+    },
+    {
+      "card_id": "capital_one_quicksilver",
+      "reward": {
+        "kind": "cash",
+        "cents_per_unit": null,
+        "value_basis": null,
+        "value_source_url": "https://www.capitalone.com/learn-grow/money-management/quicksilver-card-benefits/"
+      },
+      "rates": [
+        {
+          "category": "portal_hotels",
+          "rate": 5,
+          "merchants": [
+            "capital one travel"
+          ],
+          "note": "Hotels, rental cars and vacation rentals booked through Capital One Travel",
+          "source_url": "https://www.capitalone.com/learn-grow/money-management/quicksilver-card-benefits/"
+        },
+        {
+          "category": "everything",
+          "rate": 1.5,
+          "source_url": "https://www.capitalone.com/learn-grow/money-management/quicksilver-card-benefits/"
+        }
+      ]
+    },
+    {
+      "card_id": "capital_one_savor",
+      "reward": {
+        "kind": "cash",
+        "cents_per_unit": null,
+        "value_basis": null,
+        "value_source_url": "https://www.capitalone.com/credit-cards/savor/"
+      },
+      "rates": [
+        {
+          "category": "dining",
+          "rate": 3,
+          "source_url": "https://www.capitalone.com/credit-cards/savor/"
+        },
+        {
+          "category": "groceries",
+          "rate": 3,
+          "note": "Not superstores like Walmart and Target",
+          "source_url": "https://www.capitalone.com/credit-cards/savor/"
+        },
+        {
+          "category": "entertainment",
+          "rate": 3,
+          "source_url": "https://www.capitalone.com/credit-cards/savor/"
+        },
+        {
+          "category": "streaming",
+          "rate": 3,
+          "note": "Popular streaming services",
+          "source_url": "https://www.capitalone.com/credit-cards/savor/"
+        },
+        {
+          "category": "everything",
+          "rate": 1,
+          "source_url": "https://www.capitalone.com/credit-cards/savor/"
+        }
+      ]
+    },
+    {
+      "card_id": "citi_double_cash",
+      "reward": {
+        "kind": "cash",
+        "cents_per_unit": null,
+        "value_basis": null,
+        "value_source_url": "https://www.citi.com/credit-cards/citi-double-cash-credit-card"
+      },
+      "rates": [
+        {
+          "category": "portal_hotels",
+          "rate": 5,
+          "merchants": [
+            "citi travel"
+          ],
+          "note": "Hotels, rental cars and attractions booked through Citi Travel",
+          "source_url": "https://www.citi.com/credit-cards/citi-double-cash-credit-card"
+        },
+        {
+          "category": "everything",
+          "rate": 2,
+          "note": "1% when you buy, 1% as you pay",
+          "source_url": "https://www.citi.com/credit-cards/citi-double-cash-credit-card"
+        }
+      ]
+    },
+    {
+      "card_id": "citi_custom_cash",
+      "reward": {
+        "kind": "cash",
+        "cents_per_unit": null,
+        "value_basis": null,
+        "value_source_url": "https://citicards.citi.com/usc/LPACA/Citi/Cards/CustomCash/ATL/index.html"
+      },
+      "rates": [
+        {
+          "category": "top_category",
+          "rate": 5,
+          "cap": 500,
+          "cap_period": "billing_cycle",
+          "needs": "this being your top spending category this billing cycle",
+          "source_url": "https://citicards.citi.com/usc/LPACA/Citi/Cards/CustomCash/ATL/index.html"
+        },
+        {
+          "category": "everything",
+          "rate": 1,
+          "source_url": "https://citicards.citi.com/usc/LPACA/Citi/Cards/CustomCash/ATL/index.html"
+        }
+      ]
+    },
+    {
+      "card_id": "citi_strata_premier",
+      "reward": {
+        "kind": "points",
+        "cents_per_unit": null,
+        "value_basis": null,
+        "value_source_url": null
+      },
+      "rates": [
+        {
+          "category": "portal_hotels",
+          "rate": 10,
+          "merchants": [
+            "citi travel"
+          ],
+          "note": "Hotels, car rentals and attractions booked through Citi Travel",
+          "source_url": "https://www.citi.com/credit-cards/citi-strata-premier-credit-card"
+        },
+        {
+          "category": "flights",
+          "rate": 3,
+          "source_url": "https://www.citi.com/credit-cards/citi-strata-premier-credit-card"
+        },
+        {
+          "category": "hotels",
+          "rate": 3,
+          "source_url": "https://www.citi.com/credit-cards/citi-strata-premier-credit-card"
+        },
+        {
+          "category": "dining",
+          "rate": 3,
+          "source_url": "https://www.citi.com/credit-cards/citi-strata-premier-credit-card"
+        },
+        {
+          "category": "groceries",
+          "rate": 3,
+          "note": "Supermarkets",
+          "source_url": "https://www.citi.com/credit-cards/citi-strata-premier-credit-card"
+        },
+        {
+          "category": "gas",
+          "rate": 3,
+          "note": "Gas and EV charging",
+          "source_url": "https://www.citi.com/credit-cards/citi-strata-premier-credit-card"
+        },
+        {
+          "category": "everything",
+          "rate": 1,
+          "source_url": "https://www.citi.com/credit-cards/citi-strata-premier-credit-card"
+        }
+      ]
+    },
+    {
+      "card_id": "citi_costco",
+      "reward": {
+        "kind": "cash",
+        "cents_per_unit": null,
+        "value_basis": null,
+        "value_source_url": "https://www.citi.com/credit-cards/costco-anywhere-visa-card"
+      },
+      "rates": [
+        {
+          "category": "merchant",
+          "rate": 5,
+          "merchants": [
+            "costco gas"
+          ],
+          "cap": 7000,
+          "cap_period": "year",
+          "note": "Gas at Costco; shares the $7,000 a year with other gas",
+          "source_url": "https://www.citi.com/credit-cards/costco-anywhere-visa-card"
+        },
+        {
+          "category": "gas",
+          "rate": 4,
+          "cap": 7000,
+          "cap_period": "year",
+          "note": "Other gas and EV charging",
+          "source_url": "https://www.citi.com/credit-cards/costco-anywhere-visa-card"
+        },
+        {
+          "category": "dining",
+          "rate": 3,
+          "source_url": "https://www.citi.com/credit-cards/costco-anywhere-visa-card"
+        },
+        {
+          "category": "travel",
+          "rate": 3,
+          "source_url": "https://www.citi.com/credit-cards/costco-anywhere-visa-card"
+        },
+        {
+          "category": "merchant",
+          "rate": 2,
+          "merchants": [
+            "costco"
+          ],
+          "note": "Costco and Costco.com",
+          "source_url": "https://www.citi.com/credit-cards/costco-anywhere-visa-card"
+        },
+        {
+          "category": "everything",
+          "rate": 1,
+          "source_url": "https://www.citi.com/credit-cards/costco-anywhere-visa-card"
+        }
+      ],
+      "note": "Paid once a year as a certificate to use at Costco."
+    },
+    {
+      "card_id": "discover_it",
+      "reward": {
+        "kind": "cash",
+        "cents_per_unit": null,
+        "value_basis": null,
+        "value_source_url": "https://www.discover.com/credit-cards/cash-back/"
+      },
+      "rates": [
+        {
+          "category": "rotating",
+          "rate": 5,
+          "needs": "this quarter’s categories, activated each quarter (up to the quarterly maximum)",
+          "source_url": "https://www.discover.com/credit-cards/cash-back/"
+        },
+        {
+          "category": "everything",
+          "rate": 1,
+          "source_url": "https://www.discover.com/credit-cards/cash-back/"
+        }
+      ]
+    },
+    {
+      "card_id": "apple_card",
+      "reward": {
+        "kind": "cash",
+        "cents_per_unit": null,
+        "value_basis": null,
+        "value_source_url": "https://www.apple.com/apple-card/"
+      },
+      "rates": [
+        {
+          "category": "merchant",
+          "rate": 3,
+          "merchants": [
+            "apple"
+          ],
+          "source_url": "https://www.apple.com/apple-card/"
+        },
+        {
+          "category": "merchant",
+          "rate": 3,
+          "merchants": [
+            "uber",
+            "uber eats",
+            "nike",
+            "walgreens",
+            "exxon",
+            "mobil"
+          ],
+          "needs": "Apple Pay",
+          "source_url": "https://www.apple.com/apple-card/"
+        },
+        {
+          "category": "everything",
+          "rate": 2,
+          "needs": "Apple Pay",
+          "source_url": "https://www.apple.com/apple-card/"
+        },
+        {
+          "category": "everything",
+          "rate": 1,
+          "note": "With the physical card or card number",
+          "source_url": "https://www.apple.com/apple-card/"
+        }
+      ]
+    },
+    {
+      "card_id": "wells_fargo_active_cash",
+      "reward": {
+        "kind": "cash",
+        "cents_per_unit": null,
+        "value_basis": null,
+        "value_source_url": "https://www.wellsfargo.com/assets/pdf/about/investor-relations/annual-reports/2023-annual-report.pdf"
+      },
+      "rates": [
+        {
+          "category": "everything",
+          "rate": 2,
+          "source_url": "https://www.wellsfargo.com/assets/pdf/about/investor-relations/annual-reports/2023-annual-report.pdf"
+        }
+      ]
+    },
+    {
+      "card_id": "wells_fargo_autograph",
+      "reward": {
+        "kind": "points",
+        "cents_per_unit": null,
+        "value_basis": null,
+        "value_source_url": null
+      },
+      "rates": [
+        {
+          "category": "streaming",
+          "rate": 3,
+          "note": "Popular streaming services",
+          "source_url": "https://www.wellsfargo.com/credit-cards/autograph-visa/streaming/"
+        }
+      ]
+    },
+    {
+      "card_id": "target_circle_card",
+      "reward": {
+        "kind": "cash",
+        "cents_per_unit": null,
+        "value_basis": null,
+        "value_source_url": "https://www.target.com/circlecard"
+      },
+      "rates": [
+        {
+          "category": "merchant",
+          "rate": 5,
+          "merchants": [
+            "target"
+          ],
+          "note": "5% off at Target and Target.com; some items excluded",
+          "source_url": "https://www.target.com/circlecard"
+        }
+      ]
+    }
+  ]
+}

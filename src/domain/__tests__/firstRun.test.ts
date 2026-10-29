@@ -7,7 +7,7 @@ const days = (n: number) => new Date(NOW.getTime() + n * 86_400_000).toISOString
 describe('nextStep', () => {
   it('is the first step not done yet, or nothing', () => {
     const cards = { id: 'cards' as const, title: 'Add your cards', done: true, route: '/add-card' as const };
-    const inbox = { id: 'inbox' as const, title: 'Connect your email or texts', done: false, route: '/connect-gmail' as const };
+    const inbox = { id: 'inbox' as const, title: 'Connect your bank or email', done: false, route: '/connect-bank' as const };
     expect(nextStep([cards, inbox])?.id).toBe('inbox');
     expect(nextStep([cards, { ...inbox, done: true }])).toBeNull();
   });

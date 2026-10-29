@@ -3,6 +3,7 @@ import { AppState } from 'react-native';
 import { setHomeCurrency, shortCardName } from '@/domain/format';
 import { domainStoreKey, interestProfile, storeKey, type Deal, type DealFeedback, type StorePair, type StoreStat } from '@/domain/deals';
 import { relevantEvents, type LocalEvent } from '@/domain/events';
+import type { CardReward, EarnRate } from '@/domain/earn';
 import { planMoments, type Moment } from '@/domain/moments';
 import { planRecapMoment } from '@/domain/proof';
 import { isMutedOffer } from '@/domain/mutes';
@@ -52,6 +53,10 @@ export interface AppData {
   cardSightings: CardSighting[];
   /** "I have it" / "Not for me" on suggested perks, by program id. */
   perkFeedback: { program_id: string; action: 'have' | 'dismissed' }[];
+  /** What each card earns where, from the issuers' own pages (catalog). */
+  earnRates: EarnRate[];
+  /** Each card's reward currency, and its cash value when the issuer states one. */
+  cardRewards: CardReward[];
   /** "Done" / "Not for me" on perks that need turning on, per card or membership. */
   perkSetup: { user_card_id: string; benefit_id: string; status: 'done' | 'skipped' }[];
   /** This year's receipts that took money off (membership savings, codes), with those lines. */
@@ -83,7 +88,7 @@ interface DataState {
 // Before the free-perks columns exist (database not updated yet), the catalog still loads without them.
 const OLD_PROGRAM_COLUMNS = 'id, kind, name, provider, countries, summary, how_to, url, merchants, window_days, status, last_verified, sort_order';
 
-const empty: AppData = { profile: null, cards: [], benefits: [], userCards: [], opportunities: [], recovered: [], usage: [], receipts: [], studentOffers: [], studentClaims: [], school: null, myPerks: [], programs: [], senderDomains: [], schoolHints: [], events: [], deals: [], dealFeedback: [], cardSightings: [], perkFeedback: [], perkSetup: [], discountReceipts: [], memberEmails: [], storeMutes: [], scout: { sources: 0, lastChecked: null }, storeStats: [], storePairs: [] };
+const empty: AppData = { profile: null, cards: [], benefits: [], userCards: [], opportunities: [], recovered: [], usage: [], receipts: [], studentOffers: [], studentClaims: [], school: null, myPerks: [], programs: [], senderDomains: [], schoolHints: [], events: [], deals: [], dealFeedback: [], cardSightings: [], perkFeedback: [], perkSetup: [], discountReceipts: [], earnRates: [], cardRewards: [], memberEmails: [], storeMutes: [], scout: { sources: 0, lastChecked: null }, storeStats: [], storePairs: [] };
 const DataContext = createContext<DataState>({ data: empty, loading: true, error: null, refresh: async () => ({ data: null, error: null }) });
 
 function must<T>(what: string, res: { data: T | null; error: { message: string; code?: string } | null }): T {
@@ -107,7 +112,7 @@ async function load(userId: string): Promise<AppData> {
   const since = new Date(Date.now() - 180 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
   const yearAgo = new Date(Date.now() - 365 * 24 * 60 * 60 * 1000).toISOString();
   const today = new Date().toISOString().slice(0, 10);
-  const [profile, cards, benefits, userCards, opportunities, recovered, usage, receipts, studentOffers, studentClaims, myPerks, programs, senders, events, dealFeedback, cardSightings, mutes, perkFeedback, perkSetup, discountReceipts] = await Promise.all([
+  const [profile, cards, benefits, userCards, opportunities, recovered, usage, receipts, studentOffers, studentClaims, myPerks, programs, senders, events, dealFeedback, cardSightings, mutes, perkFeedback, perkSetup, discountReceipts, earnRates, cardRewards] = await Promise.all([
     supabase
       .from('profiles')
       .select('*')
@@ -146,6 +151,8 @@ async function load(userId: string): Promise<AppData> {
       .gte('purchase_date', yearStart.slice(0, 10))
       .neq('discounts', '[]')
       .limit(1000),
+    supabase.from('card_earn_rates').select('card_id, category, rate, merchants, cap, cap_period, needs, note, source_url').order('sort_order'),
+    supabase.from('card_rewards').select('card_id, kind, cents_per_unit, value_basis'),
   ]);
 
   // numeric columns arrive as numbers from PostgREST; normalize defensively.
@@ -257,6 +264,9 @@ async function load(userId: string): Promise<AppData> {
     perkFeedback: (perkFeedback.data ?? []) as AppData['perkFeedback'],
     // Optional too: before these are in the database, nothing to turn on is answered and no savings show.
     perkSetup: (perkSetup.data ?? []) as AppData['perkSetup'],
+    // Optional catalog: before it's in the database, Before you pay just doesn't compare earn rates.
+    earnRates: ((earnRates.data ?? []) as EarnRate[]).map((r) => ({ ...r, rate: Number(r.rate), cap: num(r.cap), merchants: r.merchants ?? [] })),
+    cardRewards: ((cardRewards.data ?? []) as CardReward[]).map((r) => ({ ...r, cents_per_unit: num(r.cents_per_unit) })),
     discountReceipts: ((discountReceipts.data ?? []) as AppData['discountReceipts']).map((r) => ({
       ...r,
       total: num(r.total),

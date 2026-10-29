@@ -1,4 +1,4 @@
-import { useFocusEffect } from 'expo-router';
+import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { Alert, Platform, View } from 'react-native';
 import { Badge, Button, ErrorNote, Note, Panel, Row, Screen, T } from '@/components/ui';
@@ -47,6 +47,8 @@ export default function ConnectBank() {
     run('connect', async () => {
       const ok = await connectBank();
       toast(ok ? 'Connected. Your purchases are coming in.' : 'Not connected. You can try again any time.', { tone: ok ? 'success' : 'info' });
+      // Straight to what it found.
+      if (ok) router.push('/scan');
     });
 
   const disconnect = (c: BankConnection) => {
@@ -94,6 +96,8 @@ export default function ConnectBank() {
         <Button title={list?.length ? 'Connect another bank' : 'Connect a bank'} icon="add" loading={busy === 'connect'} disabled={!!busy} onPress={connect} />
         <T variant="caption" faint center>Opens your bank’s sign-in through Plaid. PerkScan never sees your bank password.</T>
       </View>
+      {list?.length ? <Button title="See what PerkScan found" kind="secondary" icon="sparkles" onPress={() => router.push('/scan')} /> : null}
+      <Button title="Use email instead" kind="ghost" onPress={() => router.push('/connect-gmail')} />
     </Screen>
   );
 }

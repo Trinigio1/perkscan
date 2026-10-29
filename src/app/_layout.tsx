@@ -90,6 +90,7 @@ function RootNavigator() {
         <Stack.Screen name="paying-for" options={{ ...header, title: 'What you pay for' }} />
         <Stack.Screen name="birthday" options={{ ...header, title: 'Birthday month' }} />
         <Stack.Screen name="connect-bank" options={{ ...header, title: 'Bank' }} />
+        <Stack.Screen name="scan" options={{ ...header, title: 'What PerkScan found' }} />
         <Stack.Screen name="hidden-money" options={{ ...header, title: 'Hidden money' }} />
         <Stack.Screen name="coming-up" options={{ ...header, title: 'Coming up' }} />
         <Stack.Screen name="cards" options={{ ...header, title: 'Your cards' }} />

@@ -340,7 +340,7 @@ async function saveReceipt(db: SupabaseClient, userId: string, messageId: string
 }
 
 /** Price adjustment, stated warranty and double-charge checks for a saved receipt. */
-async function purchaseExtras(db: SupabaseClient, userId: string, receiptId: string, warrantyMonths: number | null, country: string | null, today: string): Promise<ExtraRow[]> {
+export async function purchaseExtras(db: SupabaseClient, userId: string, receiptId: string, warrantyMonths: number | null, country: string | null, today: string): Promise<ExtraRow[]> {
   const cols = 'id, kind, pending, merchant, total, currency, purchase_date, return_by, last_four, purchase_type';
   const { data: r, error } = await db.from('receipts').select(cols).eq('id', receiptId).single();
   if (error) throw new Error(`receipts: ${error.message}`);
