@@ -1,4 +1,4 @@
-import { kindOf, moneyList, setupSteps, nextToUse, viewOf } from '../money';
+import { isOwed, kindOf, moneyList, owedToYou, setupSteps, nextToUse, viewOf } from '../money';
 import { opp } from '../__fixtures__/opportunities';
 
 const NOW = new Date('2026-10-22T12:00:00Z');
@@ -73,6 +73,19 @@ describe('moneyList', () => {
     expect(missed.total).toEqual({ TTD: 5 });
   });
 
+  it('puts money owed to you first, apart from codes and credits', () => {
+    const owedItems = [
+      ...items,
+      opp({ id: 'flight', type: 'refund', value_estimate: 669.23, currency: 'USD', expires_at: null, dedupe_key: 'flight:bw:484:2026-11-03' }),
+      opp({ id: 'drop', type: 'price_drop', value_estimate: 70, currency: 'USD', expires_at: days(10), dedupe_key: 'price_adjust:r1' }),
+      opp({ id: 'twice', type: 'refund', value_estimate: 40, currency: 'USD', expires_at: null, dedupe_key: 'double_charge:x' }),
+    ];
+    const l = moneyList(owedItems, 'open', 'all', NOW, new Map(), () => 'active');
+    expect(l.sections[0]).toEqual({ title: 'Owed to you', items: [expect.objectContaining({ id: 'drop' }), expect.objectContaining({ id: 'flight' })] });
+    // A possible double charge is a guess: it stays with the things to check.
+    expect(l.sections.find((s) => s.title === 'Worth checking')!.items.map((o) => o.id)).toEqual(['twice']);
+  });
+
   it('is empty when there is nothing in the view', () => {
     expect(moneyList([], 'open', 'all', NOW, new Map())).toEqual({ sections: [], kinds: [], total: {}, count: 0 });
   });
@@ -142,5 +155,27 @@ describe('in-app deals seen in email', () => {
     expect(list.total).toEqual({ USD: 10 });
     expect(nextToUse([code, live], NOW).map((o) => o.id)).toEqual(['code']);
     expect(viewOf(gone, NOW)).toBeNull();
+  });
+});
+
+describe('owedToYou', () => {
+  it('counts refunds, checked price drops and settlements, never guesses or windows', () => {
+    expect(isOwed({ type: 'price_drop', value_estimate: null })).toBe(false);
+    expect(isOwed({ type: 'price_drop', value_estimate: 12 })).toBe(true);
+    expect(isOwed({ type: 'promo', value_estimate: 12 })).toBe(false);
+    const o = owedToYou(
+      [
+        opp({ id: 'a', type: 'refund', value_estimate: 100, currency: 'USD', expires_at: null, dedupe_key: 'flight:x' }),
+        opp({ id: 'b', type: 'refund', value_estimate: null, currency: 'EUR', expires_at: null, dedupe_key: 'flight:y' }),
+        opp({ id: 'c', type: 'refund', value_estimate: 40, currency: 'USD', expires_at: null, dedupe_key: 'double_charge:z' }),
+        opp({ id: 'd', type: 'refund', value_estimate: 30, currency: 'USD', status: 'claimed', expires_at: null }),
+      ],
+      NOW,
+      new Map([['a', 25]]),
+    );
+    expect(o.items.map((x) => x.id)).toEqual(['a', 'b']);
+    // What's left: 100 minus the 25 already back. An unknown amount adds nothing.
+    expect(o.total).toEqual({ USD: 75, EUR: 0 });
+    expect(o.count).toBe(2);
   });
 });

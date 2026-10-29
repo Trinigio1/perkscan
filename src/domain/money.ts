@@ -68,6 +68,31 @@ export function viewOf(o: Opportunity, now: Date): MoneyView | null {
   return 'open';
 }
 
+/**
+ * Money a company owes you back, not a discount to spend: refunds (a cancelled flight, an order), a price
+ * drop with a checked amount, and settlements you were told you're part of. Price-drop windows with no drop
+ * found yet are a return window, not money owed.
+ */
+export function isOwed(o: Pick<Opportunity, 'type' | 'value_estimate'>): boolean {
+  if (o.type === 'refund' || o.type === 'settlement') return true;
+  return o.type === 'price_drop' && o.value_estimate !== null;
+}
+
+export interface Owed {
+  items: Opportunity[];
+  /** What's left to get back. Refunds with no known amount add nothing. */
+  total: MoneyBag;
+  count: number;
+}
+
+/** What you're owed and can ask for now. Guesses (a possible double charge) stay in "Worth checking". */
+export function owedToYou(opportunities: Opportunity[], now: Date, recoveredByOpp: Map<string, number>, statusOf?: BenefitStatusOf): Owed {
+  const items = opportunities.filter((o) => isOwed(o) && viewOf(o, now) === 'open' && confidenceOf(o, statusOf) !== 'check');
+  const total: MoneyBag = {};
+  for (const o of items) addToBag(total, o.currency, remainingValue(o, recoveredByOpp));
+  return { items, total, count: items.length };
+}
+
 export interface MoneySection {
   title: string;
   items: Opportunity[];
@@ -106,9 +131,12 @@ export function moneyList(
   let sections: MoneySection[];
   if (view === 'open') {
     const ranked = [...items].filter((o) => !isInAppDeal(o)).sort(rankCompare(now, statusOf, relevanceOf));
-    const sure = ranked.filter((o) => confidenceOf(o, statusOf) !== 'check');
+    // Money owed to you comes first: it's yours already, it only needs asking for.
+    const owed = ranked.filter((o) => isOwed(o) && confidenceOf(o, statusOf) !== 'check');
+    const sure = ranked.filter((o) => !owed.includes(o) && confidenceOf(o, statusOf) !== 'check');
     const end = now.getTime() + WEEK_MS;
     sections = [
+      { title: 'Owed to you', items: owed },
       { title: 'This week', items: sure.filter((o) => t(o) <= end) },
       { title: 'Later', items: sure.filter((o) => t(o) > end && t(o) !== Infinity) },
       { title: 'No end date', items: sure.filter((o) => t(o) === Infinity) },

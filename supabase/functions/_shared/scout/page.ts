@@ -101,6 +101,31 @@ export async function readPage(url: string, fetchImpl: Fetch = fetch): Promise<P
   }
 }
 
+/**
+ * The page's raw HTML (for the structured data a store publishes, like a product's current price), with the
+ * same rules as readPage: https, robots.txt, same site, size and time capped.
+ */
+export async function readHtml(url: string, fetchImpl: Fetch = fetch): Promise<{ ok: true; html: string; finalUrl: string } | { ok: false; error: string }> {
+  if (!/^https:\/\//i.test(url)) return { ok: false, error: 'not https' };
+  try {
+    const origin = new URL(url).origin;
+    const robots = await get(fetchImpl, `${origin}/robots.txt`).catch(() => null);
+    if (robots?.ok) {
+      const u = new URL(url);
+      if (!robotsAllows(await robots.text(), `${u.pathname}${u.search}`)) return { ok: false, error: 'robots.txt disallows' };
+    }
+    const res = await get(fetchImpl, url);
+    if (!res.ok) return { ok: false, error: `HTTP ${res.status}` };
+    const finalUrl = res.url || url;
+    if (!finalUrl.startsWith('https://') || !sameSite(finalUrl, url)) return { ok: false, error: 'redirected off site' };
+    const html = await res.text();
+    if (html.length > MAX_BYTES) return { ok: false, error: 'page too large' };
+    return { ok: true, html, finalUrl };
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message.slice(0, 120) : 'fetch failed' };
+  }
+}
+
 /** Page HTML to compact text, links kept as "[label](url)" so the model can point to a deal's own page. */
 export function pageText(html: string): string {
   const withLinks = html.replace(/<a\s[^>]*href=["'](https:\/\/[^"'#\s]+)["'][^>]*>([\s\S]*?)<\/a>/gi, (_m, href: string, inner: string) => {

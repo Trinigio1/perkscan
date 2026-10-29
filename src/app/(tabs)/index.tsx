@@ -13,7 +13,7 @@ import { claimsToCheck } from '@/domain/claims';
 import { dealsWorth, discountSummary } from '@/domain/estimate';
 import { foundMoney, nextStep, toCheckCount, worthCelebrating } from '@/domain/firstRun';
 import { addToBag, formatBag, getHomeCurrency, sumBags, type MoneyBag } from '@/domain/format';
-import { nextToUse, setupSteps } from '@/domain/money';
+import { nextToUse, owedToYou, setupSteps } from '@/domain/money';
 import { includedWhenYouNeedIt, includedWorth } from '@/domain/included';
 import { scoreByCurrency } from '@/domain/score';
 import { usedQuestions } from '@/domain/usedFromReceipts';
@@ -63,7 +63,7 @@ export default function Home() {
   const statusOf = useCallback((id: string) => benefitById.get(id)?.status, [benefitById]);
   const { relevanceOf } = useRelevance();
 
-  const { now, home, totals, soon, toCheck, found, arrivals, discounts, usedAsks } = useMemo(() => {
+  const { now, home, totals, owed, soon, toCheck, found, arrivals, discounts, usedAsks } = useMemo(() => {
     const at = new Date();
     const homeCur = data.profile?.home_currency?.trim() || getHomeCurrency();
     // Amounts are never converted: one score per currency, the home currency shown big.
@@ -78,6 +78,8 @@ export default function Home() {
         used: bag((s) => s.recoveredThisYear),
         missed: bag((s) => s.leftOnTable),
       },
+      // Refunds, price drops and settlements: part of "ready", shown on their own line first.
+      owed: owedToYou(data.opportunities, at, recoveredByOpp, statusOf),
       soon: nextToUse(data.opportunities, at, 4, statusOf, relevanceOf),
       toCheck: toCheckCount(data.opportunities, at, statusOf),
       found: foundMoney(data.opportunities, data.recovered, at, statusOf),
@@ -87,7 +89,7 @@ export default function Home() {
       // Not money in hand: codes at stores you buy from, worth what you usually spend there times the percent.
       discounts: discountSummary(data.opportunities.filter((o) => relevanceOf(o) === 0), data.receipts, at),
     };
-  }, [data, statusOf, relevanceOf]);
+  }, [data, recoveredByOpp, statusOf, relevanceOf]);
   // Student perks: free software, music and Prime prices that come with a school email.
   const studentPerks = data.profile?.is_student || data.school ? openStudentOffers({ studentOffers: data.studentOffers, studentClaims: data.studentClaims, school: data.school, country: data.profile?.country ?? null }).length : 0;
   // Subscriptions where a checked student price is cheaper than what the receipts show.
@@ -99,6 +101,8 @@ export default function Home() {
   // student plans. Each part is its own line underneath, so it's clear what's sure and what's an estimate.
   // Card and membership perks: credits you get back when you pay (up to their amount), and perks with a yearly worth.
   const perks = useMemo(() => includedWorth(includedWhenYouNeedIt(data.userCards, data.cards, data.benefits)), [data.userCards, data.cards, data.benefits]);
+  // Ready to use, without what's owed (that has its own line), so no amount shows twice.
+  const readyToUse = Object.fromEntries(Object.entries(totals.ready).map(([cur, v]) => [cur, Math.max(0, v - (owed.total[cur] ?? 0))])) as MoneyBag;
   const saveUpTo = sumBags(totals.ready, discounts.estimated, dealsFor.worth, studentYearly, perks.total);
 
   // The "We found $X" moment: opens by itself once, the first time there's something to show after setup.
@@ -146,7 +150,12 @@ export default function Home() {
           )}
         </Pressable>
         {/* What the headline is made of: what's sure first, then the estimates (≈). */}
-        <ExtraLine show={nonZero(totals.ready)} text={`${formatBag(totals.ready, big)} ready to use now`} onPress={() => router.push('/money')} />
+        <ExtraLine
+          show={owed.count > 0}
+          text={nonZero(owed.total) ? `${formatBag(owed.total, big)} owed to you · ${owed.count} to ask for` : `${owed.count} refund${owed.count === 1 ? '' : 's'} owed to you`}
+          onPress={() => router.push('/money')}
+        />
+        <ExtraLine show={nonZero(readyToUse)} text={`${formatBag(readyToUse, big)} ready to use now`} onPress={() => router.push('/money')} />
         <ExtraLine
           show={nonZero(discounts.estimated) || discounts.otherCount > 0}
           text={

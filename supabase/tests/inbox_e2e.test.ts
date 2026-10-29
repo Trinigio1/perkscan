@@ -30,7 +30,11 @@ const fakeModel: ModelCall = async (input) => {
   }
   const base = { receipt: null, offers: [] as unknown[] };
   let out: Record<string, unknown>;
-  if (input.includes('PROMO SPRING20 APPLIED')) {
+  if (input.includes('FLIGHT BOOKED XKQ7PL')) {
+    out = { ...base, kind: 'receipt', merchant: 'Caribbean Airlines', summary: 'Flight booking, $669.23', receipt: { total: 669.23, currency: 'USD', purchase_type: 'flight', travel_date: '2099-11-03', purchase_date: new Date().toISOString().slice(0, 10), card_last_four: null, order_number: 'XKQ7PL', return_by: null, return_window_days: null, items: [], discounts: [] } };
+  } else if (input.includes('BW484 CANCELLED')) {
+    out = { ...base, kind: 'other', merchant: 'Caribbean Airlines', summary: 'Flight BW 484 cancelled', offers: [{ type: 'refund', currency: 'USD', title: 'Refund available', amount: null, percent_off: null, code: null, expires_on: null, min_spend: null, points: null, claim_url: null, details: null }], flight: { status: 'cancelled', delay_minutes: null, airline: 'Caribbean Airlines', airline_country: 'TT', flight_number: 'BW 484', flight_date: '2099-11-03', from_country: 'US', to_country: 'TT', booking_ref: 'XKQ7PL', accepted_alternative: false } };
+  } else if (input.includes('PROMO SPRING20 APPLIED')) {
     out = { ...base, kind: 'receipt', merchant: 'Acme Outfitters', summary: 'Order from Acme, $81.59', receipt: { total: 81.59, currency: 'USD', purchase_type: 'clothing', travel_date: null, purchase_date: new Date().toISOString().slice(0, 10), card_last_four: null, order_number: 'A-77', return_by: null, return_window_days: null, items: [], discounts: [{ description: 'Promo SPRING20', code: 'SPRING20', amount: 20.4 }] } };
   } else if (input.includes('PROMO MART RECEIPT')) {
     out = { ...base, kind: 'receipt', merchant: 'Promo Mart', summary: 'Order from Promo Mart, $40', receipt: { total: 40, currency: 'USD', purchase_type: 'other', travel_date: null, purchase_date: new Date().toISOString().slice(0, 10), card_last_four: null, order_number: 'PM-1', return_by: null, return_window_days: null, items: [], discounts: [{ description: 'Promotion', code: null, amount: 5 }, { description: 'Member savings', code: null, amount: 2 }] } };
@@ -259,6 +263,15 @@ Deno.test('inbox pipeline end to end', async () => {
     // Only the service role can mark used from a receipt.
     const sneaky = await alice.client.rpc('_mark_used_from_receipt', { p_opportunity_id: mart.data!.id, p_amount: 999, p_receipt_id: mart.data!.id, p_line: 'x' });
     assert(!!sneaky.error, 'not callable from the app');
+
+    // A cancelled US flight: a refund of the ticket price, from the booking's receipt.
+    await post(ingest, { messages: [{ id: 'g-book', from: 'Caribbean Airlines <noreply@caribbean-airlines.com>', subject: 'Your booking', date: new Date().toISOString(), text: 'FLIGHT BOOKED XKQ7PL' }] }, token);
+    await post(ingest, { messages: [{ id: 'g-cancel', from: 'Caribbean Airlines <noreply@caribbean-airlines.com>', subject: 'Flight cancelled', date: new Date().toISOString(), text: 'BW484 CANCELLED' }] }, token);
+    const refunds = (await admin.from('opportunities').select('title, value_estimate, dedupe_key').eq('user_id', alice.id).eq('type', 'refund').like('dedupe_key', 'flight:%')).data ?? [];
+    assert(refunds.length === 1 && Number(refunds[0]!.value_estimate) === 669.23, `refund of the ticket price: ${JSON.stringify(refunds)}`);
+    assert(/^Refund owed: Caribbean Airlines BW 484/.test(refunds[0]!.title as string), `says why: ${refunds[0]!.title}`);
+    const generic = (await admin.from('opportunities').select('id').eq('user_id', alice.id).eq('title', 'Refund available')).data ?? [];
+    assert(generic.length === 0, 'the rule\'s claim replaces the general refund from the same email');
 
     // A store the user hid: its marketing isn't stored or read, but its receipts are.
     await alice.client.from('store_mutes').insert({ store_key: 'promoshop', name: 'Promo Shop' });

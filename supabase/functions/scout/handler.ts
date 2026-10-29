@@ -1,6 +1,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { json } from '../_shared/http.ts';
 import type { ModelCall } from '../_shared/inbox/parse.ts';
+import { runPriceWatch, type PriceWatchReport } from '../_shared/pricewatch/run.ts';
 import { discoverStores, type DiscoverReport } from '../_shared/scout/discover.ts';
 import { runScout, type ScoutOptions } from '../_shared/scout/run.ts';
 
@@ -49,8 +50,17 @@ export function scoutHandler(deps: ScoutDeps) {
         console.error('store discovery failed', e);
       }
     }
+    // Price drops on purchases still inside their store's window: no AI, a capped number of pages.
+    let prices: PriceWatchReport | null = null;
+    if (!only) {
+      try {
+        prices = await runPriceWatch(deps.db, { fetch: deps.options.fetch });
+      } catch (e) {
+        console.error('price watch failed', e);
+      }
+    }
     try {
-      return json({ discovered, sources: await runScout(deps.db, deps.model, { ...deps.options, only }) });
+      return json({ discovered, prices, sources: await runScout(deps.db, deps.model, { ...deps.options, only }) });
     } catch (e) {
       console.error('scout failed', e);
       return json({ error: 'Scout run failed' }, 500);

@@ -9,5 +9,5 @@
     }
   },
   "include": ["**/*.ts", "**/*.tsx", ".expo/types/**/*.ts", "expo-env.d.ts"],
-  "exclude": ["node_modules", "legacy", "supabase/functions", "supabase/tests/inbox_e2e.test.ts", "supabase/tests/scout_e2e.test.ts", "supabase/tests/claude_fallback.test.ts", "eval"]
+  "exclude": ["node_modules", "legacy", "supabase/functions", "supabase/tests/inbox_e2e.test.ts", "supabase/tests/scout_e2e.test.ts", "supabase/tests/claude_fallback.test.ts", "supabase/tests/pricewatch_e2e.test.ts", "eval"]
 }

@@ -94,6 +94,21 @@ export const ReceiptSchema = z.object({
     .describe(DISCOUNTS_HELP),
 });
 
+/** A flight the email says was cancelled, delayed or changed: what the passenger-rights rules need. */
+export const FlightSchema = z.object({
+  status: z.string().nullable().describe('cancelled, delayed, or schedule_change (the airline moved the time); null if none of these'),
+  delay_minutes: z.number().nullable().describe('How late it arrives (or the new time minus the old), in minutes, if stated'),
+  airline: z.string().nullable(),
+  airline_country: z.string().nullable().describe('2-letter country of the airline, e.g. US for American, DE for Lufthansa, TT for Caribbean Airlines'),
+  flight_number: z.string().nullable().describe('e.g. "BW 484"'),
+  flight_date: z.string().nullable().describe('YYYY-MM-DD scheduled departure'),
+  from_country: z.string().nullable().describe('2-letter country of the departure airport'),
+  to_country: z.string().nullable().describe('2-letter country of the arrival airport'),
+  booking_ref: z.string().nullable().describe('Booking / confirmation code, if shown'),
+  accepted_alternative: z.boolean().nullable().describe('True if the email says the reader already accepted a rebooking, credit or voucher'),
+});
+const FLIGHT_HELP = 'Only when the email says a flight was cancelled, delayed or its schedule changed; else null';
+
 export const KINDS = ['receipt', 'card_alert', 'promo', 'gift_card_or_store_credit', 'loyalty', 'trial_or_subscription', 'settlement', 'other'] as const;
 
 export const ParsedEmailSchema = z.object({
@@ -116,6 +131,9 @@ export const ParsedEmailSchema = z.object({
     .nullable()
     .optional() // replies stored before interests were read leave it out
     .describe('What the store or offer is mainly about, e.g. a gym -> fitness, Sephora -> beauty. Null for banks, bills and anything that fits none'),
+  flight: FlightSchema.nullable()
+    .optional() // replies stored before flights were read leave it out
+    .describe(FLIGHT_HELP),
 });
 
 /**
@@ -143,6 +161,7 @@ export const ModelOutputSchema = ParsedEmailSchema.extend({
     .describe('Every distinct offer, credit, code, trial or settlement in the email; empty if none'),
   card: CardSeenSchema.nullable().describe('Only when the email is from a bank or card issuer about the reader\'s own credit or charge card'),
   membership: z.string().nullable().describe('A paid membership the email shows the reader has (it addresses them as a member or lists their member benefits), e.g. "Uber One", "Amazon Prime". Null for ads inviting them to join'),
+  flight: FlightSchema.nullable().describe(FLIGHT_HELP),
   interest: z
     .string()
     .nullable()
@@ -177,6 +196,25 @@ function money(n: number | null, max = 100_000): number | null {
 function text(s: string | null, max: number): string | null {
   const t = s?.replace(/\s+/g, ' ').trim();
   return t ? t.slice(0, max) : null;
+}
+
+const country2 = (c: string | null | undefined) => (c && /^[A-Za-z]{2}$/.test(c.trim()) ? c.trim().toUpperCase() : null);
+
+/** A flight disruption, or null when it isn't one the rules can use. */
+function normalizeFlight(f: z.infer<typeof FlightSchema> | null): z.infer<typeof FlightSchema> | null {
+  if (!f || !['cancelled', 'delayed', 'schedule_change'].includes(f.status ?? '')) return null;
+  return {
+    status: f.status,
+    delay_minutes: f.delay_minutes !== null && f.delay_minutes > 0 && f.delay_minutes < 7 * 24 * 60 ? Math.round(f.delay_minutes) : null,
+    airline: text(f.airline, 60),
+    airline_country: country2(f.airline_country),
+    flight_number: text(f.flight_number, 12),
+    flight_date: date(f.flight_date),
+    from_country: country2(f.from_country),
+    to_country: country2(f.to_country),
+    booking_ref: text(f.booking_ref, 20),
+    accepted_alternative: typeof f.accepted_alternative === 'boolean' ? f.accepted_alternative : null,
+  };
 }
 
 /** Clamps values into sane ranges and drops anything malformed rather than trusting it. */
@@ -239,6 +277,7 @@ export function normalizeParsed(p: ParsedEmail): ParsedEmail {
     card: normalizeCard(p.card ?? null),
     interest: p.interest && (INTEREST_IDS as readonly string[]).includes(p.interest) ? p.interest : null,
     membership: text(p.membership ?? null, 60),
+    flight: normalizeFlight(p.flight ?? null),
   };
 }
 

@@ -1,0 +1,14 @@
+{
+  "origin": "synthetic",
+  "source": "email",
+  "input": {
+    "subject": "Your flight BW 484 has been cancelled",
+    "date": "2026-10-30T14:00:00-04:00",
+    "text": "Dear passenger,\n\nWe regret to inform you that flight BW 484 from Miami (MIA) to Port of Spain (POS) on November 3, 2026 has been cancelled due to operational reasons.\n\nBooking reference: XKQ7PL\n\nYou can rebook on another flight at no cost or request a refund through Manage Booking.",
+    "from": "Caribbean Airlines <noreply@caribbean-airlines.com>"
+  },
+  "expected": {
+    "kind": "other",
+    "merchant": "Caribbean Airlines"
+  }
+}

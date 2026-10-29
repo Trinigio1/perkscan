@@ -20,6 +20,8 @@ export interface ReceiptRow {
   category: string | null;
   /** Codes, gift cards, credits and rewards applied on the receipt: how PerkScan notices you used one. */
   discounts?: { description: string; code: string | null; amount: number | null }[];
+  /** Direct product links from the receipt, for the daily price-drop check. */
+  product_links?: string[];
 }
 
 export interface OpportunityRow {

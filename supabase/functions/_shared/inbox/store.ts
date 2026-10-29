@@ -1,4 +1,5 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
+import { productLinks } from '../pricewatch/watch.ts';
 import { buildModelInput, fromDomain, type RawEmail } from './clean.ts';
 import { containsSecurityCode } from './security.ts';
 
@@ -93,6 +94,8 @@ export async function storeMessages(
     const externalId = m.id ?? (source === 'email' ? null : await textId(source, m.text ?? m.html ?? ''));
     // Store only the cleaned text the model needs (links removed, card numbers masked).
     const raw = buildModelInput({ subject: m.subject, from: m.from, date: m.date ?? new Date().toISOString(), text: m.text, html: m.html }, tz);
+    // Direct product links on stores with price-adjustment policies, so price drops can be checked later.
+    const links = source === 'email' ? productLinks(`${m.text ?? ''}\n${m.html ?? ''}`) : [];
     const { data, error } = await db
       .from('inbound_messages')
       .insert({
@@ -102,14 +105,17 @@ export async function storeMessages(
         from_domain: fromDomain(m.from),
         sent_at: sentAt(m.date),
         raw_body: raw,
+        ...(links.length ? { product_links: links } : {}),
       })
       .select('id')
       .single();
     if (error?.code === '23505') {
       // Sent before. If PerkScan couldn't read it then (its text is deleted within 24 hours), read it again now.
       const again = await requeueUnread(db, userId, source, externalId, raw, opts.reread ?? false, sentAt(m.date));
-      if (again) result.ids.push(again);
-      else result.duplicates += 1;
+      if (again) {
+        result.ids.push(again);
+        if (links.length) await db.from('inbound_messages').update({ product_links: links }).eq('id', again);
+      } else result.duplicates += 1;
     } else if (error) return { ...result, error: 'store_failed' };
     else result.ids.push(data.id as string);
   }

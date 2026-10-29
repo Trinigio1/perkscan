@@ -122,6 +122,11 @@ export default function Money() {
                     <T variant="caption" muted>Amounts or terms aren’t confirmed yet, so they’re not in your totals. Tap one to see how to check it.</T>
                   </Panel>
                 </Pressable>
+              ) : s.title === 'Owed to you' ? (
+                <View style={{ gap: 2 }}>
+                  <T variant="overline" color={c.accentStrong}>{s.title}</T>
+                  <T variant="caption" muted>Already yours: a refund, a price drop or a settlement. Tap one for how to ask for it.</T>
+                </View>
               ) : s.title ? (
                 <T variant="overline" color={s.title === 'This week' ? c.warn : c.textMuted}>{s.title}</T>
               ) : null}

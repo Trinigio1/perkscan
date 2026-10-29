@@ -1,9 +1,10 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { matchAndApply } from '../matching/apply.ts';
 import { doubleChargeRow, isDoubleCharge, priceAdjustment, statedWarranty, type ExtraRow, type PriceProgramIn, type PurchaseIn } from '../matching/programs.ts';
-import { findDuplicate, mergeFields, MERGE_WINDOW_DAYS, orderKey, type ExistingReceipt } from './merge.ts';
+import { findDuplicate, mergeFields, MERGE_WINDOW_DAYS, orderKey, sameMerchant, type ExistingReceipt } from './merge.ts';
 import { usageFrom, type OpenItem } from './usage.ts';
 import { cardSighting } from './cards.ts';
+import { flightClaim, type Flight, type FlightClaim, type RuleText } from './flights.ts';
 import { localDay } from './clean.ts';
 import { readNote, toRows, type ReceiptRow, type RefundRule } from './opportunities.ts';
 import { costUsd, parseEmail, type ModelCall } from './parse.ts';
@@ -60,7 +61,7 @@ export async function processMessages(db: SupabaseClient, ids: string[], call: M
       .eq('id', id)
       .in('parse_status', ['pending', 'failed'])
       .not('raw_body', 'is', null)
-      .select('id, user_id, raw_body, attempts, from_domain, sent_at, subject')
+      .select('id, user_id, raw_body, attempts, from_domain, sent_at, subject, product_links')
       .maybeSingle();
     if (!claimed) {
       results.push({ id, status: 'skipped' });
@@ -99,6 +100,14 @@ export async function processMessages(db: SupabaseClient, ids: string[], call: M
       fromDomain: fromDomainOf,
       subject: (claimed.subject as string | null) ?? null,
     });
+    // A cancelled, delayed or changed flight: what the passenger-rights rules say you may be owed.
+    if (parsed.data.flight) {
+      const claim = await flightMoney(db, claimed.user_id as string, parsed.data.flight);
+      if (claim) {
+        // The rule's claim replaces any general "refund" the reader saw in the same email.
+        rows.opportunities = [...rows.opportunities.filter((o) => o.type !== 'refund'), claim.row];
+      }
+    }
     // The connection test's fictional shop: confirm it was read, but never add its code to the user's money.
     const isTest = fromDomainOf === 'test-shop.example' || /perkscan test shop/i.test(parsed.data.merchant ?? '');
     // Read again (rereadAll): this email's earlier results are replaced by what the current reader finds.
@@ -114,6 +123,9 @@ export async function processMessages(db: SupabaseClient, ids: string[], call: M
       // Read again and it's not a purchase after all (an order update): drop the store receipt it made before.
       await db.from('receipts').delete().eq('user_id', claimed.user_id).eq('source_message_id', id).eq('kind', 'receipt');
     }
+    // The receipt keeps its product links (stores with price-adjustment policies) for the daily price check.
+    const links = ((claimed.product_links as string[] | null) ?? []).slice(0, 10);
+    if (rows.receipt && rows.receipt.kind === 'receipt' && links.length) rows.receipt.product_links = links;
     const receiptId = rows.receipt ? await saveReceipt(db, claimed.user_id as string, id, rows.receipt) : null;
 
     let created = 0;
@@ -212,6 +224,34 @@ const shiftDay = (d: string, days: number) => {
   t.setUTCDate(t.getUTCDate() + days);
   return t.toISOString().slice(0, 10);
 };
+
+/**
+ * The claim for a disrupted flight, with the ticket price when the booking's receipt is on file: matched by
+ * booking code, else by airline and travel date.
+ */
+async function flightMoney(db: SupabaseClient, userId: string, f: Flight): Promise<FlightClaim | null> {
+  const [usDot, eu261] = await Promise.all([ruleText(db, 'us_dot_flight_refunds'), ruleText(db, 'eu261')]);
+  let ticket: { total: number; currency: string } | null = null;
+  const { data: flights } = await db
+    .from('receipts')
+    .select('merchant, total, currency, order_number, travel_date')
+    .eq('user_id', userId)
+    .eq('purchase_type', 'flight')
+    .not('total', 'is', null)
+    .order('purchase_date', { ascending: false })
+    .limit(50);
+  const booking = orderKey(f.booking_ref);
+  const hit = (flights ?? []).find(
+    (r) => (booking && orderKey(r.order_number as string | null) === booking) || (!!f.flight_date && r.travel_date === f.flight_date && !!f.airline && sameMerchant(r.merchant as string, f.airline)),
+  );
+  if (hit) ticket = { total: Number(hit.total), currency: hit.currency as string };
+  return flightClaim(f, { usDot, eu261 }, ticket);
+}
+
+async function ruleText(db: SupabaseClient, id: string): Promise<RuleText | null> {
+  const { data } = await db.from('perk_programs').select('id, how_to, url').eq('id', id).eq('status', 'active').maybeSingle();
+  return data?.how_to && data?.url ? { id, how_to: data.how_to as string, url: data.url as string } : null;
+}
 
 /** Inserts a receipt, or merges it into the alert/receipt already stored for the same purchase. Returns its id. */
 /**
