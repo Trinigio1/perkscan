@@ -42,6 +42,8 @@ export function planCreditReminders(opportunities: Opportunity[], recovered: Rec
   for (const r of recovered) if (r.opportunity_id) recoveredByOpp.set(r.opportunity_id, (recoveredByOpp.get(r.opportunity_id) ?? 0) + r.amount);
 
   const out: PlannedReminder[] = [];
+  // Card credits from one card that end the same day are one reminder, not one each.
+  const credits = new Map<string, { fireAt: Date; when: string; items: { opp: Opportunity; remaining: number }[] }>();
   for (const opp of opportunities) {
     if (opp.status !== 'open' || !opp.expires_at || isInAppDeal(opp)) continue;
     const remaining = remainingValue(opp, recoveredByOpp);
@@ -54,14 +56,10 @@ export function planCreditReminders(opportunities: Opportunity[], recovered: Rec
       if (fireAt.getTime() <= now.getTime() || fireAt.getTime() >= expires.getTime()) continue;
       const when = days <= 2 ? `in ${days} days` : 'in a week';
       if (opp.type === 'card_credit') {
-        const amount = opp.value_estimate === null ? 'Your' : `${formatMoney(remaining, { currency: opp.currency })} of your`;
-        out.push({
-          id: `remind-${opp.id}-${days}d`,
-          opportunityId: opp.id,
-          fireAt,
-          title: `${opp.title} resets ${when}`,
-          body: `${amount} ${opp.title} expires soon. Use it or lose it.`,
-        });
+        const key = `${opp.user_card_id ?? opp.id}|${fireAt.getTime()}`;
+        const group = credits.get(key) ?? { fireAt, when, items: [] };
+        group.items.push({ opp, remaining });
+        credits.set(key, group);
       } else {
         const who = opp.merchant ? `${opp.merchant} ` : '';
         const noun = NOUN[opp.type] ?? 'offer';
@@ -74,6 +72,35 @@ export function planCreditReminders(opportunities: Opportunity[], recovered: Rec
         });
       }
     }
+  }
+  for (const { fireAt, when, items } of credits.values()) {
+    const days = when === 'in a week' ? 7 : 2;
+    const first = items[0]!.opp;
+    if (items.length === 1) {
+      const amount = first.value_estimate === null ? 'Your' : `${formatMoney(items[0]!.remaining, { currency: first.currency })} of your`;
+      out.push({
+        id: `remind-${first.id}-${days}d`,
+        opportunityId: first.id,
+        fireAt,
+        title: `${first.title} resets ${when}`,
+        body: `${amount} ${first.title} expires soon. Use it or lose it.`,
+      });
+      continue;
+    }
+    // "$27 in card credits resets in 2 days: Uber Cash $10 · Dining credit $10 · Dunkin' credit $7".
+    const known = items.filter((x) => x.opp.value_estimate !== null);
+    const sameCur = known.length === items.length && known.every((x) => x.opp.currency === first.currency);
+    const total = known.reduce((n, x) => n + x.remaining, 0);
+    out.push({
+      id: `remind-${first.user_card_id ?? first.id}-${fireAt.toISOString().slice(0, 10)}-${days}d`,
+      opportunityId: first.id,
+      fireAt,
+      title: sameCur ? `${formatMoney(total, { currency: first.currency })} in card credits resets ${when}` : `${items.length} card credits reset ${when}`,
+      body: `${items
+        .slice(0, 3)
+        .map((x) => (x.opp.value_estimate === null ? x.opp.title : `${x.opp.title} ${formatMoney(x.remaining, { currency: x.opp.currency })}`))
+        .join(' · ')}${items.length > 3 ? ` and ${items.length - 3} more` : ''}. Use them or lose them.`,
+    });
   }
   // "Did it arrive?" a few days after the user asked for a refund or filed a claim.
   for (const opp of opportunities) {

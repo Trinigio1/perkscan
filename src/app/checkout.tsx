@@ -1,7 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useMemo, useState } from 'react';
-import { Pressable, TextInput, View } from 'react-native';
+import { Linking, Pressable, TextInput, View } from 'react-native';
 import { CardArt } from '@/components/CardArt';
 import { Disclaimer } from '@/components/Disclaimer';
 import { OfferRow } from '@/components/OfferRow';
@@ -47,6 +47,8 @@ export default function Checkout() {
             recoveredByOpp,
             now: new Date(),
             money: (n, cur) => formatMoney(n, { currency: cur }),
+            programs: data.programs,
+            feedback: new Map(data.perkFeedback.map((f) => [f.program_id, f.action])),
           })
         : null,
     [merchant, category, data, recoveredByOpp],
@@ -138,6 +140,43 @@ export default function Checkout() {
               </Panel>
             )}
           </View>
+
+          {stack.memberships.length ? (
+            <View style={{ gap: space.sm }}>
+              <T variant="heading">Included with your membership</T>
+              {stack.memberships.map((m) => (
+                <Panel key={m.userCardId} style={{ gap: space.sm }}>
+                  <T variant="subheading">{m.name}</T>
+                  {m.perks.map((x) => (
+                    <View key={x.name} style={{ gap: 2 }}>
+                      <T variant="label">{x.name}</T>
+                      {x.terms ? <T variant="caption" muted>{x.terms}</T> : null}
+                    </View>
+                  ))}
+                </Panel>
+              ))}
+            </View>
+          ) : null}
+
+          {stack.programs.length ? (
+            <View style={{ gap: space.sm }}>
+              <T variant="heading">Free at {merchant}</T>
+              <Panel style={{ paddingVertical: space.xs }}>
+                {stack.programs.map((p, i) => (
+                  <Pressable
+                    key={p.id}
+                    onPress={() => Linking.openURL(p.url)}
+                    accessibilityRole="link"
+                    style={({ pressed }) => [{ paddingVertical: space.md, gap: 2, opacity: pressed ? 0.6 : 1 }, i > 0 ? { borderTopWidth: 1, borderTopColor: c.border } : null]}
+                  >
+                    <T variant="subheading">{p.name}</T>
+                    <T variant="caption" numberOfLines={3}>{p.summary}</T>
+                    <T variant="caption" color={c.accentStrong}>{p.have ? 'You’re a member: sign in or scan it when you pay' : 'Free to join: join before you pay'}</T>
+                  </Pressable>
+                ))}
+              </Panel>
+            </View>
+          ) : null}
 
           <T variant="caption" faint center>Points and cash-back rates aren’t compared yet.</T>
           <Disclaimer />

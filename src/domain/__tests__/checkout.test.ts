@@ -29,6 +29,30 @@ const userCards = [uc('uc-gold', 'gold'), uc('uc-scotia', 'scotia')];
 const base = { cards, benefits, userCards, receipts: [] as Receipt[], recoveredByOpp: new Map<string, number>(), now: NOW, money: (n: number, c: string) => `${c} ${n}` };
 
 describe('checkoutStack', () => {
+  it('adds your membership’s perks and free programs that work at this store', () => {
+    const uberOne: Card = { ...card('uber_one'), kind: 'membership', issuer: 'Uber', product_name: 'Uber One' };
+    const s = checkoutStack('Uber Eats', 'delivery_rides', {
+      ...base,
+      cards: [...cards, uberOne],
+      userCards: [...userCards, uc('uc-uber', 'uber_one')],
+      benefits: [...benefits, benefit({ id: 'uber_one__delivery', card_id: 'uber_one', type: 'perk', name: '$0 delivery fee', terms_summary: 'On eligible orders.', status: 'active' })],
+      opportunities: [],
+      programs: [
+        { id: 'chipotle_rewards', kind: 'free_perk', name: 'Chipotle Rewards', provider: 'Chipotle', summary: 'Free to join.', url: 'https://chipotle.com/rewards', merchants: ['chipotle'], status: 'active' },
+        { id: 'uber_thing', kind: 'free_perk', name: 'Uber Eats deals', provider: 'Uber Eats', summary: 'Free.', url: 'https://ubereats.com', merchants: ['ubereats'], status: 'active' },
+      ],
+      feedback: new Map(),
+    });
+    expect(s.memberships).toEqual([{ userCardId: 'uc-uber', name: 'Uber One', perks: [{ name: '$0 delivery fee', terms: 'On eligible orders.' }] }]);
+    // A membership never shows up as a card to pay with.
+    expect(s.cards.map((c) => c.userCardId)).not.toContain('uc-uber');
+    expect(s.programs.map((p) => p.id)).toEqual(['uber_thing']);
+    const hidden = checkoutStack('Chipotle Mexican Grill', 'dining', { ...base, opportunities: [], programs: [
+      { id: 'chipotle_rewards', kind: 'free_perk', name: 'Chipotle Rewards', provider: 'Chipotle', summary: 'Free to join.', url: 'https://chipotle.com/rewards', merchants: ['chipotle'], status: 'active' },
+    ], feedback: new Map([['chipotle_rewards', 'dismissed']]) });
+    expect(hidden.programs).toEqual([]);
+  });
+
   it('picks the card with an unused credit at this store', () => {
     const credit = opp({ id: 'c1', user_card_id: 'uc-gold', benefit_id: 'gold__uber_cash', value_estimate: 10, expires_at: '2026-11-01T00:00:00Z' });
     const s = checkoutStack('UBER * EATS', 'delivery_rides', { ...base, opportunities: [credit], recoveredByOpp: new Map([['c1', 3]]) });

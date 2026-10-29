@@ -11,7 +11,8 @@ import { interestLabel } from '@/domain/deals';
 import { analyticsConfigured, analyticsOptedOut, setAnalyticsOptOut } from '@/lib/analytics';
 import { updateProfile } from '@/lib/cards';
 import { getAccuracy } from '@/lib/feedback';
-import { myEvents, useData } from '@/lib/data';
+import { MONTHS } from '@/domain/moments';
+import { myEvents, myMoments, useData } from '@/lib/data';
 import { remindersAvailable, remindersEnabled, requestReminderPermission, setRemindersEnabled, syncReminders } from '@/lib/notifications';
 import { useToast } from '@/lib/toast';
 import { space, useAppearance, type AppearancePref } from '@/theme';
@@ -87,7 +88,7 @@ export default function Settings() {
     }
     setReminders(v);
     await setRemindersEnabled(v);
-    if (v) await syncReminders(data.opportunities, data.recovered, myEvents(data));
+    if (v) await syncReminders(data.opportunities, data.recovered, myEvents(data), myMoments(data));
   };
 
   const email = session?.user.email ?? 'Signed in';
@@ -124,6 +125,13 @@ export default function Settings() {
           title="Interests"
           value={data.profile?.interests?.length ? data.profile.interests.map(interestLabel).slice(0, 2).join(', ') + (data.profile.interests.length > 2 ? '…' : '') : 'Not set'}
           onPress={() => router.push('/interests')}
+        />
+        <ListRow
+          icon="gift-outline"
+          tone="orange"
+          title="Birthday month"
+          value={data.profile?.birth_month ? MONTHS[data.profile.birth_month - 1] : 'Not set'}
+          onPress={() => router.push('/birthday')}
         />
         <ListRow
           icon="contrast"

@@ -1,8 +1,9 @@
 import { createContext, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { AppState } from 'react-native';
 import { setHomeCurrency, shortCardName } from '@/domain/format';
-import { domainStoreKey, storeKey, type Deal, type DealFeedback, type StorePair, type StoreStat } from '@/domain/deals';
+import { domainStoreKey, interestProfile, storeKey, type Deal, type DealFeedback, type StorePair, type StoreStat } from '@/domain/deals';
 import { relevantEvents, type LocalEvent } from '@/domain/events';
+import { planMoments, type Moment } from '@/domain/moments';
 import { isMutedOffer } from '@/domain/mutes';
 import { isStale, isVagueElsewhere, yourStores } from '@/domain/relevance';
 import type { Program } from '@/domain/programs';
@@ -291,7 +292,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
         if (currentUser.current !== forUser) return { data: null, error: null }; // user changed while loading
         setData(next);
         setError(null);
-        if (forUser) syncReminders(next.opportunities, next.recovered, myEvents(next)).catch(() => {});
+        if (forUser) syncReminders(next.opportunities, next.recovered, myEvents(next), myMoments(next)).catch(() => {});
         return { data: next, error: null };
       } catch (e) {
         const message = e instanceof Error ? e.message : String(e);
@@ -345,4 +346,23 @@ export function useLookups() {
 export function myEvents(d: AppData): LocalEvent[] {
   const cards = d.userCards.map((uc) => d.cards.find((c) => c.id === uc.card_id)).filter((c): c is Card => !!c);
   return relevantEvents(d.events, { country: d.profile?.country ?? null, region: d.profile?.region ?? null, cards, today: new Date().toISOString().slice(0, 10) });
+}
+
+/** Nudges at the right moment: credits back on the day they reset, your bank's events on their first day, your birthday month. */
+export function myMoments(d: AppData): Moment[] {
+  const shops = interestProfile({ picked: d.profile?.interests ?? [], receipts: d.receipts, opportunities: d.opportunities, senderDomains: d.senderDomains }).shops;
+  return planMoments(
+    {
+      userCards: d.userCards,
+      cards: d.cards,
+      benefits: d.benefits,
+      events: myEvents(d),
+      opportunities: d.opportunities,
+      programs: d.programs,
+      feedback: new Map(d.perkFeedback.map((f) => [f.program_id, f.action])),
+      shops,
+      birthMonth: d.profile?.birth_month ?? null,
+    },
+    new Date(),
+  );
 }

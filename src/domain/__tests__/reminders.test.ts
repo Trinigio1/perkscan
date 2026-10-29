@@ -44,7 +44,7 @@ describe('planCreditReminders', () => {
   });
 
   it('caps the number of reminders', () => {
-    const many = Array.from({ length: 40 }, () => opp({ expires_at: new Date(2026, 10, 1).toISOString() }));
+    const many = Array.from({ length: 40 }, (_, i) => opp({ user_card_id: `card-${i}`, expires_at: new Date(2026, 10, 1).toISOString() }));
     expect(planCreditReminders(many, [], NOW)).toHaveLength(MAX_REMINDERS);
   });
 });
@@ -61,5 +61,25 @@ describe('claim follow-ups', () => {
       NOW2,
     );
     expect(plan.map((r) => [r.id, r.title])).toEqual([['remind-asked-arrived', 'Did your Target money arrive?']]);
+  });
+
+  it('groups one card’s credits that reset the same day into one reminder', () => {
+    const end = new Date(NOW.getTime() + 10 * 86_400_000).toISOString();
+    const plan = planCreditReminders(
+      [
+        opp({ id: 'uber', title: 'Uber Cash', value_estimate: 10, expires_at: end, user_card_id: 'gold' }),
+        opp({ id: 'dining', title: 'Dining credit', value_estimate: 10, expires_at: end, user_card_id: 'gold' }),
+        opp({ id: 'dunkin', title: 'Dunkin’ credit', value_estimate: 7, expires_at: end, user_card_id: 'gold' }),
+        opp({ id: 'other', title: 'Airline credit', value_estimate: 100, expires_at: end, user_card_id: 'boa' }),
+      ],
+      [rec('dining', 4)],
+      NOW,
+    );
+    const twoDay = plan.filter((r) => r.id.endsWith('-2d'));
+    expect(twoDay).toHaveLength(2);
+    const gold = twoDay.find((r) => r.id.startsWith('remind-gold-'))!;
+    expect(gold.title).toBe('$23 in card credits resets in 2 days');
+    expect(gold.body).toBe('Uber Cash $10 · Dining credit $6 · Dunkin’ credit $7. Use them or lose them.');
+    expect(twoDay.find((r) => r.opportunityId === 'other')!.title).toBe('Airline credit resets in 2 days');
   });
 });

@@ -5,14 +5,15 @@ import * as SecureStore from 'expo-secure-store';
 import { Platform } from 'react-native';
 import { planWeeklyDigest } from '@/domain/digest';
 import type { LocalEvent } from '@/domain/events';
+import type { Moment } from '@/domain/moments';
 import { getHomeCurrency } from '@/domain/format';
-import { planCreditReminders } from '@/domain/reminders';
+import { MAX_REMINDERS, planCreditReminders } from '@/domain/reminders';
 import type { Opportunity, Recovered } from '@/domain/types';
 
 const PREF_KEY = 'reminders_enabled';
 const CHANNEL = 'credit-reminders';
 // 'credit-' was the Phase 1 prefix; still cancel those so old reminders don't linger.
-const PREFIXES = ['remind-', 'credit-', 'digest-'];
+const PREFIXES = ['remind-', 'credit-', 'digest-', 'renew-', 'event-', 'birthday-'];
 
 /**
  * Expo Go on Android ships without parts of expo-notifications, and importing it there crashes the app.
@@ -74,18 +75,21 @@ async function cancelCreditReminders() {
 }
 
 /** Replaces scheduled reminders (expiring soon + the weekly digest) with the current plan. Local notifications. */
-export async function syncReminders(opportunities: Opportunity[], recovered: Recovered[], events: LocalEvent[] = []) {
+export async function syncReminders(opportunities: Opportunity[], recovered: Recovered[], events: LocalEvent[] = [], moments: Moment[] = []) {
   if (!(await remindersEnabled())) return;
   const Notifications = notificationsModule();
   const perms = await Notifications.getPermissionsAsync();
   if (!perms.granted) return;
 
-  const plan = planCreditReminders(opportunities, recovered, new Date());
+  // Expiry reminders and right-moment nudges share the device's limit; the soonest go first.
+  const plan: (Moment | (ReturnType<typeof planCreditReminders>[number] & { route?: undefined }))[] = [...planCreditReminders(opportunities, recovered, new Date()), ...moments]
+    .sort((a, b) => a.fireAt.getTime() - b.fireAt.getTime())
+    .slice(0, MAX_REMINDERS);
   await cancelCreditReminders();
   for (const r of plan) {
     await Notifications.scheduleNotificationAsync({
       identifier: r.id,
-      content: { title: r.title, body: r.body, data: { opportunityId: r.opportunityId } },
+      content: { title: r.title, body: r.body, data: r.route ? { route: r.route } : { opportunityId: r.opportunityId } },
       trigger: { type: Notifications.SchedulableTriggerInputTypes.DATE, date: r.fireAt, channelId: CHANNEL },
     });
   }

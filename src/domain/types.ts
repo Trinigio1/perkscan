@@ -75,6 +75,8 @@ export interface Profile {
   region?: string | null;
   /** Opted in to sharing public promo codes from their email. */
   share_deals?: boolean;
+  /** 1–12, optional: for birthday rewards at the right time. Never the day or year. */
+  birth_month?: number | null;
 }
 
 export interface UserCard {

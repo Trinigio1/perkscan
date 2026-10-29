@@ -3,7 +3,9 @@
 // the kind of purchase, and currency. Earn rates (points / cash back) aren't in the
 // catalog yet, so they're never guessed.
 
+import { matchStore, storeKey } from './deals';
 import { sameMerchant } from './merchant';
+import type { Program } from './programs';
 import { remainingValue } from './score';
 import type { Card, CardBenefit, Opportunity, Receipt, UserCard } from './types';
 
@@ -99,6 +101,10 @@ export interface CheckoutStack {
   best: CardPick | null;
   promos: Opportunity[];
   storeCredit: Opportunity[];
+  /** Your memberships that work here ("Uber One at Uber Eats"), with their perks in the catalog's words. */
+  memberships: { userCardId: string; name: string; perks: { name: string; terms: string | null }[] }[];
+  /** Free programs at this store: ones you have, and ones you could join. */
+  programs: { id: string; name: string; summary: string; url: string; have: boolean }[];
 }
 
 export interface CheckoutInput {
@@ -111,6 +117,9 @@ export interface CheckoutInput {
   now: Date;
   /** Formats money; injected so this stays free of UI code. */
   money: (amount: number, currency: string) => string;
+  programs?: Pick<Program, 'id' | 'kind' | 'name' | 'provider' | 'summary' | 'url' | 'merchants' | 'status'>[];
+  /** "I have it" / "Not for me" on programs. */
+  feedback?: Map<string, 'have' | 'dismissed'>;
 }
 
 const live = (o: Opportunity, now: Date) => o.status === 'open' && (!o.expires_at || new Date(o.expires_at) > now);
@@ -182,7 +191,26 @@ export function checkoutStack(merchant: string, category: SpendCategory, d: Chec
   const best = top && top.reasons.some((r) => r.kind !== 'currency') && (picks.length === 1 || top.score > picks[1]!.score) ? top : null;
 
   const atStore = (o: Opportunity) => !!o.merchant && sameMerchant(o.merchant, merchant) && live(o, d.now);
+
+  // Memberships that belong to this store (Uber One at Uber Eats, DashPass at DoorDash): their verified perks.
+  const memberships: CheckoutStack['memberships'] = [];
+  for (const uc of d.userCards) {
+    const card = d.cards.find((c) => c.id === uc.card_id);
+    if (!card || card.kind !== 'membership' || !sameMerchant(card.issuer, merchant)) continue;
+    const perks = d.benefits.filter((b) => b.card_id === card.id && b.type === 'perk' && b.status === 'active').map((b) => ({ name: b.name, terms: b.terms_summary }));
+    if (perks.length) memberships.push({ userCardId: uc.id, name: card.product_name, perks });
+  }
+
+  // Free programs at this store; "Not for me" ones stay hidden.
+  const here = [storeKey(merchant)].filter((k) => k.length >= 3);
+  const programs = (d.programs ?? [])
+    .filter((p) => p.status === 'active' && (p.kind === 'free_perk' || p.kind === 'loyalty') && p.merchants.length && d.feedback?.get(p.id) !== 'dismissed')
+    .filter((p) => matchStore({ merchant: p.provider, merchant_keys: p.merchants.map(storeKey) }, here))
+    .map((p) => ({ id: p.id, name: p.name, summary: p.summary, url: p.url, have: d.feedback?.get(p.id) === 'have' }));
+
   return {
+    memberships,
+    programs,
     category,
     merchantCurrency,
     cards: picks,
