@@ -23,11 +23,11 @@ describe('seed/card_benefits.json', () => {
     expect(seedJson.cards.map((c: { id: string }) => c.id)).toEqual([
       'amex_platinum', 'amex_gold', 'chase_sapphire_reserve', 'chase_sapphire_preferred', 'capital_one_venture_x',
       'capital_one_savor', 'citi_strata_premier', 'chase_freedom_unlimited', 'discover_it', 'apple_card',
-      'scotiabank_tt_visa_classic', 'scotiabank_tt_aero_platinum_visa', 'scotiabank_tt_gold_mastercard_cashback', 'scotiabank_tt_mastercard',
+      'scotiabank_tt_visa_classic', 'scotiabank_tt_aero_platinum_visa', 'scotiabank_tt_aero_mastercard_black', 'scotiabank_tt_gold_mastercard_cashback', 'scotiabank_tt_mastercard',
       'first_citizens_tt_visa_classic', 'first_citizens_tt_visa_gold', 'first_citizens_tt_visa_platinum', 'first_citizens_tt_purple',
       'first_citizens_tt_2_in_1', 'first_citizens_tt_vacation_lifestyle_mc',
       'republic_tt_visa_classic', 'republic_tt_visa_gold', 'republic_tt_pricesmart_visa_platinum',
-      'republic_tt_aadvantage_visa_infinite', 'republic_tt_visa_signature', 'first_citizens_tt_visa_signature',
+      'republic_tt_aadvantage_visa_infinite', 'republic_tt_visa_signature', 'first_citizens_tt_visa_signature', 'first_citizens_tt_visa_infinite',
       'amex_blue_cash_preferred', 'amex_blue_cash_everyday', 'amex_green', 'amex_delta_gold', 'amex_delta_platinum', 'amex_hilton_surpass',
       'chase_freedom_flex', 'chase_prime_visa', 'chase_united_explorer', 'chase_marriott_boundless',
       'capital_one_venture', 'capital_one_quicksilver', 'citi_double_cash', 'citi_custom_cash', 'citi_costco',
@@ -57,11 +57,12 @@ describe('seed/card_benefits.json', () => {
   });
 
   it('takes verified T&T card terms only from the bank’s own site', () => {
-    const own: Record<string, string> = { Scotiabank: 'tt.scotiabank.com', 'First Citizens': 'firstcitizenstt.com', 'Republic Bank': 'republictt.com' };
+    // First Citizens moved from firstcitizenstt.com to its group site, firstcitizensgroup.com.
+    const own: Record<string, string[]> = { Scotiabank: ['tt.scotiabank.com'], 'First Citizens': ['firstcitizenstt.com', 'firstcitizensgroup.com'], 'Republic Bank': ['republictt.com'] };
     for (const card of seedJson.cards.filter((c: { country: string }) => c.country === 'TT')) {
-      const host = Object.entries(own).find(([name]) => card.issuer.startsWith(name))![1];
+      const hosts = Object.entries(own).find(([name]) => card.issuer.startsWith(name))![1];
       for (const b of card.benefits.filter((x: { status: string }) => x.status === 'active')) {
-        expect(new URL(b.source_url).hostname.replace(/^www\./, '')).toBe(host);
+        expect(hosts).toContain(new URL(b.source_url).hostname.replace(/^www\./, ''));
       }
     }
   });

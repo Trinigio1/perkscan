@@ -2,13 +2,23 @@
 
 ## Why
 
-A user with a Bank of America Premium Rewards card ··6042 knew they had airport lounge access, but PerkScan didn't show it.
-Bank of America's own pages explain why:
+A user knew they had airport lounge access through a card, and PerkScan didn't show it. The card was a **Scotiabank Trinidad & Tobago** card, not the Bank of America card first suspected.
 
-- **Premium Rewards ($95 fee)** has no lounge membership. Its $100 airline incidental credit can cover airline lounge day passes.
-- **Premium Rewards Elite ($550 fee)** includes Priority Pass Select for the cardholder and up to 4 people (enrollment required).
+Scotiabank T&T's own pages tie Priority Pass to two things:
+- The **AERO Mastercard Black**, which was missing from the catalog.
+- **Premium Banking**: 4 lounge visits a year with a Premium Banking credit card, or 10 with a Mastercard Black.
 
-So the card most likely added was the wrong product.
+**Scotiabank / First Citizens fixes** (migration `038`):
+- New: `scotiabank_tt_aero_mastercard_black`, with Priority Pass, AERO Rewards points and a personal assistant service.
+- New: `first_citizens_tt_visa_infinite`, with Priority Pass.
+- The `scotiabank_tt_aero_platinum_visa` lounge entry now says access comes through Premium Banking (4 visits a year).
+- Seed test: First Citizens terms may also come from firstcitizensgroup.com, which replaced firstcitizenstt.com as the bank's site.
+
+On Bank of America: Premium Rewards ($95) has no lounge membership; only Premium Rewards Elite ($550) includes Priority Pass. Keep a standard Premium Rewards card as it is. Switch only if the card really is the Elite.
+
+## Not automatic yet
+
+The catalog is checked by hand from issuer pages. It covers 49 card products and is not refreshed automatically. Cards outside it get no perks. See "Next" below.
 
 ## What changed
 
@@ -53,4 +63,8 @@ npx supabase db push --linked
 npx expo start --tunnel -c
 ```
 
-Then open the Bank of America card in the Cards tab, choose **Switch** under "Not the right card?", and pick **Premium Rewards Elite**.
+Then open your Scotiabank card in Cards. If it's the AERO Mastercard Black, add that card, or use **Switch** under "Not the right card?".
+
+## Next
+
+A card scout: a monthly job that rereads every card's official page and benefits guide. Changes are evidence-checked: each one is applied only with a quote from that page, and dollar amounts wait for review. When someone adds a card that isn't in the catalog, the scout looks it up on the issuer's site.

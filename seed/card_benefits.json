@@ -2060,16 +2060,16 @@
           "period": "per_claim",
           "period_anchor": "calendar",
           "amount_schedule": null,
-          "terms_summary": "A Priority Pass membership for 600+ airport lounges worldwide. How many visits are free isn't stated — ask Scotiabank.",
+          "terms_summary": "Priority Pass lounge access through Scotiabank Premium Banking: 4 lounge visits a year with a Premium Banking credit card. Ask Scotiabank whether your card and account qualify.",
           "max_coverage": null,
           "coverage_window_days": null,
           "enrollment_required": true,
           "merchant_match": null,
           "currency": null,
           "status": "active",
-          "source_url": "https://tt.scotiabank.com/tt-pb/preferred-products/scotiabank-premium-credit-cards.html",
-          "last_verified": "2026-10-22",
-          "notes": "Read from the bank's own page text via web search on 2026-10-22 (the page itself could not be opened from the build environment). Bank pages can be dated: confirm with the bank before relying on it."
+          "source_url": "https://tt.scotiabank.com/tt-pb/about-scotiabank-premium-banking.html",
+          "last_verified": "2026-11-01",
+          "notes": "Read from the bank's own page text via web search on 2026-11-01 (the page itself could not be opened from the build environment). Bank pages can be dated: confirm with the bank before relying on it."
         },
         {
           "id": "scotiabank_tt_aero_platinum_visa__travel_medical",
@@ -2111,6 +2111,77 @@
         }
       ],
       "fee_note": "A rates page about four years old lists TT$700; the product page gives no fee. Confirm with the bank."
+    },
+    {
+      "id": "scotiabank_tt_aero_mastercard_black",
+      "issuer": "Scotiabank Trinidad & Tobago",
+      "product_name": "Scotiabank AERO Mastercard Black",
+      "country": "TT",
+      "currency": "TTD",
+      "annual_fee": null,
+      "status": "TODO_VERIFY",
+      "source_url": "https://tt.scotiabank.com/tt-pb/preferred-products/scotiabank-premium-credit-cards.html",
+      "last_verified": null,
+      "fee_note": "Scotiabank's Premium Banking page lists a US$290 a month qualification for the Mastercard Black AERO; the annual fee isn't stated. Confirm with the bank.",
+      "benefits": [
+        {
+          "id": "scotiabank_tt_aero_mastercard_black__lounges",
+          "type": "perk",
+          "name": "Airport lounge access (Priority Pass)",
+          "amount": null,
+          "period": "per_claim",
+          "period_anchor": "calendar",
+          "amount_schedule": null,
+          "terms_summary": "A Priority Pass membership for 600+ airport lounges worldwide. With Scotiabank Premium Banking: 10 lounge visits a year. Show your Priority Pass card at the lounge; no booking needed.",
+          "max_coverage": null,
+          "coverage_window_days": null,
+          "enrollment_required": true,
+          "merchant_match": null,
+          "currency": null,
+          "status": "active",
+          "source_url": "https://tt.scotiabank.com/tt-pb/about-scotiabank-premium-banking.html",
+          "last_verified": "2026-11-01",
+          "notes": "Read from the bank's own page text via web search on 2026-11-01 (the page itself could not be opened from the build environment). Bank pages can be dated: confirm with the bank before relying on it."
+        },
+        {
+          "id": "scotiabank_tt_aero_mastercard_black__aero_rewards",
+          "type": "perk",
+          "name": "AERO Rewards points",
+          "amount": null,
+          "period": "per_claim",
+          "period_anchor": "calendar",
+          "amount_schedule": null,
+          "terms_summary": "Earn AERO Rewards points on purchases and redeem them for flights.",
+          "max_coverage": null,
+          "coverage_window_days": null,
+          "enrollment_required": false,
+          "merchant_match": null,
+          "currency": null,
+          "status": "active",
+          "source_url": "https://tt.scotiabank.com/tt-pb/preferred-products/scotiabank-premium-credit-cards.html",
+          "last_verified": "2026-11-01",
+          "notes": "Read from the bank's own page text via web search on 2026-11-01 (the page itself could not be opened from the build environment). Bank pages can be dated: confirm with the bank before relying on it."
+        },
+        {
+          "id": "scotiabank_tt_aero_mastercard_black__concierge",
+          "type": "perk",
+          "name": "Personal assistant service",
+          "amount": null,
+          "period": "per_claim",
+          "period_anchor": "calendar",
+          "amount_schedule": null,
+          "terms_summary": "An elite personal assistant (concierge) service for cardholders.",
+          "max_coverage": null,
+          "coverage_window_days": null,
+          "enrollment_required": false,
+          "merchant_match": null,
+          "currency": null,
+          "status": "active",
+          "source_url": "https://tt.scotiabank.com/tt-pb/preferred-products/scotiabank-premium-credit-cards.html",
+          "last_verified": "2026-11-01",
+          "notes": "Read from the bank's own page text via web search on 2026-11-01 (the page itself could not be opened from the build environment). Bank pages can be dated: confirm with the bank before relying on it."
+        }
+      ]
     },
     {
       "id": "scotiabank_tt_gold_mastercard_cashback",
@@ -3122,6 +3193,39 @@
           "source_url": "https://www.firstcitizenstt.com/personal-banking/credit-cards/credit-card-benefits.html",
           "last_verified": "2026-10-22",
           "notes": "Read from the bank's own page text via web search on 2026-10-22 (the page itself could not be opened from the build environment). Bank pages can be dated: confirm with the bank before relying on it."
+        }
+      ]
+    },
+    {
+      "id": "first_citizens_tt_visa_infinite",
+      "issuer": "First Citizens (Trinidad & Tobago)",
+      "product_name": "First Citizens Visa Infinite",
+      "country": "TT",
+      "currency": "TTD",
+      "annual_fee": null,
+      "status": "TODO_VERIFY",
+      "source_url": "https://www.firstcitizensgroup.com/tt/credit-cards/priority-pass/",
+      "last_verified": null,
+      "fee_note": "The annual fee isn't stated on the Priority Pass page. Confirm with the bank.",
+      "benefits": [
+        {
+          "id": "first_citizens_tt_visa_infinite__lounges",
+          "type": "perk",
+          "name": "Airport lounge access (Priority Pass)",
+          "amount": null,
+          "period": "per_claim",
+          "period_anchor": "calendar",
+          "amount_schedule": null,
+          "terms_summary": "A complimentary Priority Pass membership. Show the digital Priority Pass card with your Visa Infinite card at the lounge. How many visits are free isn't stated; ask First Citizens.",
+          "max_coverage": null,
+          "coverage_window_days": null,
+          "enrollment_required": true,
+          "merchant_match": null,
+          "currency": null,
+          "status": "active",
+          "source_url": "https://www.firstcitizensgroup.com/tt/credit-cards/priority-pass/",
+          "last_verified": "2026-11-01",
+          "notes": "Read from the bank's own page text via web search on 2026-11-01 (the page itself could not be opened from the build environment). Bank pages can be dated: confirm with the bank before relying on it."
         }
       ]
     },
