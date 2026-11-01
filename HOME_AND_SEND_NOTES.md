@@ -46,7 +46,7 @@ Nothing was removed. Everything Home showed is still one tap away.
 
 | Suite | Result |
 |---|---|
-| Jest | 605 pass |
+| Jest | 603 pass |
 | New tests | Filling blanks (unanswered ones stay visible); reading checked prices; a price drop with nothing to fill; flight wording for U.S. and EU claims |
 | Browser | Home with the 3-line headline, Next up card and "2 more things to do"; the Next up screen; Money rows with Send request |
 | Browser, sending | One tap on the Target price drop opened email with the order number, both prices and the product link, and marked it started. The flight refund asked for its booking reference, then opened email and marked it started. |
