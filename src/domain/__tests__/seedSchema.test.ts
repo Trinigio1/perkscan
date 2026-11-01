@@ -31,7 +31,7 @@ describe('seed/card_benefits.json', () => {
       'amex_blue_cash_preferred', 'amex_blue_cash_everyday', 'amex_green', 'amex_delta_gold', 'amex_delta_platinum', 'amex_hilton_surpass',
       'chase_freedom_flex', 'chase_prime_visa', 'chase_united_explorer', 'chase_marriott_boundless',
       'capital_one_venture', 'capital_one_quicksilver', 'citi_double_cash', 'citi_custom_cash', 'citi_costco',
-      'wells_fargo_active_cash', 'wells_fargo_autograph', 'boa_customized_cash', 'boa_premium_rewards', 'target_circle_card',
+      'wells_fargo_active_cash', 'wells_fargo_autograph', 'boa_customized_cash', 'boa_premium_rewards', 'boa_premium_rewards_elite', 'target_circle_card',
     ]);
   });
 

@@ -1,3 +1,5 @@
+import type { Card } from './types';
+
 /** Form state and validation for adding/editing a card in the wallet. */
 export interface CardDraft {
   card_id: string;
@@ -32,4 +34,27 @@ export function draftToRow(d: CardDraft) {
     open_date: d.open_date || null,
     nickname: d.nickname.trim() || null,
   };
+}
+
+const FAMILY_NOISE = /®|™|℠|\b(the|card|credit|from|visa|signature|infinite|mastercard|world|elite)\b/gi;
+/** "Bank of America® Premium Rewards® Elite" -> "premium": the first word of the product's own name. */
+function familyWord(c: Pick<Card, 'issuer' | 'product_name'>): string {
+  const issuerWords = new Set(c.issuer.toLowerCase().split(/\s+/));
+  const words = c.product_name
+    .replace(FAMILY_NOISE, ' ')
+    .toLowerCase()
+    .split(/[^a-z0-9+]+/)
+    .filter((w) => w && !issuerWords.has(w) && w !== 'of' && w !== 'american' && w !== 'express' && w !== 'amex');
+  return words[0] ?? '';
+}
+
+/**
+ * Other cards from the same issuer and family ("Premium Rewards" and "Premium Rewards Elite",
+ * "Sapphire Preferred" and "Sapphire Reserve"): the easy ones to mix up when adding a card.
+ */
+type Family = Pick<Card, 'id' | 'issuer' | 'product_name' | 'kind' | 'country'>;
+export function siblingCards<C extends Family>(card: Family, cards: C[]): C[] {
+  const family = familyWord(card);
+  if (!family || card.kind === 'membership') return [];
+  return cards.filter((c) => c.id !== card.id && c.kind === card.kind && c.country === card.country && c.issuer === card.issuer && familyWord(c) === family);
 }

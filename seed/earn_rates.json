@@ -27,7 +27,34 @@
           "source_url": "https://www.bankofamerica.com/credit-cards/products/premium-rewards-credit-card/"
         }
       ],
-      "note": "Preferred Rewards members earn 25%–75% more points."
+      "note": "BofA Rewards members earn 10%–75% more points."
+    },
+    {
+      "card_id": "boa_premium_rewards_elite",
+      "reward": {
+        "kind": "points",
+        "cents_per_unit": 1,
+        "value_basis": "Bank of America: points are worth 1¢ each as cash rewards",
+        "value_source_url": "https://www.bankofamerica.com/credit-cards/products/premium-rewards-credit-card/"
+      },
+      "rates": [
+        {
+          "category": "travel",
+          "rate": 2,
+          "source_url": "https://www.managerewardsonline.bankofamerica.com/cms/published/root/duo/sharedContent/premiumelite/pdf/RewardsBenefitsGuide.pdf"
+        },
+        {
+          "category": "dining",
+          "rate": 2,
+          "source_url": "https://www.managerewardsonline.bankofamerica.com/cms/published/root/duo/sharedContent/premiumelite/pdf/RewardsBenefitsGuide.pdf"
+        },
+        {
+          "category": "everything",
+          "rate": 1.5,
+          "source_url": "https://www.managerewardsonline.bankofamerica.com/cms/published/root/duo/sharedContent/premiumelite/pdf/RewardsBenefitsGuide.pdf"
+        }
+      ],
+      "note": "BofA Rewards members earn 10%–75% more points."
     },
     {
       "card_id": "boa_customized_cash",

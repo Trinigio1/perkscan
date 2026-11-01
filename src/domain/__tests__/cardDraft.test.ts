@@ -1,4 +1,4 @@
-import { draftToRow, emptyDraft, validateDraft } from '../cardDraft';
+import { draftToRow, emptyDraft, siblingCards, validateDraft } from '../cardDraft';
 
 const draft = (patch: Partial<ReturnType<typeof emptyDraft>>) => ({ ...emptyDraft('amex_gold'), ...patch });
 
@@ -32,5 +32,29 @@ describe('draftToRow', () => {
       open_date: null,
       nickname: 'Gold',
     });
+  });
+});
+
+describe('siblingCards', () => {
+  const card = (id: string, issuer: string, product_name: string) => ({ id, issuer, product_name, kind: 'card' as const, country: 'US' });
+  const all = [
+    card('boa_premium_rewards', 'Bank of America', 'Bank of America® Premium Rewards®'),
+    card('boa_premium_rewards_elite', 'Bank of America', 'Bank of America® Premium Rewards® Elite'),
+    card('boa_customized_cash', 'Bank of America', 'Bank of America® Customized Cash Rewards'),
+    card('chase_sapphire_preferred', 'Chase', 'Chase Sapphire Preferred®'),
+    card('chase_sapphire_reserve', 'Chase', 'Chase Sapphire Reserve®'),
+    card('chase_freedom_flex', 'Chase', 'Chase Freedom Flex®'),
+    card('amex_delta_gold', 'American Express', 'Delta SkyMiles® Gold American Express Card'),
+    card('amex_delta_platinum', 'American Express', 'Delta SkyMiles® Platinum American Express Card'),
+    card('amex_gold', 'American Express', 'American Express® Gold Card'),
+  ];
+  const ids = (id: string) => siblingCards(all.find((c) => c.id === id)!, all).map((c) => c.id);
+  it('finds the cards easy to mix up, and only those', () => {
+    expect(ids('boa_premium_rewards')).toEqual(['boa_premium_rewards_elite']);
+    expect(ids('boa_premium_rewards_elite')).toEqual(['boa_premium_rewards']);
+    expect(ids('chase_sapphire_preferred')).toEqual(['chase_sapphire_reserve']);
+    expect(ids('amex_delta_gold')).toEqual(['amex_delta_platinum']);
+    expect(ids('amex_gold')).toEqual([]);
+    expect(ids('boa_customized_cash')).toEqual([]);
   });
 });

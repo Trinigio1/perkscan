@@ -7,7 +7,7 @@ import { CardDetailsForm } from '@/components/CardDetailsForm';
 import { ConfidenceTag } from '@/components/ConfidenceTag';
 import { Disclaimer } from '@/components/Disclaimer';
 import { Badge, Button, ErrorNote, IconBubble, Panel, Row, Screen, Segmented, T } from '@/components/ui';
-import { draftToRow, validateDraft, type CardDraft } from '@/domain/cardDraft';
+import { draftToRow, siblingCards, validateDraft, type CardDraft } from '@/domain/cardDraft';
 import { checkedLabel, formatMoney, PERIOD_LABELS } from '@/domain/format';
 import type { BenefitType, Card, CardBenefit, Opportunity, Receipt } from '@/domain/types';
 import { benefitIcon, offerIcon } from '@/domain/visuals';
@@ -170,6 +170,19 @@ export default function CardScreen() {
     refresh();
   };
 
+  // Easy to mix up when adding: "Premium Rewards" vs "Premium Rewards Elite". Same card, other product.
+  const siblings = siblingCards(card, data.cards);
+  const switchTo = async (next: Card) => {
+    setBusy(true);
+    setError(null);
+    const { error: e } = await supabase.from('user_cards').update({ card_id: next.id }).eq('id', uc.id);
+    setBusy(false);
+    if (e) return setError(e.code === '23505' ? 'You already have that card with these last 4 digits.' : e.message);
+    toast(`Switched to ${next.product_name.replace(/®|™|℠/g, '')}`, { tone: 'success' });
+    await rematchReceipts();
+    refresh();
+  };
+
   const doRemove = async () => {
     const { error: e } = await supabase.from('user_cards').delete().eq('id', uc.id);
     if (e) return setError(e.message);
@@ -214,6 +227,21 @@ export default function CardScreen() {
         </>
       ) : null}
       {error ? <ErrorNote message={error} /> : null}
+      {!editing && siblings.length ? (
+        <Panel style={{ gap: space.sm }}>
+          <T variant="label">Not the right card?</T>
+          <T variant="caption" muted>{card.issuer} has {siblings.length === 1 ? 'a similar card' : 'similar cards'} with different benefits. If {siblings.length === 1 ? 'that’s yours' : 'yours is one of these'}, switch it: your last 4 digits and purchases stay.</T>
+          {siblings.map((s) => (
+            <Row key={s.id} gap={space.sm}>
+              <View style={{ flex: 1 }}>
+                <T variant="body">{s.product_name.replace(/®|™|℠/g, '')}</T>
+                <T variant="caption" muted>{s.annual_fee === null ? 'Annual fee unconfirmed' : s.annual_fee === 0 ? 'No annual fee' : `${formatMoney(s.annual_fee, { currency: s.currency })} annual fee`}</T>
+              </View>
+              <Button title="Switch" icon="swap-horizontal" size="sm" kind="secondary" loading={busy} onPress={() => switchTo(s)} />
+            </Row>
+          ))}
+        </Panel>
+      ) : null}
 
       <Segmented<Tab> value={shownTab} onChange={setTab} options={tabs.map((t) => ({ label: t.label, value: t.value }))} />
 
