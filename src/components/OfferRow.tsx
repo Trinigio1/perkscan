@@ -1,6 +1,6 @@
 import { router } from 'expo-router';
 import { Pressable, View } from 'react-native';
-import { claimTarget, followUpQuestion } from '@/domain/claimTarget';
+import { claimTarget, followUpQuestion, type ClaimTarget } from '@/domain/claimTarget';
 import { confidenceOf } from '@/domain/confidence';
 import { offerEstimate } from '@/domain/estimate';
 import { isInAppDeal } from '@/domain/inApp';
@@ -11,6 +11,7 @@ import { offerIcon, OFFER_TYPE_LABELS } from '@/domain/visuals';
 import { useData, useLookups } from '@/lib/data';
 import { space, useColors } from '@/theme';
 import { ClaimButton } from './Claims';
+import { SendRequest, useRequest } from './SendRequest';
 import { ConfidenceTag } from './ConfidenceTag';
 import { CreditRow } from './CreditRow';
 import { Badge, IconBubble, Row, T } from './ui';
@@ -120,10 +121,28 @@ export function OpportunityRow({
   return (
     <View>
       {row}
-      <Row gap={space.sm} style={{ marginLeft: 56, marginTop: -4, paddingBottom: space.md }}>
-        <ClaimButton opp={opp} target={target} size="sm" />
-        <T variant="caption" faint numberOfLines={2} style={{ flex: 1 }}>{target.hint}</T>
-      </Row>
+      {target.openItem ? <RequestOrClaim opp={opp} target={target} /> : <ClaimLine opp={opp} target={target} />}
     </View>
+  );
+}
+
+function ClaimLine({ opp, target }: { opp: Opportunity; target: ClaimTarget }) {
+  return (
+    <Row gap={space.sm} style={{ marginLeft: 56, marginTop: -4, paddingBottom: space.md }}>
+      <ClaimButton opp={opp} target={target} size="sm" />
+      <T variant="caption" faint numberOfLines={2} style={{ flex: 1 }}>{target.hint}</T>
+    </Row>
+  );
+}
+
+/** A refund or price drop with a written request: send it from here, no extra screen. */
+function RequestOrClaim({ opp, target }: { opp: Opportunity; target: ClaimTarget }) {
+  const help = useRequest(opp);
+  if (!help) return <ClaimLine opp={opp} target={target} />;
+  return (
+    <Row gap={space.sm} style={{ marginLeft: 56, marginTop: -4, paddingBottom: space.md, alignItems: 'flex-start', flexWrap: 'wrap' }}>
+      <SendRequest opp={opp} help={help} size="sm" />
+      {!help.gaps.length ? <T variant="caption" faint numberOfLines={2} style={{ flex: 1, alignSelf: 'center' }}>Opens your email with it written</T> : null}
+    </Row>
   );
 }

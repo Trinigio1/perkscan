@@ -129,7 +129,7 @@ export default function Money() {
               ) : s.title === 'Owed to you' ? (
                 <View style={{ gap: 2 }}>
                   <T variant="overline" color={c.accentStrong}>{s.title}</T>
-                  <T variant="caption" muted>Already yours: a refund, a price drop or a settlement. Tap one for how to ask for it.</T>
+                  <T variant="caption" muted>Already yours: a refund, a price drop or a settlement. Send the request from here: it opens your email with it written.</T>
                 </View>
               ) : s.title ? (
                 <T variant="overline" color={s.title === 'This week' ? c.warn : c.textMuted}>{s.title}</T>

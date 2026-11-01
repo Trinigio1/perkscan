@@ -29,7 +29,7 @@ export interface ClaimHelp {
 }
 
 export interface ClaimContext {
-  opp: Pick<Opportunity, 'type' | 'title' | 'merchant' | 'value_estimate' | 'currency' | 'dedupe_key' | 'action_steps' | 'code'>;
+  opp: Pick<Opportunity, 'type' | 'title' | 'merchant' | 'value_estimate' | 'currency' | 'dedupe_key' | 'action_steps' | 'code'> & { description?: string | null };
   receipt?: Pick<Receipt, 'merchant' | 'total' | 'currency' | 'purchase_date' | 'last_four' | 'order_number'> | null;
   /** The user's name for the sign-off, if known. */
   name?: string | null;
@@ -47,9 +47,37 @@ function fill(value: string | null | undefined, gap: string, gaps: string[]): st
 /** All the bracketed gaps in a text, in order. */
 export const gapsIn = (text: string) => [...new Set(text.match(/\[[^\]]+\]/g) ?? [])];
 
+/**
+ * The message with the user's answers in place of its [bracketed] gaps. Gaps left unanswered stay as
+ * they are, so nothing half-filled ever looks finished.
+ */
+export function fillGaps(m: { subject: string; body: string }, values: Record<string, string>): { subject: string; body: string } {
+  const put = (text: string) => text.replace(/\[[^\]]+\]/g, (gap) => values[gap]?.trim() || gap);
+  return { subject: put(m.subject), body: put(m.body) };
+}
+
+/** What a gap asks for, in plain words: "[order number]" -> "Order number". */
+export const gapLabel = (gap: string) => {
+  const t = gap.replace(/^\[|\]$/g, '');
+  return t.charAt(0).toUpperCase() + t.slice(1);
+};
+
 /** A mailto: link with the message filled in; the user picks who it goes to and presses send. */
 export function mailtoLink(m: { subject: string; body: string }): string {
   return `mailto:?subject=${encodeURIComponent(m.subject)}&body=${encodeURIComponent(m.body)}`;
+}
+
+/**
+ * The items PerkScan's price check found cheaper, from the line it writes ("Dyson V8: you paid US$399.99,
+ * now US$329.99 · …"). Empty when the item wasn't price-checked, so nothing is guessed.
+ */
+export function checkedPrices(description: string | null): { item: string; paid: string; now: string }[] {
+  if (!description) return [];
+  return description
+    .split(' · ')
+    .map((part) => /^(.+): you paid (\S+), now (\S+)$/.exec(part.trim()))
+    .filter((m): m is RegExpExecArray => !!m)
+    .map((m) => ({ item: m[1]!, paid: m[2]!, now: m[3]! }));
 }
 
 export function claimHelp(ctx: ClaimContext): ClaimHelp | null {
@@ -82,10 +110,16 @@ export function claimHelp(ctx: ClaimContext): ClaimHelp | null {
 
   switch (opp.type) {
     case 'price_drop': {
+      // PerkScan's own price check names each item, what was paid and today's price, with its page.
+      const checked = checkedPrices(opp.description ?? null);
+      const pages = opp.action_steps.filter((x) => x.url && /^Current price of /.test(x.step)).map((x) => x.url!);
+      const dropped = checked.length
+        ? `${checked.map((x) => `${x.item} was ${x.paid} and is now ${x.now}`).join('; ')}.${pages.length ? ` Today's price: ${pages.join(' ')}` : ''}`
+        : 'The price has since dropped to [today\'s price].';
       const body = [
         `Hello ${storeName},`,
         '',
-        `I bought ${orderLine}${date ? ` on ${date}` : ''}${total ? ` for ${total}` : ''}. The price has since dropped to [today's price].`,
+        `I bought ${orderLine}${date ? ` on ${date}` : ''}${total ? ` for ${total}` : ''}. ${dropped}`,
         '',
         `Under your price adjustment policy, I'd like a refund of the difference to my original payment method.`,
         '',
@@ -107,6 +141,23 @@ export function claimHelp(ctx: ClaimContext): ClaimHelp | null {
           signOff,
         ].join('\n');
         return done({ kind: 'duplicate_charge', heading: 'Ask your bank to reverse the duplicate', to: 'Your card issuer (the number on the back of your card, or its app)', message: { subject: 'Duplicate charge to reverse', body }, url: null });
+      }
+      // A disrupted flight: the flight, the booking and the rule, not an "order".
+      if (opp.dedupe_key?.startsWith('flight:')) {
+        const what = opp.title.replace(/^[^:]+:\s*/, '');
+        const booking = fill(opp.code, '[booking reference]', gaps);
+        const eu = opp.currency === 'EUR' || /^Up to €/.test(opp.title);
+        const ask = eu
+          ? 'Under EU Regulation 261/2004, I am requesting the compensation due for this flight. Please confirm the amount and how it will be paid.'
+          : `I did not accept a rebooking or travel credit. Under the U.S. Department of Transportation's refund rules, please refund ${amount ?? fill(null, '[ticket price]', gaps)} to my original payment method.`;
+        const body = [`Hello ${storeName},`, '', `My flight ${what}. Booking reference: ${booking}.`, '', ask, '', signOff].join('\n');
+        return done({
+          kind: 'refund',
+          heading: eu ? `Claim compensation from ${store ?? 'the airline'}` : `Ask ${store ?? 'the airline'} for your refund`,
+          to: `${store ?? 'The airline'}'s customer relations`,
+          message: { subject: `${eu ? 'EU261 compensation claim' : 'Refund request'} — booking ${booking}`, body },
+          url,
+        });
       }
       const body = [
         `Hello ${storeName},`,

@@ -1,4 +1,4 @@
-import { claimHelp, claimsToCheck, gapsIn, mailtoLink } from '../claims';
+import { checkedPrices, claimHelp, claimsToCheck, fillGaps, gapLabel, gapsIn, mailtoLink } from '../claims';
 import { setHomeCurrency } from '../format';
 
 setHomeCurrency('USD');
@@ -65,5 +65,60 @@ describe('helpers', () => {
       { id: 'never', status: 'open' as const, claim_started_at: null, claim_check_after: null },
     ];
     expect(claimsToCheck(list, now).map((o) => o.id)).toEqual(['due']);
+  });
+});
+
+describe('fillGaps', () => {
+  const m = { subject: 'Refund request — order [order number]', body: 'Hello,\n\nOrder [order number], paid [amount].\n\nThank you,\n[your name]' };
+  it('puts answers in place of the gaps, and leaves unanswered ones visible', () => {
+    expect(fillGaps(m, { '[order number]': ' 112-334 ', '[your name]': 'Giovanni' })).toEqual({
+      subject: 'Refund request — order 112-334',
+      body: 'Hello,\n\nOrder 112-334, paid [amount].\n\nThank you,\nGiovanni',
+    });
+    expect(gapsIn(fillGaps(m, { '[your name]': 'G' }).body)).toEqual(['[order number]', '[amount]']);
+  });
+  it('labels a gap in plain words', () => {
+    expect(gapLabel('[order number]')).toBe('Order number');
+  });
+});
+
+describe('price-checked requests', () => {
+  it('reads what the price check found, and leaves nothing to fill but what it never saw', () => {
+    expect(checkedPrices('Dyson V8: you paid US$399.99, now US$329.99 · Filter: you paid US$20, now US$15')).toEqual([
+      { item: 'Dyson V8', paid: 'US$399.99', now: 'US$329.99' },
+      { item: 'Filter', paid: 'US$20', now: 'US$15' },
+    ]);
+    expect(checkedPrices('Some other note')).toEqual([]);
+    const help = claimHelp({
+      opp: {
+        type: 'price_drop', title: 'Price dropped', merchant: 'Target', value_estimate: 70, currency: 'USD', dedupe_key: 'price_adjust:r1', code: null,
+        description: 'Dyson V8: you paid US$399.99, now US$329.99',
+        action_steps: [{ step: 'Current price of Dyson V8', url: 'https://www.target.com/p/dyson-v8/-/A-1' }, { step: 'Store policy', url: 'https://help.target.com/price-match' }],
+      },
+      receipt: { merchant: 'Target', total: 399.99, currency: 'USD', purchase_date: '2026-10-28', last_four: '6042', order_number: '112-3344-551' },
+      name: 'Giovanni',
+    })!;
+    expect(help.gaps).toEqual([]);
+    expect(help.message!.body).toContain('Dyson V8 was US$399.99 and is now US$329.99. Today\'s price: https://www.target.com/p/dyson-v8/-/A-1');
+  });
+});
+
+describe('flight claims', () => {
+  const flight = (p: Partial<{ title: string; currency: string; code: string | null; value_estimate: number | null }>) => ({
+    type: 'refund' as const, merchant: 'Caribbean Airlines', dedupe_key: 'flight:caribbeanairlines:bw484:2026-11-03', action_steps: [],
+    title: 'Refund owed: Caribbean Airlines BW 484 on 2026-11-03 was cancelled', currency: 'USD', code: 'XKQ7PL', value_estimate: 669.23, ...p,
+  });
+  it('asks under the U.S. rules, with the booking reference and the ticket price', () => {
+    const h = claimHelp({ opp: flight({}), name: 'Giovanni' })!;
+    expect(h.gaps).toEqual([]);
+    expect(h.message!.subject).toBe('Refund request — booking XKQ7PL');
+    expect(h.message!.body).toContain('My flight Caribbean Airlines BW 484 on 2026-11-03 was cancelled. Booking reference: XKQ7PL.');
+    expect(h.message!.body).toContain("refund $669.23 to my original payment method");
+  });
+  it('claims EU261 compensation without naming an amount', () => {
+    const h = claimHelp({ opp: flight({ title: 'Up to €600 compensation: Lufthansa LH 401 on 2026-11-03 arrived 3+ hours late', currency: 'EUR', value_estimate: null, code: null }), name: 'G' })!;
+    expect(h.gaps).toEqual(['[booking reference]']);
+    expect(h.message!.subject).toBe('EU261 compensation claim — booking [booking reference]');
+    expect(h.message!.body).toContain('Under EU Regulation 261/2004');
   });
 });

@@ -4,7 +4,7 @@ import { router } from 'expo-router';
 import { useState } from 'react';
 import { Linking, Pressable, View } from 'react-native';
 import { followUpQuestion, type ClaimTarget } from '@/domain/claimTarget';
-import { mailtoLink, type ClaimHelp } from '@/domain/claims';
+import type { ClaimHelp } from '@/domain/claims';
 import { formatMoney, relativeDays } from '@/domain/format';
 import type { Opportunity } from '@/domain/types';
 import { orderPhrase, type UsedQuestion } from '@/domain/usedFromReceipts';
@@ -15,6 +15,7 @@ import { useData } from '@/lib/data';
 import { answerUsedGuess, markOpportunity } from '@/lib/inbox';
 import { useToast } from '@/lib/toast';
 import { radius, space, useColors } from '@/theme';
+import { SendRequest } from './SendRequest';
 import { Button, IconBubble, Panel, Row, T } from './ui';
 
 /**
@@ -73,18 +74,11 @@ export function ClaimHelper({ opp, help }: { opp: Opportunity; help: ClaimHelp }
             <Row gap={space.sm} style={{ alignItems: 'flex-start' }}>
               <Ionicons name="create-outline" size={16} color={c.warn} />
               <T variant="caption" color={c.warn} style={{ flex: 1 }}>
-                Fill in {help.gaps.join(', ')} before sending. PerkScan leaves out anything it doesn’t know rather than guess.
+                PerkScan will ask for {help.gaps.join(', ')} when you send. It leaves out anything it doesn’t know rather than guess.
               </T>
             </Row>
           ) : null}
-          <Button
-            title="Open in my email"
-            icon="mail"
-            onPress={async () => {
-              await Linking.openURL(mailtoLink(help.message!));
-              await started();
-            }}
-          />
+          <SendRequest opp={opp} help={help} />
           <Button
             title="Copy message"
             kind="secondary"

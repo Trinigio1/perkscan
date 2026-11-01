@@ -1,29 +1,22 @@
 import { router, type Href } from 'expo-router';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Pressable, RefreshControl, ScrollView, Text, View } from 'react-native';
-import { ArrivalCheck, UsedCheck } from '@/components/Claims';
 import { DealRow } from '@/components/DealRow';
-import { Found, NextStep, Tour } from '@/components/FirstRun';
+import { Tour } from '@/components/FirstRun';
 import { Hero } from '@/components/Hero';
-import { TurnOnPanel } from '@/components/PaidFor';
-import { MembershipNudge, PayingTwicePanel } from '@/components/PayingTwice';
-import { SpottedCardPanel, useSpottedCards } from '@/components/SpottedCards';
+import { NextUpCard } from '@/components/NextUp';
 import { OpportunityRow } from '@/components/OfferRow';
 import { Chip, ErrorNote, Money, Panel, Row, Screen, SectionHeader, T, type IconName } from '@/components/ui';
-import { claimsToCheck } from '@/domain/claims';
 import { dealsWorth, discountSummary } from '@/domain/estimate';
 import { foundMoney, nextStep, toCheckCount, worthCelebrating } from '@/domain/firstRun';
 import { addToBag, formatBag, getHomeCurrency, sumBags, type MoneyBag } from '@/domain/format';
 import { nextToUse, owedToYou, setupSteps } from '@/domain/money';
 import { includedWhenYouNeedIt, includedWorth } from '@/domain/included';
-import { allSetup } from '@/domain/paidFor';
 import { scoreByCurrency } from '@/domain/score';
-import { usedQuestions } from '@/domain/usedFromReceipts';
 import { greeting } from '@/domain/visuals';
 import { useData, useLookups } from '@/lib/data';
 import { useDeals } from '@/lib/deals';
-import { useMembershipHints, useMySubscriptions } from '@/lib/memberships';
-import { usePaidFor } from '@/lib/paidFor';
+import { useMySubscriptions } from '@/lib/memberships';
 import { useRelevance } from '@/lib/relevance';
 import { openStudentOffers } from '@/domain/suggestions';
 import { useDismissed } from '@/lib/suggestions';
@@ -37,14 +30,14 @@ const others = (bag: MoneyBag, shown: string) => {
 };
 
 const EXPLORE: { icon: IconName; label: string; href: Href }[] = [
+  { icon: 'sparkles', label: 'What you’re missing', href: '/scan' },
+  { icon: 'storefront', label: 'Before you pay', href: '/checkout' },
   { icon: 'search', label: 'Hidden money', href: '/hidden-money' },
   { icon: 'mail-open', label: 'What PerkScan read', href: '/inbox' },
   { icon: 'repeat', label: 'Subscriptions', href: '/subscriptions' },
   { icon: 'pricetags', label: 'What you pay for', href: '/paying-for' },
-  { icon: 'sparkles', label: 'What you’re missing', href: '/scan' },
   { icon: 'airplane', label: 'Card perks', href: '/perks' },
   { icon: 'card', label: 'Your cards', href: '/cards' },
-  { icon: 'storefront', label: 'Before you pay', href: '/checkout' },
   { icon: 'add', label: 'Add', href: '/add' },
 ];
 
@@ -56,22 +49,13 @@ export default function Home() {
   const [refreshing, setRefreshing] = useState(false);
   const [dismissed, dismiss, dismissedLoaded] = useDismissed();
   const deals = useDeals();
-  // Cards the inbox shows you hold but you haven't added: each one unlocks more perks.
-  const spotted = useSpottedCards();
-  // Memberships: nudge until they've added one, or when receipts show one they pay for.
-  const hints = useMembershipHints();
-  const hasMembership = data.userCards.some((u) => data.cards.find((c) => c.id === u.card_id)?.kind === 'membership');
-  const showMembershipNudge = !!data.profile?.onboarded_at && (hints.length > 0 || !hasMembership);
-  const membershipNudgeKey = `memberships:${hints[0]?.membershipId ?? 'general'}`;
+  // The headline's estimate lines fold into one, opened on tap.
+  const [moreLines, setMoreLines] = useState(false);
   // Matched deals first; a couple of popular ones if nothing matches yet.
   const topDeals = (deals.forYou.length ? deals.forYou : deals.popular).slice(0, 3);
   const statusOf = useCallback((id: string) => benefitById.get(id)?.status, [benefitById]);
   const { relevanceOf } = useRelevance();
-  // Perks included in what you pay that only work once you turn them on.
-  const toTurnOn = allSetup(usePaidFor());
-  const turnOnKey = `turn-on:${toTurnOn.length}`;
-
-  const { now, home, totals, owed, soon, toCheck, found, arrivals, discounts, usedAsks } = useMemo(() => {
+  const { now, home, totals, owed, soon, toCheck, found, discounts } = useMemo(() => {
     const at = new Date();
     const homeCur = data.profile?.home_currency?.trim() || getHomeCurrency();
     // Amounts are never converted: one score per currency, the home currency shown big.
@@ -88,12 +72,9 @@ export default function Home() {
       },
       // Refunds, price drops and settlements: part of "ready", shown on their own line first.
       owed: owedToYou(data.opportunities, at, recoveredByOpp, statusOf),
-      soon: nextToUse(data.opportunities, at, 4, statusOf, relevanceOf),
+      soon: nextToUse(data.opportunities, at, 3, statusOf, relevanceOf),
       toCheck: toCheckCount(data.opportunities, at, statusOf),
       found: foundMoney(data.opportunities, data.recovered, at, statusOf),
-      arrivals: claimsToCheck(data.opportunities, at),
-      // A receipt showed a discount that might be one of your offers.
-      usedAsks: usedQuestions(data.opportunities, data.receipts),
       // Not money in hand: codes at stores you buy from, worth what you usually spend there times the percent.
       discounts: discountSummary(data.opportunities.filter((o) => relevanceOf(o) === 0), data.receipts, at),
     };
@@ -112,6 +93,9 @@ export default function Home() {
   // Ready to use, without what's owed (that has its own line), so no amount shows twice.
   const readyToUse = Object.fromEntries(Object.entries(totals.ready).map(([cur, v]) => [cur, Math.max(0, v - (owed.total[cur] ?? 0))])) as MoneyBag;
   const saveUpTo = sumBags(totals.ready, discounts.estimated, dealsFor.worth, studentYearly, perks.total);
+  // Everything in the headline that's an estimate, behind one line.
+  const estimates = sumBags(discounts.estimated, dealsFor.worth, studentYearly, perks.total);
+  const hasMore = nonZero(estimates) || discounts.otherCount > 0 || dealsFor.total > 0 || studentPerks > 0;
 
   // The "We found $X" moment: opens by itself once, the first time there's something to show after setup.
   const celebrate = worthCelebrating(found) && !!data.profile?.onboarded_at;
@@ -164,27 +148,39 @@ export default function Home() {
           onPress={() => router.push('/money')}
         />
         <ExtraLine show={nonZero(readyToUse)} text={`${formatBag(readyToUse, big)} ready to use now`} onPress={() => router.push('/money')} />
-        <ExtraLine
-          show={nonZero(discounts.estimated) || discounts.otherCount > 0}
-          text={
-            nonZero(discounts.estimated)
-              ? `≈ ${formatBag(discounts.estimated, big)} off at stores you use · ${discounts.estimatedCount} code${discounts.estimatedCount === 1 ? '' : 's'}`
-              : `${discounts.otherCount} code${discounts.otherCount === 1 ? '' : 's'} at stores you use${discounts.bestPercent ? ` · up to ${discounts.bestPercent}% off` : ''}`
-          }
-          onPress={() => router.push('/money')}
-        />
-        <ExtraLine
-          show={dealsFor.total > 0}
-          text={nonZero(dealsFor.worth) ? `≈ ${formatBag(dealsFor.worth, big)} in deals for you · ${dealsFor.total} deal${dealsFor.total === 1 ? '' : 's'}` : `${dealsFor.total} deal${dealsFor.total === 1 ? '' : 's'} for you`}
-          onPress={() => router.push('/deals')}
-        />
-        <ExtraLine
-          show={nonZero(perks.total)}
-          text={`≈ ${formatBag(perks.total, big)} in card & membership perks · ${perks.count} perk${perks.count === 1 ? '' : 's'}`}
-          onPress={() => router.push('/money')}
-        />
-        <ExtraLine show={nonZero(studentYearly)} text={`${formatBag(studentYearly, big)} a year with student prices`} onPress={() => router.push('/subscriptions')} />
-        <ExtraLine show={studentPerks > 0} text={`+ ${studentPerks} student perk${studentPerks === 1 ? '' : 's'} for you`} onPress={() => router.push('/student')} />
+        {/* The estimates (≈) fold into one line, so the headline stays short. */}
+        {moreLines ? (
+          <>
+            <ExtraLine
+              show={nonZero(discounts.estimated) || discounts.otherCount > 0}
+              text={
+                nonZero(discounts.estimated)
+                  ? `≈ ${formatBag(discounts.estimated, big)} off at stores you use · ${discounts.estimatedCount} code${discounts.estimatedCount === 1 ? '' : 's'}`
+                  : `${discounts.otherCount} code${discounts.otherCount === 1 ? '' : 's'} at stores you use${discounts.bestPercent ? ` · up to ${discounts.bestPercent}% off` : ''}`
+              }
+              onPress={() => router.push('/money')}
+            />
+            <ExtraLine
+              show={dealsFor.total > 0}
+              text={nonZero(dealsFor.worth) ? `≈ ${formatBag(dealsFor.worth, big)} in deals for you · ${dealsFor.total} deal${dealsFor.total === 1 ? '' : 's'}` : `${dealsFor.total} deal${dealsFor.total === 1 ? '' : 's'} for you`}
+              onPress={() => router.push('/deals')}
+            />
+            <ExtraLine
+              show={nonZero(perks.total)}
+              text={`≈ ${formatBag(perks.total, big)} in card & membership perks · ${perks.count} perk${perks.count === 1 ? '' : 's'}`}
+              onPress={() => router.push('/money')}
+            />
+            <ExtraLine show={nonZero(studentYearly)} text={`${formatBag(studentYearly, big)} a year with student prices`} onPress={() => router.push('/subscriptions')} />
+            <ExtraLine show={studentPerks > 0} text={`+ ${studentPerks} student perk${studentPerks === 1 ? '' : 's'} for you`} onPress={() => router.push('/student')} />
+            <ExtraLine show text="Show less" onPress={() => setMoreLines(false)} />
+          </>
+        ) : (
+          <ExtraLine
+            show={hasMore}
+            text={nonZero(estimates) ? `+ ≈ ${formatBag(estimates, big)} more you could save` : '+ more ways to save'}
+            onPress={() => setMoreLines(true)}
+          />
+        )}
         {!checkFirst && toCheck > 0 ? <T variant="caption" color={c.heroMuted} style={{ marginTop: space.xs }}>{toCheck} more to check before they count</T> : null}
         {/* The three small numbers only once there's something in them. */}
         {quiet ? null : (
@@ -196,24 +192,9 @@ export default function Home() {
         )}
       </Hero>
 
-      {usedAsks[0] ? <UsedCheck question={usedAsks[0]} /> : null}
-      {arrivals[0] ? <ArrivalCheck opp={arrivals[0]} /> : null}
       {dismissedLoaded && !dismissed.has('tour') ? <Tour onDone={() => dismiss('tour')} /> : null}
-      {step ? <NextStep step={step} /> : null}
-      {spotted[0] ? <SpottedCardPanel spotted={spotted[0]} more={spotted.length - 1} /> : null}
-      <PayingTwicePanel />
-      {dismissedLoaded && toTurnOn.length && !dismissed.has(turnOnKey) ? <TurnOnPanel items={toTurnOn} onHide={() => dismiss(turnOnKey)} /> : null}
-      {studentSavings.length ? (
-        <Panel onPress={() => router.push('/subscriptions')} style={{ gap: 4 }}>
-          <T variant="caption" color={c.accentStrong}>Your subscriptions</T>
-          <T variant="subheading">
-            Save {formatBag(studentSavings.reduce((b, x) => addToBag(b, x.student!.currency, x.student!.savesYearly), {} as MoneyBag))} a year with student prices
-          </T>
-          <T variant="caption" muted>{studentSavings.map((x) => x.name).join(', ')}: you pay the full price, and you qualify for the student plan.</T>
-        </Panel>
-      ) : null}
-      {dismissedLoaded && showMembershipNudge && !dismissed.has(membershipNudgeKey) ? <MembershipNudge onHide={() => dismiss(membershipNudgeKey)} /> : null}
-      {dismissedLoaded && celebrate && !dismissed.has('found') ? <Found found={found} home={home} onDone={() => dismiss('found')} /> : null}
+      {/* One thing to do (questions, setup, savings to set up), with the rest one tap away. */}
+      <NextUpCard />
 
       <SectionHeader title="Use soon" action="See all" onAction={() => router.push('/money')} />
       {soon.length ? (
