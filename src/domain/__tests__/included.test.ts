@@ -32,4 +32,15 @@ describe('includedWhenYouNeedIt', () => {
     // Global Entry up to $100 + Grubhub+ $120 a year; the per-flight bag fee isn't added up.
     expect(includedWorth(items)).toEqual({ total: { USD: 220 }, count: 2 });
   });
+
+  it('counts a per-use worth as often as you used it this past year', () => {
+    const withBag = [
+      ...benefits,
+      { id: 'boa_premium_rewards__bag', card_id: 'boa_premium_rewards', type: 'perk' as const, name: 'Free first checked bag', amount: null, period: 'per_claim' as const, status: 'active' as const, terms_summary: null, currency: null, worth: 45, worth_period: 'use' as const, worth_basis: 'The bag fee' },
+    ];
+    const items = includedWhenYouNeedIt(mine, cards, withBag);
+    // Global Entry up to $100, plus the bag on 3 flights.
+    expect(includedWorth(items, (x) => (x.benefitId.endsWith('__bag') ? 3 : 0))).toEqual({ total: { USD: 235 }, count: 2 });
+    expect(includedWorth(items, () => 0)).toEqual({ total: { USD: 100 }, count: 1 });
+  });
 });

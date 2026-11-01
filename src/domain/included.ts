@@ -8,6 +8,7 @@ import type { Card, CardBenefit, UserCard } from './types';
 export interface IncludedItem {
   key: string;
   userCardId: string;
+  benefitId: string;
   /** "Bank of America Premium Rewards ·· 6042", "Uber One". */
   from: string;
   title: string;
@@ -40,7 +41,7 @@ export function includedWhenYouNeedIt(
       if (b.card_id !== uc.card_id || b.status !== 'active') continue;
       // A credit you get back once you pay for something (no monthly or yearly reset): Global Entry, PreCheck, CLEAR.
       const worth = { worth: b.worth ?? null, worthPeriod: b.worth !== null && b.worth !== undefined ? (b.worth_period ?? null) : null, worthBasis: b.worth_basis ?? null };
-      const base = { key: `${uc.id}:${b.id}`, userCardId: uc.id, from, title: b.name, terms: b.terms_summary, ...worth };
+      const base = { key: `${uc.id}:${b.id}`, userCardId: uc.id, benefitId: b.id, from, title: b.name, terms: b.terms_summary, ...worth };
       if (b.type === 'credit' && b.period === 'per_claim' && b.amount !== null) {
         out.push({ ...base, amount: b.amount, currency: b.currency ?? card.currency, kind: 'credit' });
       } else if (card.kind === 'membership' && b.type === 'perk') {
@@ -57,14 +58,16 @@ export function includedWhenYouNeedIt(
 
 /**
  * What your cards and memberships give you that isn't money in hand, for Home's "Save up to": credits
- * you get back when you pay for something (up to their amount) and perks with a yearly worth. Per-use
- * worths (a checked bag on each flight) are shown on the perk but not added up: how often is up to you.
+ * you get back when you pay for something (up to their amount) and perks with a yearly worth. A per-use
+ * worth (a checked bag on each flight) counts only as often as you actually used it this past year
+ * (`usesOf`, from your own trips); without that it's shown on the perk but not added up.
  */
-export function includedWorth(items: IncludedItem[]): { total: MoneyBag; count: number } {
+export function includedWorth(items: IncludedItem[], usesOf?: (x: IncludedItem) => number): { total: MoneyBag; count: number } {
   const total: MoneyBag = {};
   let count = 0;
   for (const x of items) {
-    const v = x.amount ?? (x.worthPeriod === 'year' ? x.worth : null);
+    const uses = x.worthPeriod === 'use' && usesOf ? usesOf(x) : 0;
+    const v = x.amount ?? (x.worthPeriod === 'year' ? x.worth : x.worthPeriod === 'use' && x.worth && uses > 0 ? x.worth * uses : null);
     if (v && x.currency) {
       addToBag(total, x.currency, v);
       count += 1;

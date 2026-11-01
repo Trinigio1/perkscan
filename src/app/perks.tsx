@@ -3,6 +3,7 @@ import { router } from 'expo-router';
 import { useMemo } from 'react';
 import { Linking, Pressable, View } from 'react-native';
 import { ConfidenceTag } from '@/components/ConfidenceTag';
+import { PerksWorthPanel } from '@/components/PerksWorth';
 import { Badge, Button, Empty, IconBubble, Panel, Row, Screen, T } from '@/components/ui';
 import { merchantSite } from '@/domain/claimTarget';
 import { checkedLabel, formatMoney } from '@/domain/format';
@@ -58,6 +59,7 @@ export default function Perks() {
         </Panel>
       ) : null}
 
+      <PerksWorthPanel show={20} linked={false} />
       {groups.length === 0 ? (
         <T muted>PerkScan doesn’t list perks for your cards yet.</T>
       ) : (
@@ -85,6 +87,8 @@ export default function Perks() {
 
 function PerkLineView({ b, cards }: { b: CardBenefit; cards: string[] }) {
   const c = useColors();
+  // What it's worth, from what the same thing costs on its own (a lounge visit, a bag fee).
+  const worth = b.worth ? `≈ ${formatMoney(b.worth, { currency: b.currency ?? 'USD' })} ${b.worth_period === 'year' ? 'a year' : 'each use'}` : null;
   const limit = b.max_coverage !== null ? `Up to ${formatMoney(b.max_coverage, { currency: b.currency ?? 'USD' })}` : null;
   // Where to use it: the merchant (e.g. Priority Pass for lounges), else the issuer's own terms page.
   const site = merchantSite(b.name);
@@ -103,9 +107,11 @@ function PerkLineView({ b, cards }: { b: CardBenefit; cards: string[] }) {
       {b.terms_summary ? <T variant="caption" numberOfLines={3}>{b.terms_summary}</T> : null}
       <Row gap={6} style={{ flexWrap: 'wrap', marginTop: 2, alignItems: 'center' }}>
         <ConfidenceTag value={b.status === 'active' ? 'confirmed' : 'check'} />
+        {worth ? <Badge label={worth} tone="good" icon="diamond" /> : null}
         {limit ? <Badge label={limit} tone="good" /> : null}
         {b.enrollment_required ? <Badge label="Enroll first" icon="alert-circle" tone="warn" /> : null}
       </Row>
+      {worth && b.worth_basis ? <T variant="caption" faint>{b.worth_basis}</T> : null}
       {b.status === 'active' && checkedLabel(b.last_verified) ? <T variant="caption" faint>{checkedLabel(b.last_verified)}</T> : null}
       {use ? (
         <View style={{ alignItems: 'flex-start', marginTop: 4 }}>

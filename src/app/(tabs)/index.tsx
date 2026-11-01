@@ -6,12 +6,14 @@ import { Tour } from '@/components/FirstRun';
 import { Hero } from '@/components/Hero';
 import { NextUpCard } from '@/components/NextUp';
 import { OpportunityRow } from '@/components/OfferRow';
+import { PerksWorthPanel, usePerksWorth } from '@/components/PerksWorth';
 import { Chip, ErrorNote, Money, Panel, Row, Screen, SectionHeader, T, type IconName } from '@/components/ui';
 import { dealsWorth, discountSummary } from '@/domain/estimate';
 import { foundMoney, nextStep, toCheckCount, worthCelebrating } from '@/domain/firstRun';
 import { addToBag, formatBag, getHomeCurrency, sumBags, type MoneyBag } from '@/domain/format';
 import { nextToUse, owedToYou, setupSteps } from '@/domain/money';
 import { includedWhenYouNeedIt, includedWorth } from '@/domain/included';
+import { usesThisYear } from '@/domain/perkValue';
 import { scoreByCurrency } from '@/domain/score';
 import { greeting } from '@/domain/visuals';
 import { useData, useLookups } from '@/lib/data';
@@ -89,7 +91,9 @@ export default function Home() {
   // "Save up to": money in hand, plus estimated discounts at your stores, deals for you and cheaper
   // student plans. Each part is its own line underneath, so it's clear what's sure and what's an estimate.
   // Card and membership perks: credits you get back when you pay (up to their amount), and perks with a yearly worth.
-  const perks = useMemo(() => includedWorth(includedWhenYouNeedIt(data.userCards, data.cards, data.benefits)), [data.userCards, data.cards, data.benefits]);
+  // Per-use perks (a lounge visit, a checked bag) count as often as you flew this past year.
+  const { trips } = usePerksWorth();
+  const perks = useMemo(() => includedWorth(includedWhenYouNeedIt(data.userCards, data.cards, data.benefits), (x) => usesThisYear(x, trips)), [data.userCards, data.cards, data.benefits, trips]);
   // Ready to use, without what's owed (that has its own line), so no amount shows twice.
   const readyToUse = Object.fromEntries(Object.entries(totals.ready).map(([cur, v]) => [cur, Math.max(0, v - (owed.total[cur] ?? 0))])) as MoneyBag;
   const saveUpTo = sumBags(totals.ready, discounts.estimated, dealsFor.worth, studentYearly, perks.total);
@@ -195,6 +199,8 @@ export default function Home() {
       {dismissedLoaded && !dismissed.has('tour') ? <Tour onDone={() => dismiss('tour')} /> : null}
       {/* One thing to do (questions, setup, savings to set up), with the rest one tap away. */}
       <NextUpCard />
+      {/* What your cards and memberships are worth a year, lounges and bags included. */}
+      <PerksWorthPanel />
 
       <SectionHeader title="Use soon" action="See all" onAction={() => router.push('/money')} />
       {soon.length ? (
