@@ -1,12 +1,14 @@
 import { Ionicons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
-import { Pressable } from 'react-native';
+import { Pressable, View } from 'react-native';
 import { Hero } from '@/components/Hero';
+import { KnewCheck, useMonthValue } from '@/components/MonthValue';
 import { Button, Panel, Row, Screen, T } from '@/components/ui';
 import { monthlyRecap } from '@/domain/digest';
 import { formatBag, formatMoney, getHomeCurrency, type MoneyBag } from '@/domain/format';
 import { membershipSavingsIn } from '@/domain/paidFor';
+import { knewQuestions, PLAN } from '@/domain/monthValue';
 import { savedBySource, spottedOnReceipts } from '@/domain/proof';
 import { track } from '@/lib/analytics';
 import { useData } from '@/lib/data';
@@ -38,6 +40,12 @@ export default function Recap() {
     };
   }, [data, offset, home]);
   const label = month.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+  // Of what you used, what you didn't know about before PerkScan, by your own answers.
+  const v = useMonthValue(offset);
+  const toAnswer = useMemo(
+    () => knewQuestions(data.recovered, data.opportunities, new Date(), 400).filter((q) => new Date(q.recovered.recovered_at) >= v.from && new Date(q.recovered.recovered_at) < v.to),
+    [data.recovered, data.opportunities, v.from, v.to],
+  );
 
   return (
     <Screen edges={[]}>
@@ -62,6 +70,33 @@ export default function Recap() {
           <T variant="caption" color={c.heroMuted}>The month before: {formatBag(r.previousRecovered, home)}</T>
         ) : null}
       </Hero>
+
+      {nonZero(v.used) || nonZero(v.newValue) ? (
+        <Panel style={{ gap: space.sm }}>
+          <T variant="subheading">Found by PerkScan</T>
+          <Row>
+            <T style={{ flex: 1 }}>New money for you</T>
+            <T variant="label">{formatBag(v.newValue, home)}</T>
+          </Row>
+          <Row>
+            <T style={{ flex: 1 }}>You didn’t know about</T>
+            <T variant="label" color={c.accentStrong}>{formatBag(v.found, home)}</T>
+          </Row>
+          <Row>
+            <T style={{ flex: 1 }} muted>You already knew about</T>
+            <T variant="label" color={c.textMuted}>{formatBag(v.knew, home)}</T>
+          </Row>
+          {v.plan === 'plus' && v.paidFor ? (
+            <T color={c.accentStrong}>Your {PLAN.name} plan paid for itself {v.paidFor}× {offset === 0 ? 'this month' : 'that month'}.</T>
+          ) : null}
+          {toAnswer.length ? (
+            <View style={{ gap: space.md, marginTop: space.xs }}>
+              <T variant="caption" muted>Did you know about these before PerkScan? Only what you didn’t know counts as found.</T>
+              {toAnswer.slice(0, 5).map((q) => <KnewCheck key={q.recovered.id} q={q} compact />)}
+            </View>
+          ) : null}
+        </Panel>
+      ) : null}
 
       {sources.length > 1 ? (
         <Panel style={{ gap: space.sm }}>

@@ -111,6 +111,12 @@ export async function answerUsedGuess(id: string, used: boolean) {
   if (error) throw new Error(error.message);
 }
 
+/** "Did you already know about this?" for money you got back: false = PerkScan found it. */
+export async function answerKnewBefore(recoveredId: string, knew: boolean) {
+  const { error } = await supabase.rpc('answer_knew_before', { p_recovered_id: recoveredId, p_knew: knew });
+  if (error) throw new Error(error.message);
+}
+
 export async function markOpportunity(id: string, action: 'used' | 'dismiss' | 'reopen', amount: number | null = null) {
   const { error } = await supabase.rpc('mark_opportunity', { p_opportunity_id: id, p_action: action, p_amount: amount });
   if (error) throw new Error(error.message);

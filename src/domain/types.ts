@@ -67,6 +67,8 @@ export interface CardBenefit {
 
 export interface Profile {
   id: string;
+  /** Set by the server (billing), never by the app. */
+  plan?: 'free' | 'plus';
   display_name: string | null;
   forwarding_address: string | null;
   is_student: boolean;
@@ -198,6 +200,8 @@ export interface Recovered {
   marked_by?: 'user' | 'auto';
   /** The receipt that showed it used. */
   source_receipt_id?: string | null;
+  /** "Did you already know about this?": false = PerkScan found it, true = already knew, null = not answered. */
+  knew_before?: boolean | null;
 }
 
 export interface BenefitUsage {

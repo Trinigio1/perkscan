@@ -66,7 +66,8 @@
     "eval": "npx -y deno@2.9.6 run --allow-read=eval --allow-write=eval/results --allow-env --allow-net=api.anthropic.com --config supabase/functions/deno.json eval/run.ts",
     "schools:us": "tsx scripts/import-us-schools.ts",
     "perks:review": "tsx scripts/review-perks.ts",
-    "catalog:review": "tsx scripts/review-catalog.ts"
+    "catalog:review": "tsx scripts/review-catalog.ts",
+    "metrics:value": "tsx scripts/value-report.ts"
   },
   "private": true,
   "jest": {

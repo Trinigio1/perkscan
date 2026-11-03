@@ -126,7 +126,7 @@ async function load(userId: string): Promise<AppData> {
     supabase.from('card_benefits').select('*').order('sort_order'),
     supabase.from('user_cards').select('*').order('created_at'),
     supabase.from('opportunities').select('*, inbound_messages(from_domain, sent_at)').or(`status.in.(open,claimed),expires_at.gte.${yearStart}`).order('expires_at', { ascending: true }),
-    supabase.from('recovered').select('id, opportunity_id, amount, currency, recovered_at, marked_by, source_receipt_id'),
+    supabase.from('recovered').select('id, opportunity_id, amount, currency, recovered_at, marked_by, source_receipt_id, knew_before'),
     supabase.from('benefit_usage').select('id, user_card_id, benefit_id, period_start, amount_used, is_used, marked_by'),
     supabase
       .from('receipts')
@@ -164,6 +164,13 @@ async function load(userId: string): Promise<AppData> {
   // numeric columns arrive as numbers from PostgREST; normalize defensively.
   const num = (v: unknown) => (v === null || v === undefined ? null : Number(v));
   const prof = must<Profile>('profile', profile);
+  // Older databases: without "did you know" answers, then without where a "used" came from.
+  let recoveredRows: Recovered[];
+  if (!recovered.error) recoveredRows = must('recovered', recovered);
+  else {
+    const withSource = await supabase.from('recovered').select('id, opportunity_id, amount, currency, recovered_at, marked_by, source_receipt_id');
+    recoveredRows = withSource.error ? must('recovered', await supabase.from('recovered').select('id, opportunity_id, amount, currency, recovered_at')) : must('recovered', withSource);
+  }
   // Only the user's own school: there are thousands, and the picker searches them on demand.
   const school = prof.university_id
     ? ((await supabase.from('universities').select(SCHOOL_COLUMNS).eq('id', prof.university_id).maybeSingle()).data as University | null)
@@ -234,9 +241,7 @@ async function load(userId: string): Promise<AppData> {
       // you don't use: never shown or counted.
       .filter((o: Opportunity) => !isMutedOffer(o, muteKeys) && !isStale(o, new Date()) && !isVagueElsewhere(o, you)),
     // Before "used from receipts" is in the database, read without where a "used" came from.
-    recovered: (recovered.error ? must('recovered', await supabase.from('recovered').select('id, opportunity_id, amount, currency, recovered_at')) : must('recovered', recovered)).map(
-      (r: Recovered) => ({ ...r, amount: Number(r.amount) }),
-    ),
+    recovered: recoveredRows.map((r: Recovered) => ({ ...r, amount: Number(r.amount) })),
     usage: must('benefit_usage', usage).map((u: BenefitUsage) => ({ ...u, amount_used: num(u.amount_used) })),
     receipts: must('receipts', receipts).map((r: Receipt) => ({ ...r, total: num(r.total) })),
     // Student mode is optional; a missing table (database not updated yet) just means no offers.

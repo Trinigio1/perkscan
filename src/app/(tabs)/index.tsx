@@ -6,6 +6,7 @@ import { Tour } from '@/components/FirstRun';
 import { Hero } from '@/components/Hero';
 import { NextUpCard } from '@/components/NextUp';
 import { OpportunityRow } from '@/components/OfferRow';
+import { MonthValueCard } from '@/components/MonthValue';
 import { PerksWorthPanel, usePerksWorth } from '@/components/PerksWorth';
 import { Chip, ErrorNote, Money, Panel, Row, Screen, SectionHeader, T, type IconName } from '@/components/ui';
 import { dealsWorth, discountSummary } from '@/domain/estimate';
@@ -199,6 +200,8 @@ export default function Home() {
       {dismissedLoaded && !dismissed.has('tour') ? <Tour onDone={() => dismiss('tour')} /> : null}
       {/* One thing to do (questions, setup, savings to set up), with the rest one tap away. */}
       <NextUpCard />
+      {/* This month: new money for you, what you used, and what PerkScan found that you didn't know about. */}
+      <MonthValueCard />
       {/* What your cards and memberships are worth a year, lounges and bags included. */}
       <PerksWorthPanel />
 

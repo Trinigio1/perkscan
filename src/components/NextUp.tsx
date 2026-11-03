@@ -4,6 +4,7 @@ import { useCallback, useMemo, type ReactNode } from 'react';
 import { Pressable } from 'react-native';
 import { addToBag, formatBag, getHomeCurrency, type MoneyBag } from '@/domain/format';
 import { claimsToCheck } from '@/domain/claims';
+import { knewQuestions } from '@/domain/monthValue';
 import { foundMoney, nextStep, worthCelebrating } from '@/domain/firstRun';
 import { setupSteps } from '@/domain/money';
 import { allSetup } from '@/domain/paidFor';
@@ -15,6 +16,7 @@ import { useDismissed } from '@/lib/suggestions';
 import { space, useColors } from '@/theme';
 import { ArrivalCheck, UsedCheck } from './Claims';
 import { Found, NextStep } from './FirstRun';
+import { KnewCheck } from './MonthValue';
 import { TurnOnPanel } from './PaidFor';
 import { MembershipNudge, PayingTwicePanel } from './PayingTwice';
 import { SpottedCardPanel, useSpottedCards } from './SpottedCards';
@@ -49,6 +51,9 @@ export function useNextUp(): NextUpItem[] {
     if (ask) items.push({ key: 'used', node: <UsedCheck question={ask} /> });
     const arrived = claimsToCheck(data.opportunities, now)[0];
     if (arrived) items.push({ key: 'arrived', node: <ArrivalCheck opp={arrived} /> });
+    // Money that came back: did you know about it before PerkScan? (The honest measure of what it found.)
+    const knew = knewQuestions(data.recovered, data.opportunities, now)[0];
+    if (knew) items.push({ key: `knew:${knew.recovered.id}`, node: <KnewCheck q={knew} /> });
     // 2. Setup still to finish.
     const step = nextStep(setupSteps(data));
     if (step) items.push({ key: 'step', node: <NextStep step={step} /> });

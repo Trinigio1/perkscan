@@ -38,6 +38,8 @@ export const EVENTS = {
   school_selected: { country: ['TT', 'US', 'other'] },
   student_offer_claimed: {},
   recap_viewed: {},
+  // "Did you already know about this?" on money you got back: PerkScan found it, or you already knew.
+  knew_before: { answer: ['found', 'knew'] },
   share_opened: {},
   data_exported: {},
   account_deleted: {},
