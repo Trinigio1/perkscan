@@ -7,7 +7,7 @@ import {
   dealSourceFileSchema, dealSourcesToSql, eventFileSchema, eventsToSql, programFileSchema, programsToSql, settlementFileSchema, settlementsToSql, studentFileSchema, studentToSql, universitiesToSql, universityFileSchema, unknownUniversityIds,
 } from '../src/domain/catalogSchema';
 import { earnFileSchema, earnToSql } from '../src/domain/earnSchema';
-import { seedFileSchema, seedToSql } from '../src/domain/seedSchema';
+import { priceFileSchema, seedFileSchema, seedToSql, unknownPrices } from '../src/domain/seedSchema';
 
 const root = resolve(__dirname, '..');
 const output = resolve(root, 'supabase/seed.sql');
@@ -26,6 +26,12 @@ const cardFile = load('seed/card_benefits.json', seedFileSchema);
 // Memberships share the cards catalog (kind = 'membership'); they come after the cards.
 const memberships = load('seed/memberships.json', seedFileSchema);
 const cards = { ...cardFile, cards: [...cardFile.cards, ...memberships.cards.map((m) => ({ ...m, kind: 'membership' as const }))] };
+const prices = load('seed/perk_prices.json', priceFileSchema);
+const badPrices = unknownPrices(cards, prices);
+if (badPrices.length) {
+  console.error(`Perks point at prices that aren't in seed/perk_prices.json: ${badPrices.join(', ')}`);
+  process.exit(1);
+}
 const students = load('seed/student_discounts.json', studentFileSchema);
 const settlements = load('seed/settlements.json', settlementFileSchema);
 const programs = load('seed/programs.json', programFileSchema);
@@ -47,7 +53,7 @@ if (unknown.length) {
 }
 
 // seedToSql wraps the cards in begin/commit; the other lists go inside the same transaction.
-const sql = seedToSql(cards).replace(/commit;\n$/, [
+const sql = seedToSql(cards, prices).replace(/commit;\n$/, [
   '-- Schools (seed/universities.json)',
   ...universitiesToSql(universities),
   '-- Student offers (seed/student_discounts.json)',

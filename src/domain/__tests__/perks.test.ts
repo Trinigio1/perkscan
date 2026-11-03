@@ -1,5 +1,5 @@
 import seedJson from '../../../seed/card_benefits.json';
-import { groupPerks, loungeCards, perkGroup } from '../perks';
+import { groupPerks, loungeCards, perkCheck, perkGroup } from '../perks';
 import type { CardBenefit } from '../types';
 
 const benefit = (id: string, type: CardBenefit['type'] = 'perk', status: CardBenefit['status'] = 'active'): CardBenefit => ({
@@ -82,5 +82,20 @@ describe('groupPerks', () => {
 
   it('is empty without cards', () => {
     expect(groupPerks([], benefits, label)).toEqual([]);
+  });
+});
+
+describe('perkCheck', () => {
+  const base = { status: 'active' as const, last_verified: '2026-11-01', origin: 'catalog' as const, check_result: null, checked_at: null };
+  it('says when a perk was last checked, and how the check found it', () => {
+    expect(perkCheck(base)).toEqual({ tag: 'confirmed', note: 'Checked Nov 1, 2026 on the official site' });
+    expect(perkCheck({ ...base, origin: 'scout' })).toEqual({ tag: 'confirmed', note: 'Found on the bank’s page Nov 1, 2026' });
+    expect(perkCheck({ ...base, status: 'TODO_VERIFY', last_verified: null })).toEqual({ tag: 'check', note: null });
+  });
+  it('flags a perk the check could not find on the bank’s page', () => {
+    expect(perkCheck({ ...base, check_result: 'not_on_page', checked_at: '2026-12-02T03:00:00Z' })).toEqual({
+      tag: 'check',
+      note: 'Not found on the bank’s page when checked Dec 2, 2026. Confirm with the bank before you count on it.',
+    });
   });
 });

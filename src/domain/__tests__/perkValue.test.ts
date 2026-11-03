@@ -1,4 +1,4 @@
-import { perksWorth, tripsInLastYear, usesThisYear } from '../perkValue';
+import { perksWorth, spentAbroad, tripsInLastYear, usageThisYear, usesThisYear } from '../perkValue';
 
 const now = new Date('2026-11-01T12:00:00Z');
 const flight = (merchant: string, date: string, order: string | null = null) => ({ merchant, purchase_type: 'flight', purchase_date: date, order_number: order });
@@ -77,5 +77,33 @@ describe('perksWorth', () => {
     expect(w.total).toEqual({ USD: 720 });
     expect(w.perUse.map((p) => p.title)).toEqual(['Airport lounge access']);
     expect(w.lines.some((l) => /Unverified|Trip delay/.test(l.title))).toBe(false);
+  });
+});
+
+describe('no foreign transaction fees', () => {
+  const cards = [{ id: 'venture', kind: 'card' as const, product_name: 'Capital One Venture', currency: 'USD', annual_fee: 95 }];
+  const mine = [{ id: 'v1', card_id: 'venture', last_four: '1111' }];
+  const benefits = [
+    { id: 'venture__no_foreign_fees', card_id: 'venture', type: 'perk' as const, name: 'No foreign transaction fees', amount: null, amount_schedule: null, period: 'per_claim' as const, status: 'active' as const, terms_summary: null, currency: 'USD', worth: 3, worth_period: 'percent' as const, worth_basis: 'The 3% fee many cards charge.' },
+  ];
+  const buy = (total: number, currency: string, date: string, card: string | null = 'v1') => ({ matched_user_card_id: card, total, currency, purchase_date: date });
+
+  it('adds up purchases in other currencies on each card, this past year only', () => {
+    const abroad = spentAbroad(
+      [buy(200, 'EUR', '2026-07-01'), buy(50, 'EUR', '2026-07-02'), buy(1000, 'TTD', '2026-03-01'), buy(80, 'USD', '2026-07-03'), buy(90, 'EUR', '2025-06-01'), buy(70, 'EUR', '2026-07-04', null)],
+      mine,
+      cards,
+      now,
+    );
+    expect(abroad.get('v1')).toEqual({ EUR: 250, TTD: 1000 });
+    expect(usageThisYear({ benefitId: 'venture__no_foreign_fees', from: 'Capital One Venture', userCardId: 'v1', worthPeriod: 'percent' }, { flights: 0, byAirline: {} }, abroad)).toEqual({ spentAbroad: { EUR: 250, TTD: 1000 } });
+  });
+
+  it('values the perk at 3% of what you spent abroad, in that currency; nothing spent, nothing added', () => {
+    const w = perksWorth(mine, cards, benefits, [], now, [buy(250, 'EUR', '2026-07-01')]);
+    expect(w.lines.map((l) => [l.value, l.currency, l.how])).toEqual([[7.5, 'EUR', '3% of the €250 you spent abroad this past year. The 3% fee many cards charge.']]);
+    const none = perksWorth(mine, cards, benefits, [], now, []);
+    expect(none.total).toEqual({});
+    expect(none.perUse).toMatchObject([{ title: 'No foreign transaction fees', per: 'percent', worth: 3 }]);
   });
 });

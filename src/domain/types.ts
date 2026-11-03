@@ -53,10 +53,16 @@ export interface CardBenefit {
   sort_order: number;
   /** What a perk with no stated amount is worth, by the provider's own figure (see worth_basis). */
   worth?: number | null;
-  worth_period?: 'year' | 'use' | null;
+  /** year: worth a year. use: worth each time you use it. percent: a percent of what you spend abroad. */
+  worth_period?: 'year' | 'use' | 'percent' | null;
   /** "Amazon puts Grubhub+ at a $120 value a year". */
   worth_basis?: string | null;
   worth_source_url?: string | null;
+  /** catalog: checked by hand. scout: added by the monthly check from the bank's own page. */
+  origin?: 'catalog' | 'scout';
+  /** What the monthly check found on the bank's page, and when. */
+  check_result?: 'confirmed' | 'not_on_page' | 'unreachable' | null;
+  checked_at?: string | null;
 }
 
 export interface Profile {

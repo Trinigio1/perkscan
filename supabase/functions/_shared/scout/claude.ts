@@ -4,6 +4,7 @@ import { MODEL } from '../inbox/claude.ts';
 import type { ModelCall } from '../inbox/parse.ts';
 import type { z } from 'zod';
 import { PERK_SYSTEM_PROMPT, PerkPageSchema } from '../perkscout/extract.ts';
+import { CARD_SYSTEM_PROMPT, CardPageSchema, PRICE_SYSTEM_PROMPT, PricePageSchema } from '../cardcheck/extract.ts';
 import { FoundPageSchema, SCOUT_SYSTEM_PROMPT } from './extract.ts';
 
 /** Model call for the scout: one page in, the promotions on it out, as schema-valid JSON. */
@@ -11,6 +12,10 @@ export const claudeScoutCall = (apiKey: string): ModelCall => pageCall(apiKey, S
 
 /** Model call for the perk scout: a store's rewards page in, its free program out. */
 export const claudePerkCall = (apiKey: string): ModelCall => pageCall(apiKey, PERK_SYSTEM_PROMPT, PerkPageSchema);
+
+/** Model calls for the monthly card check: a card's official page, and a price page. */
+export const claudeCardCall = (apiKey: string): ModelCall => pageCall(apiKey, CARD_SYSTEM_PROMPT, CardPageSchema);
+export const claudePriceCall = (apiKey: string): ModelCall => pageCall(apiKey, PRICE_SYSTEM_PROMPT, PricePageSchema);
 
 function pageCall(apiKey: string, system: string, schema: z.ZodType): ModelCall {
   const client = new Anthropic({ apiKey, maxRetries: 2, timeout: 90_000 });

@@ -40,7 +40,17 @@ describe('includedWhenYouNeedIt', () => {
     ];
     const items = includedWhenYouNeedIt(mine, cards, withBag);
     // Global Entry up to $100, plus the bag on 3 flights.
-    expect(includedWorth(items, (x) => (x.benefitId.endsWith('__bag') ? 3 : 0))).toEqual({ total: { USD: 235 }, count: 2 });
-    expect(includedWorth(items, () => 0)).toEqual({ total: { USD: 100 }, count: 1 });
+    expect(includedWorth(items, (x) => ({ uses: x.benefitId.endsWith('__bag') ? 3 : 0 }))).toEqual({ total: { USD: 235 }, count: 2 });
+    expect(includedWorth(items, () => ({ uses: 0 }))).toEqual({ total: { USD: 100 }, count: 1 });
+  });
+
+  it('counts a no-foreign-fee perk at its percent of what you spent abroad, per currency', () => {
+    const withFee = [
+      ...benefits,
+      { id: 'boa_premium_rewards__no_foreign_fees', card_id: 'boa_premium_rewards', type: 'perk' as const, name: 'No foreign transaction fees', amount: null, period: 'per_claim' as const, status: 'active' as const, terms_summary: null, currency: 'USD', worth: 3, worth_period: 'percent' as const, worth_basis: 'The 3% fee' },
+    ];
+    const items = includedWhenYouNeedIt(mine, cards, withFee);
+    expect(includedWorth(items, (x) => (x.worthPeriod === 'percent' ? { spentAbroad: { EUR: 400 } } : {}))).toEqual({ total: { USD: 100, EUR: 12 }, count: 2 });
+    expect(includedWorth(items, () => ({ spentAbroad: {} }))).toEqual({ total: { USD: 100 }, count: 1 });
   });
 });

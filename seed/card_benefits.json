@@ -273,10 +273,9 @@
           "last_verified": "2026-10-22",
           "notes": "Read from the issuer's own page text via web search on 2026-10-22 (the page itself could not be opened from the build environment). Bank pages can be dated: confirm with the bank before relying on it. Worth: the price read from the provider's own page text via web search on 2026-11-01 (the page could not be opened from the build environment). Prices change: recheck.",
           "currency": null,
-          "worth": 35,
-          "worth_period": "use",
-          "worth_basis": "What Priority Pass charges its Standard members for each lounge visit.",
-          "worth_source_url": "https://www.prioritypass.com/membership-options"
+          "worth_price": "priority_pass_visit",
+          "worth_units": null,
+          "worth_note": null
         },
         {
           "id": "amex_platinum__hotel_status",
@@ -743,7 +742,10 @@
           "status": "active",
           "source_url": "https://global.americanexpress.com/card-benefits/detail/no-foreign-transaction-fees/gold",
           "last_verified": "2026-11-01",
-          "notes": "Read from the issuer’s own pages via web search on 2026-11-01. Terms change: confirm with the issuer before relying on it."
+          "notes": "Read from the issuer’s own pages via web search on 2026-11-01. Terms change: confirm with the issuer before relying on it.",
+          "worth_price": "foreign_fee_percent",
+          "worth_units": null,
+          "worth_note": null
         }
       ]
     },
@@ -973,10 +975,9 @@
           "last_verified": "2026-10-22",
           "notes": "Read from the issuer's own page text via web search on 2026-10-22 (the page itself could not be opened from the build environment). Bank pages can be dated: confirm with the bank before relying on it. Worth: the price read from the provider's own page text via web search on 2026-11-01 (the page could not be opened from the build environment). Prices change: recheck.",
           "currency": null,
-          "worth": 35,
-          "worth_period": "use",
-          "worth_basis": "What Priority Pass charges its Standard members for each lounge visit.",
-          "worth_source_url": "https://www.prioritypass.com/membership-options"
+          "worth_price": "priority_pass_visit",
+          "worth_units": null,
+          "worth_note": null
         },
         {
           "id": "chase_sapphire_reserve__trip_delay",
@@ -1170,10 +1171,9 @@
           "last_verified": "2026-10-25",
           "notes": "Read from the issuer's own page text via web search on 2026-10-25 (the page itself could not be opened from the build environment). Bank pages can be dated: confirm with the bank before relying on it. Worth: the price read from the provider's own page text via web search on 2026-11-01 (the page could not be opened from the build environment). Prices change: recheck.",
           "currency": null,
-          "worth": 96,
-          "worth_period": "year",
-          "worth_basis": "DoorDash's price for a year of DashPass on the annual plan.",
-          "worth_source_url": "https://help.doordash.com/consumers/s/article/What-is-DashPass"
+          "worth_price": "dashpass_year",
+          "worth_units": null,
+          "worth_note": null
         },
         {
           "id": "chase_sapphire_preferred__trip_delay",
@@ -1338,7 +1338,10 @@
           "source_url": "https://www.capitalone.com/learn-grow/more-than-money/all-about-venture-x/",
           "last_verified": "2026-10-25",
           "notes": "Read from the issuer's own page text via web search on 2026-10-25 (the page itself could not be opened from the build environment). Bank pages can be dated: confirm with the bank before relying on it.",
-          "currency": null
+          "currency": null,
+          "worth_price": "venture_x_anniversary_miles",
+          "worth_units": null,
+          "worth_note": null
         },
         {
           "id": "capital_one_venture_x__global_entry",
@@ -1377,10 +1380,9 @@
           "last_verified": "2026-10-22",
           "notes": "Read from the issuer's own page text via web search on 2026-10-22 (the page itself could not be opened from the build environment). Bank pages can be dated: confirm with the bank before relying on it. Worth: the price read from the provider's own page text via web search on 2026-11-01 (the page could not be opened from the build environment). Prices change: recheck.",
           "currency": null,
-          "worth": 35,
-          "worth_period": "use",
-          "worth_basis": "What Priority Pass charges its Standard members for each lounge visit.",
-          "worth_source_url": "https://www.prioritypass.com/membership-options"
+          "worth_price": "priority_pass_visit",
+          "worth_units": null,
+          "worth_note": null
         },
         {
           "id": "capital_one_venture_x__trip_delay",
@@ -1564,7 +1566,10 @@
           "status": "active",
           "source_url": "https://www.capitalone.com/learn-grow/money-management/no-foreign-transaction-fee-credit-card/",
           "last_verified": "2026-11-01",
-          "notes": "Read from the issuer’s own pages via web search on 2026-11-01. Terms change: confirm with the issuer before relying on it."
+          "notes": "Read from the issuer’s own pages via web search on 2026-11-01. Terms change: confirm with the issuer before relying on it.",
+          "worth_price": "foreign_fee_percent",
+          "worth_units": null,
+          "worth_note": null
         }
       ]
     },
@@ -1691,7 +1696,10 @@
           "status": "active",
           "source_url": "https://www.citi.com/credit-cards/citi-strata-premier-credit-card",
           "last_verified": "2026-11-01",
-          "notes": "Read from the issuer’s own pages via web search on 2026-11-01. Terms change: confirm with the issuer before relying on it."
+          "notes": "Read from the issuer’s own pages via web search on 2026-11-01. Terms change: confirm with the issuer before relying on it.",
+          "worth_price": "foreign_fee_percent",
+          "worth_units": null,
+          "worth_note": null
         }
       ]
     },
@@ -1886,7 +1894,10 @@
           "status": "active",
           "source_url": "https://www.apple.com/apple-card/",
           "last_verified": "2026-11-01",
-          "notes": "Read from the issuer’s own pages via web search on 2026-11-01. Terms change: confirm with the issuer before relying on it."
+          "notes": "Read from the issuer’s own pages via web search on 2026-11-01. Terms change: confirm with the issuer before relying on it.",
+          "worth_price": "foreign_fee_percent",
+          "worth_units": null,
+          "worth_note": null
         }
       ],
       "fee_note": "No annual, foreign transaction or late fees. Chase is due to take over as issuer (announced January 2026)."
@@ -2086,10 +2097,9 @@
           "source_url": "https://tt.scotiabank.com/tt-pb/about-scotiabank-premium-banking.html",
           "last_verified": "2026-11-01",
           "notes": "Read from the bank's own page text via web search on 2026-11-01 (the page itself could not be opened from the build environment). Bank pages can be dated: confirm with the bank before relying on it. Worth: the price read from the provider's own page text via web search on 2026-11-01 (the page could not be opened from the build environment). Prices change: recheck.",
-          "worth": 140,
-          "worth_period": "year",
-          "worth_basis": "4 visits a year × US$35, what Priority Pass charges its Standard members per visit. Needs Scotiabank Premium Banking.",
-          "worth_source_url": "https://www.prioritypass.com/membership-options"
+          "worth_price": "priority_pass_visit",
+          "worth_units": 4,
+          "worth_note": "Needs Scotiabank Premium Banking."
         },
         {
           "id": "scotiabank_tt_aero_platinum_visa__travel_medical",
@@ -2162,10 +2172,9 @@
           "source_url": "https://tt.scotiabank.com/tt-pb/about-scotiabank-premium-banking.html",
           "last_verified": "2026-11-01",
           "notes": "Read from the bank's own page text via web search on 2026-11-01 (the page itself could not be opened from the build environment). Bank pages can be dated: confirm with the bank before relying on it. Worth: the price read from the provider's own page text via web search on 2026-11-01 (the page could not be opened from the build environment). Prices change: recheck.",
-          "worth": 350,
-          "worth_period": "year",
-          "worth_basis": "10 visits a year × US$35, what Priority Pass charges its Standard members per visit. Needs Scotiabank Premium Banking.",
-          "worth_source_url": "https://www.prioritypass.com/membership-options"
+          "worth_price": "priority_pass_visit",
+          "worth_units": 10,
+          "worth_note": "Needs Scotiabank Premium Banking."
         },
         {
           "id": "scotiabank_tt_aero_mastercard_black__aero_rewards",
@@ -2999,10 +3008,9 @@
           "source_url": "https://republictt.com/personal/republicaadvantage-visa-infinite-credit-card",
           "last_verified": "2026-10-22",
           "notes": "Read from the bank's own page text via web search on 2026-10-22 (the page itself could not be opened from the build environment). Bank pages can be dated: confirm with the bank before relying on it. Worth: the price read from the provider's own page text via web search on 2026-11-01 (the page could not be opened from the build environment). Prices change: recheck.",
-          "worth": 70,
-          "worth_period": "year",
-          "worth_basis": "2 visits a year × US$35, what Priority Pass charges its Standard members per visit.",
-          "worth_source_url": "https://www.prioritypass.com/membership-options"
+          "worth_price": "priority_pass_visit",
+          "worth_units": 2,
+          "worth_note": null
         },
         {
           "id": "republic_tt_aadvantage_visa_infinite__miles",
@@ -3620,7 +3628,10 @@
           "status": "active",
           "source_url": "https://global.americanexpress.com/card-benefits/view-all/amex-green",
           "last_verified": "2026-11-01",
-          "notes": "Read from the issuer’s own pages via web search on 2026-11-01. Terms change: confirm with the issuer before relying on it."
+          "notes": "Read from the issuer’s own pages via web search on 2026-11-01. Terms change: confirm with the issuer before relying on it.",
+          "worth_price": "foreign_fee_percent",
+          "worth_units": null,
+          "worth_note": null
         }
       ]
     },
@@ -3695,10 +3706,9 @@
           "last_verified": "2026-10-25",
           "notes": "Read from the issuer's own page text via web search on 2026-10-25 (the page itself could not be opened from the build environment). Bank pages can be dated: confirm with the bank before relying on it. Worth: the price read from the provider's own page text via web search on 2026-11-01 (the page could not be opened from the build environment). Prices change: recheck.",
           "currency": null,
-          "worth": 45,
-          "worth_period": "use",
-          "worth_basis": "Delta's fee for a first checked bag on U.S. flights (tickets bought from April 8, 2026), each way.",
-          "worth_source_url": "https://www.delta.com/us/en/baggage/checked-baggage/overview"
+          "worth_price": "delta_first_bag",
+          "worth_units": null,
+          "worth_note": null
         },
         {
           "id": "amex_delta_gold__priority_boarding",
@@ -3840,10 +3850,9 @@
           "source_url": "https://www.americanexpress.com/en-us/credit-cards/credit-intel/delta-baggage-fees/",
           "last_verified": "2026-11-01",
           "notes": "Read from the issuer’s own pages via web search on 2026-11-01. Terms change: confirm with the issuer before relying on it. Worth: the price read from the provider's own page text via web search on 2026-11-01 (the page could not be opened from the build environment). Prices change: recheck.",
-          "worth": 45,
-          "worth_period": "use",
-          "worth_basis": "Delta's fee for a first checked bag on U.S. flights (tickets bought from April 8, 2026), each way.",
-          "worth_source_url": "https://www.delta.com/us/en/baggage/checked-baggage/overview"
+          "worth_price": "delta_first_bag",
+          "worth_units": null,
+          "worth_note": null
         },
         {
           "id": "amex_delta_platinum__priority_boarding",
@@ -4191,7 +4200,10 @@
           "status": "active",
           "source_url": "https://media.chase.com/news/chase-and-amazon-announce-new-benefits-features-amazon-visa-card-portfolio",
           "last_verified": "2026-11-01",
-          "notes": "Read from the issuer’s own pages via web search on 2026-11-01. Terms change: confirm with the issuer before relying on it."
+          "notes": "Read from the issuer’s own pages via web search on 2026-11-01. Terms change: confirm with the issuer before relying on it.",
+          "worth_price": "foreign_fee_percent",
+          "worth_units": null,
+          "worth_note": null
         }
       ]
     },
@@ -4309,10 +4321,9 @@
           "last_verified": "2026-10-25",
           "notes": "Read from the issuer's own page text via web search on 2026-10-25 (the page itself could not be opened from the build environment). Bank pages can be dated: confirm with the bank before relying on it. Worth: the price read from the provider's own page text via web search on 2026-11-01 (the page could not be opened from the build environment). Prices change: recheck.",
           "currency": null,
-          "worth": 45,
-          "worth_period": "use",
-          "worth_basis": "United's prepaid fee for a first checked bag on most U.S. flights (tickets bought from April 3, 2026), each way.",
-          "worth_source_url": "https://www.united.com/en/us/fly/baggage/checked-bags.html"
+          "worth_price": "united_first_bag",
+          "worth_units": null,
+          "worth_note": null
         },
         {
           "id": "chase_united_explorer__club_passes",
@@ -4332,10 +4343,9 @@
           "last_verified": "2026-10-25",
           "notes": "Read from the issuer's own page text via web search on 2026-10-25 (the page itself could not be opened from the build environment). Bank pages can be dated: confirm with the bank before relying on it. Worth: the price read from the provider's own page text via web search on 2026-11-01 (the page could not be opened from the build environment). Prices change: recheck.",
           "currency": null,
-          "worth": 118,
-          "worth_period": "year",
-          "worth_basis": "2 passes × $59, United's price for a one-time United Club pass.",
-          "worth_source_url": "https://www.united.com/web/en-US/content/travel/airport/lounge/rates.aspx"
+          "worth_price": "united_club_pass",
+          "worth_units": 2,
+          "worth_note": null
         },
         {
           "id": "chase_united_explorer__priority_boarding",
@@ -4590,7 +4600,10 @@
           "status": "active",
           "source_url": "https://www.capitalone.com/learn-grow/money-management/no-foreign-transaction-fee-credit-card/",
           "last_verified": "2026-11-01",
-          "notes": "Read from the issuer’s own pages via web search on 2026-11-01. Terms change: confirm with the issuer before relying on it."
+          "notes": "Read from the issuer’s own pages via web search on 2026-11-01. Terms change: confirm with the issuer before relying on it.",
+          "worth_price": "foreign_fee_percent",
+          "worth_units": null,
+          "worth_note": null
         }
       ]
     },
@@ -4679,7 +4692,10 @@
           "status": "active",
           "source_url": "https://www.capitalone.com/learn-grow/money-management/no-foreign-transaction-fee-credit-card/",
           "last_verified": "2026-11-01",
-          "notes": "Read from the issuer’s own pages via web search on 2026-11-01. Terms change: confirm with the issuer before relying on it."
+          "notes": "Read from the issuer’s own pages via web search on 2026-11-01. Terms change: confirm with the issuer before relying on it.",
+          "worth_price": "foreign_fee_percent",
+          "worth_units": null,
+          "worth_note": null
         }
       ]
     },
@@ -5111,10 +5127,9 @@
           "source_url": "https://www.managerewardsonline.bankofamerica.com/cms/published/root/duo/sharedContent/premiumelite/pdf/RewardsBenefitsGuide.pdf",
           "last_verified": "2026-11-01",
           "notes": "Read from the issuer’s own pages via web search on 2026-11-01. Terms change: confirm with the issuer before relying on it. Worth: the price read from the provider's own page text via web search on 2026-11-01 (the page could not be opened from the build environment). Prices change: recheck.",
-          "worth": 35,
-          "worth_period": "use",
-          "worth_basis": "What Priority Pass charges its Standard members for each lounge visit.",
-          "worth_source_url": "https://www.prioritypass.com/membership-options"
+          "worth_price": "priority_pass_visit",
+          "worth_units": null,
+          "worth_note": null
         },
         {
           "id": "boa_premium_rewards_elite__airfare_discount",

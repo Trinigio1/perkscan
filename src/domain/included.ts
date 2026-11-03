@@ -19,7 +19,7 @@ export interface IncludedItem {
   kind: 'credit' | 'membership_perk' | 'card_perk';
   /** What a perk with no stated amount is worth, by the provider's own figure. */
   worth: number | null;
-  worthPeriod: 'year' | 'use' | null;
+  worthPeriod: 'year' | 'use' | 'percent' | null;
   /** Where the worth comes from, shown with it. */
   worthBasis: string | null;
 }
@@ -56,17 +56,31 @@ export function includedWhenYouNeedIt(
   return out.sort((a, b) => figure(b) - figure(a));
 }
 
+/** How much you used a perk this past year: times (a lounge visit per flight), or money spent abroad. */
+export interface Usage {
+  uses?: number;
+  spentAbroad?: MoneyBag;
+}
+
 /**
  * What your cards and memberships give you that isn't money in hand, for Home's "Save up to": credits
  * you get back when you pay for something (up to their amount) and perks with a yearly worth. A per-use
- * worth (a checked bag on each flight) counts only as often as you actually used it this past year
- * (`usesOf`, from your own trips); without that it's shown on the perk but not added up.
+ * worth (a checked bag on each flight) counts only as often as you actually used it this past year, and
+ * a no-foreign-fee perk only on what you actually spent abroad (`usageOf`, from your own receipts);
+ * without that they're shown on the perk but not added up.
  */
-export function includedWorth(items: IncludedItem[], usesOf?: (x: IncludedItem) => number): { total: MoneyBag; count: number } {
+export function includedWorth(items: IncludedItem[], usageOf?: (x: IncludedItem) => Usage): { total: MoneyBag; count: number } {
   const total: MoneyBag = {};
   let count = 0;
   for (const x of items) {
-    const uses = x.worthPeriod === 'use' && usesOf ? usesOf(x) : 0;
+    const usage = usageOf && (x.worthPeriod === 'use' || x.worthPeriod === 'percent') ? usageOf(x) : {};
+    if (x.worthPeriod === 'percent' && x.worth) {
+      const saved = Object.entries(usage.spentAbroad ?? {}).filter(([, v]) => v > 0);
+      for (const [cur, spent] of saved) addToBag(total, cur, Math.round(spent * x.worth) / 100);
+      if (saved.length) count += 1;
+      continue;
+    }
+    const uses = usage.uses ?? 0;
     const v = x.amount ?? (x.worthPeriod === 'year' ? x.worth : x.worthPeriod === 'use' && x.worth && uses > 0 ? x.worth * uses : null);
     if (v && x.currency) {
       addToBag(total, x.currency, v);

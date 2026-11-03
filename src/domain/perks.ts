@@ -65,3 +65,16 @@ export function loungeCards(groups: ReturnType<typeof groupPerks>): string[] {
   const airport = groups.find((g) => g.group === 'airport');
   return [...new Set((airport?.lines ?? []).filter((l) => /lounge/.test(l.benefit.id)).flatMap((l) => l.cards))];
 }
+
+const shortDate = (iso: string) => new Date(`${iso.slice(0, 10)}T12:00:00Z`).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' });
+
+/**
+ * What the monthly card check says about a perk: its tag, and a short line under it. A perk the check
+ * couldn't find on the bank's page any more is shown as one to check until a person decides.
+ */
+export function perkCheck(b: Pick<CardBenefit, 'status' | 'last_verified' | 'origin' | 'check_result' | 'checked_at'>): { tag: 'confirmed' | 'check'; note: string | null } {
+  if (b.check_result === 'not_on_page' && b.checked_at) return { tag: 'check', note: `Not found on the bank’s page when checked ${shortDate(b.checked_at)}. Confirm with the bank before you count on it.` };
+  if (b.status !== 'active') return { tag: 'check', note: null };
+  if (!b.last_verified || !/^\d{4}-\d{2}-\d{2}/.test(b.last_verified)) return { tag: 'confirmed', note: null };
+  return { tag: 'confirmed', note: b.origin === 'scout' ? `Found on the bank’s page ${shortDate(b.last_verified)}` : `Checked ${shortDate(b.last_verified)} on the official site` };
+}

@@ -61,7 +61,10 @@
           "status": "active",
           "source_url": "https://www.aboutamazon.com/news/retail/amazon-prime-benefits",
           "last_verified": "2026-10-25",
-          "notes": "Read from the provider's own page text via web search on 2026-10-25 (the page itself could not be opened from the build environment). Terms change: confirm in your account before relying on it."
+          "notes": "Read from the provider's own page text via web search on 2026-10-25 (the page itself could not be opened from the build environment). Terms change: confirm in your account before relying on it.",
+          "worth_price": "prime_video_month",
+          "worth_units": null,
+          "worth_note": null
         },
         {
           "id": "amazon_prime__whole_foods",
@@ -158,7 +161,10 @@
           "status": "active",
           "source_url": "https://www.walmart.com/help/article/walmart-benefits-streaming-services/35624ec8e133496ab647a398a90cf779",
           "last_verified": "2026-10-25",
-          "notes": "Read from the provider's own page text via web search on 2026-10-25 (the page itself could not be opened from the build environment). Terms change: confirm in your account before relying on it."
+          "notes": "Read from the provider's own page text via web search on 2026-10-25 (the page itself could not be opened from the build environment). Terms change: confirm in your account before relying on it.",
+          "worth_price": "paramount_essential_month",
+          "worth_units": null,
+          "worth_note": "You pick Paramount+ Essential or Peacock Premium; valued at the cheaper one."
         },
         {
           "id": "walmart_plus__fuel",
@@ -313,7 +319,10 @@
           "status": "active",
           "source_url": "https://help.samsclub.com/app/answers/detail/a_id/4278/~/sams-club-plus-includes-walmart+-annual",
           "last_verified": "2026-10-25",
-          "notes": "Read from the provider's own page text via web search on 2026-10-25 (the page itself could not be opened from the build environment). Terms change: confirm in your account before relying on it."
+          "notes": "Read from the provider's own page text via web search on 2026-10-25 (the page itself could not be opened from the build environment). Terms change: confirm in your account before relying on it.",
+          "worth_price": "walmart_plus_year",
+          "worth_units": null,
+          "worth_note": null
         },
         {
           "id": "sams_club_plus__shipping",
@@ -370,7 +379,10 @@
           "status": "active",
           "source_url": "https://www.instacart.com/help/section/360007996832/21115822390804",
           "last_verified": "2026-10-25",
-          "notes": "Read from the provider's own page text via web search on 2026-10-25 (the page itself could not be opened from the build environment). Terms change: confirm in your account before relying on it."
+          "notes": "Read from the provider's own page text via web search on 2026-10-25 (the page itself could not be opened from the build environment). Terms change: confirm in your account before relying on it.",
+          "worth_price": "peacock_premium_month",
+          "worth_units": null,
+          "worth_note": null
         },
         {
           "id": "instacart_plus__delivery",
@@ -586,7 +598,10 @@
           "status": "active",
           "source_url": "https://www.t-mobile.com/cell-phone-plans",
           "last_verified": "2026-10-25",
-          "notes": "Read from the provider's own page text via web search on 2026-10-25 (the page itself could not be opened from the build environment). Terms change: confirm in your account before relying on it."
+          "notes": "Read from the provider's own page text via web search on 2026-10-25 (the page itself could not be opened from the build environment). Terms change: confirm in your account before relying on it.",
+          "worth_price": "netflix_ads_month",
+          "worth_units": null,
+          "worth_note": null
         },
         {
           "id": "tmobile_experience_beyond__hulu",
@@ -609,7 +624,10 @@
           "status": "active",
           "source_url": "https://www.t-mobile.com/tv-streaming/hulu-on-us-deal",
           "last_verified": "2026-10-25",
-          "notes": "Read from the provider's own page text via web search on 2026-10-25 (the page itself could not be opened from the build environment). Terms change: confirm in your account before relying on it."
+          "notes": "Read from the provider's own page text via web search on 2026-10-25 (the page itself could not be opened from the build environment). Terms change: confirm in your account before relying on it.",
+          "worth_price": "hulu_ads_month",
+          "worth_units": null,
+          "worth_note": null
         },
         {
           "id": "tmobile_experience_beyond__apple_tv",
@@ -685,7 +703,10 @@
           "status": "active",
           "source_url": "https://www.t-mobile.com/cell-phone-plans",
           "last_verified": "2026-10-25",
-          "notes": "Read from the provider's own page text via web search on 2026-10-25 (the page itself could not be opened from the build environment). Terms change: confirm in your account before relying on it."
+          "notes": "Read from the provider's own page text via web search on 2026-10-25 (the page itself could not be opened from the build environment). Terms change: confirm in your account before relying on it.",
+          "worth_price": "netflix_ads_month",
+          "worth_units": null,
+          "worth_note": null
         },
         {
           "id": "tmobile_experience_more__apple_tv",

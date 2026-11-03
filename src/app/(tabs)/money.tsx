@@ -198,7 +198,7 @@ export default function Money() {
                   {x.amount !== null ? (
                     <T variant="label" color={c.textMuted}>up to {formatMoney(x.amount, { currency: x.currency ?? undefined })}</T>
                   ) : x.worth !== null ? (
-                    <T variant="label" color={c.textMuted}>≈ {formatMoney(x.worth, { currency: x.currency ?? undefined })}{x.worthPeriod === 'year' ? '/yr' : ' each time'}</T>
+                    <T variant="label" color={c.textMuted}>{x.worthPeriod === 'percent' ? `saves ${x.worth}% abroad` : `≈ ${formatMoney(x.worth, { currency: x.currency ?? undefined })}${x.worthPeriod === 'year' ? '/yr' : ' each time'}`}</T>
                   ) : null}
                 </Row>
                 {x.worthBasis ? <T variant="caption" faint numberOfLines={2}>{x.worthBasis}</T> : null}

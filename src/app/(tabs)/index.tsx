@@ -13,7 +13,7 @@ import { foundMoney, nextStep, toCheckCount, worthCelebrating } from '@/domain/f
 import { addToBag, formatBag, getHomeCurrency, sumBags, type MoneyBag } from '@/domain/format';
 import { nextToUse, owedToYou, setupSteps } from '@/domain/money';
 import { includedWhenYouNeedIt, includedWorth } from '@/domain/included';
-import { usesThisYear } from '@/domain/perkValue';
+import { usageThisYear } from '@/domain/perkValue';
 import { scoreByCurrency } from '@/domain/score';
 import { greeting } from '@/domain/visuals';
 import { useData, useLookups } from '@/lib/data';
@@ -92,8 +92,8 @@ export default function Home() {
   // student plans. Each part is its own line underneath, so it's clear what's sure and what's an estimate.
   // Card and membership perks: credits you get back when you pay (up to their amount), and perks with a yearly worth.
   // Per-use perks (a lounge visit, a checked bag) count as often as you flew this past year.
-  const { trips } = usePerksWorth();
-  const perks = useMemo(() => includedWorth(includedWhenYouNeedIt(data.userCards, data.cards, data.benefits), (x) => usesThisYear(x, trips)), [data.userCards, data.cards, data.benefits, trips]);
+  const { trips, abroad } = usePerksWorth();
+  const perks = useMemo(() => includedWorth(includedWhenYouNeedIt(data.userCards, data.cards, data.benefits), (x) => usageThisYear(x, trips, abroad)), [data.userCards, data.cards, data.benefits, trips, abroad]);
   // Ready to use, without what's owed (that has its own line), so no amount shows twice.
   const readyToUse = Object.fromEntries(Object.entries(totals.ready).map(([cur, v]) => [cur, Math.max(0, v - (owed.total[cur] ?? 0))])) as MoneyBag;
   const saveUpTo = sumBags(totals.ready, discounts.estimated, dealsFor.worth, studentYearly, perks.total);

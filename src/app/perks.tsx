@@ -6,8 +6,8 @@ import { ConfidenceTag } from '@/components/ConfidenceTag';
 import { PerksWorthPanel } from '@/components/PerksWorth';
 import { Badge, Button, Empty, IconBubble, Panel, Row, Screen, T } from '@/components/ui';
 import { merchantSite } from '@/domain/claimTarget';
-import { checkedLabel, formatMoney } from '@/domain/format';
-import { groupPerks, loungeCards, type PerkGroup } from '@/domain/perks';
+import { formatMoney } from '@/domain/format';
+import { groupPerks, loungeCards, perkCheck, type PerkGroup } from '@/domain/perks';
 import type { CardBenefit } from '@/domain/types';
 import { useData, useLookups } from '@/lib/data';
 import { space, useColors } from '@/theme';
@@ -87,8 +87,10 @@ export default function Perks() {
 
 function PerkLineView({ b, cards }: { b: CardBenefit; cards: string[] }) {
   const c = useColors();
+  // What the monthly card check found on the bank's page.
+  const check = perkCheck(b);
   // What it's worth, from what the same thing costs on its own (a lounge visit, a bag fee).
-  const worth = b.worth ? `≈ ${formatMoney(b.worth, { currency: b.currency ?? 'USD' })} ${b.worth_period === 'year' ? 'a year' : 'each use'}` : null;
+  const worth = !b.worth ? null : b.worth_period === 'percent' ? `Saves ${b.worth}% abroad` : `≈ ${formatMoney(b.worth, { currency: b.currency ?? 'USD' })} ${b.worth_period === 'year' ? 'a year' : 'each use'}`;
   const limit = b.max_coverage !== null ? `Up to ${formatMoney(b.max_coverage, { currency: b.currency ?? 'USD' })}` : null;
   // Where to use it: the merchant (e.g. Priority Pass for lounges), else the issuer's own terms page.
   const site = merchantSite(b.name);
@@ -106,13 +108,13 @@ function PerkLineView({ b, cards }: { b: CardBenefit; cards: string[] }) {
       <T variant="caption" muted numberOfLines={1}>{cards.join(' · ')}</T>
       {b.terms_summary ? <T variant="caption" numberOfLines={3}>{b.terms_summary}</T> : null}
       <Row gap={6} style={{ flexWrap: 'wrap', marginTop: 2, alignItems: 'center' }}>
-        <ConfidenceTag value={b.status === 'active' ? 'confirmed' : 'check'} />
+        <ConfidenceTag value={check.tag} />
         {worth ? <Badge label={worth} tone="good" icon="diamond" /> : null}
         {limit ? <Badge label={limit} tone="good" /> : null}
         {b.enrollment_required ? <Badge label="Enroll first" icon="alert-circle" tone="warn" /> : null}
       </Row>
       {worth && b.worth_basis ? <T variant="caption" faint>{b.worth_basis}</T> : null}
-      {b.status === 'active' && checkedLabel(b.last_verified) ? <T variant="caption" faint>{checkedLabel(b.last_verified)}</T> : null}
+      {check.note ? <T variant="caption" faint>{check.note}</T> : null}
       {use ? (
         <View style={{ alignItems: 'flex-start', marginTop: 4 }}>
           <Button title={use.label} icon="open-outline" size="sm" onPress={() => Linking.openURL(use.url)} />

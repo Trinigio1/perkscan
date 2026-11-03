@@ -62,6 +62,8 @@ export interface AppData {
   /** This year's receipts that took money off (membership savings, codes), with those lines. */
   /** Flight bookings from the last 12 months, for what lounge and bag perks were worth to you. */
   flights: { merchant: string; purchase_type: string | null; purchase_date: string | null; order_number: string | null }[];
+  /** Purchases matched to a card over the last 12 months, for what a no-foreign-fee perk saved. */
+  cardPurchases: { matched_user_card_id: string | null; total: number | null; currency: string; purchase_date: string | null }[];
   discountReceipts: { id: string; merchant: string; total: number | null; currency: string; purchase_date: string | null; purchase_type: string | null; discounts: { description: string; code: string | null; amount: number | null }[] }[];
   /** Stores the user hid: their offers and deals aren't shown (receipts still count). */
   storeMutes: { store_key: string; name: string | null }[];
@@ -90,7 +92,7 @@ interface DataState {
 // Before the free-perks columns exist (database not updated yet), the catalog still loads without them.
 const OLD_PROGRAM_COLUMNS = 'id, kind, name, provider, countries, summary, how_to, url, merchants, window_days, status, last_verified, sort_order';
 
-const empty: AppData = { profile: null, cards: [], benefits: [], userCards: [], opportunities: [], recovered: [], usage: [], receipts: [], studentOffers: [], studentClaims: [], school: null, myPerks: [], programs: [], senderDomains: [], schoolHints: [], events: [], deals: [], dealFeedback: [], cardSightings: [], perkFeedback: [], perkSetup: [], flights: [], discountReceipts: [], earnRates: [], cardRewards: [], memberEmails: [], storeMutes: [], scout: { sources: 0, lastChecked: null }, storeStats: [], storePairs: [] };
+const empty: AppData = { profile: null, cards: [], benefits: [], userCards: [], opportunities: [], recovered: [], usage: [], receipts: [], studentOffers: [], studentClaims: [], school: null, myPerks: [], programs: [], senderDomains: [], schoolHints: [], events: [], deals: [], dealFeedback: [], cardSightings: [], perkFeedback: [], perkSetup: [], flights: [], cardPurchases: [], discountReceipts: [], earnRates: [], cardRewards: [], memberEmails: [], storeMutes: [], scout: { sources: 0, lastChecked: null }, storeStats: [], storePairs: [] };
 const DataContext = createContext<DataState>({ data: empty, loading: true, error: null, refresh: async () => ({ data: null, error: null }) });
 
 function must<T>(what: string, res: { data: T | null; error: { message: string; code?: string } | null }): T {
@@ -114,7 +116,7 @@ async function load(userId: string): Promise<AppData> {
   const since = new Date(Date.now() - 180 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
   const yearAgo = new Date(Date.now() - 365 * 24 * 60 * 60 * 1000).toISOString();
   const today = new Date().toISOString().slice(0, 10);
-  const [profile, cards, benefits, userCards, opportunities, recovered, usage, receipts, studentOffers, studentClaims, myPerks, programs, senders, events, dealFeedback, cardSightings, mutes, perkFeedback, perkSetup, discountReceipts, earnRates, cardRewards, flights] = await Promise.all([
+  const [profile, cards, benefits, userCards, opportunities, recovered, usage, receipts, studentOffers, studentClaims, myPerks, programs, senders, events, dealFeedback, cardSightings, mutes, perkFeedback, perkSetup, discountReceipts, earnRates, cardRewards, flights, cardPurchases] = await Promise.all([
     supabase
       .from('profiles')
       .select('*')
@@ -156,6 +158,7 @@ async function load(userId: string): Promise<AppData> {
     supabase.from('card_earn_rates').select('card_id, category, rate, merchants, cap, cap_period, needs, note, source_url').order('sort_order'),
     supabase.from('card_rewards').select('card_id, kind, cents_per_unit, value_basis'),
     supabase.from('receipts').select('merchant, purchase_type, purchase_date, order_number').eq('purchase_type', 'flight').gte('purchase_date', yearAgo.slice(0, 10)).limit(200),
+    supabase.from('receipts').select('matched_user_card_id, total, currency, purchase_date').not('matched_user_card_id', 'is', null).gte('purchase_date', yearAgo.slice(0, 10)).limit(3000),
   ]);
 
   // numeric columns arrive as numbers from PostgREST; normalize defensively.
@@ -271,6 +274,7 @@ async function load(userId: string): Promise<AppData> {
     earnRates: ((earnRates.data ?? []) as EarnRate[]).map((r) => ({ ...r, rate: Number(r.rate), cap: num(r.cap), merchants: r.merchants ?? [] })),
     cardRewards: ((cardRewards.data ?? []) as CardReward[]).map((r) => ({ ...r, cents_per_unit: num(r.cents_per_unit) })),
     flights: (flights.data ?? []) as AppData['flights'],
+    cardPurchases: ((cardPurchases.data ?? []) as AppData['cardPurchases']).map((r) => ({ ...r, total: num(r.total) })),
     discountReceipts: ((discountReceipts.data ?? []) as AppData['discountReceipts']).map((r) => ({
       ...r,
       total: num(r.total),

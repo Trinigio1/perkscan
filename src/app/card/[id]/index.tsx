@@ -8,7 +8,8 @@ import { ConfidenceTag } from '@/components/ConfidenceTag';
 import { Disclaimer } from '@/components/Disclaimer';
 import { Badge, Button, ErrorNote, IconBubble, Panel, Row, Screen, Segmented, T } from '@/components/ui';
 import { draftToRow, siblingCards, validateDraft, type CardDraft } from '@/domain/cardDraft';
-import { checkedLabel, formatMoney, PERIOD_LABELS } from '@/domain/format';
+import { formatMoney, PERIOD_LABELS } from '@/domain/format';
+import { perkCheck } from '@/domain/perks';
 import type { BenefitType, Card, CardBenefit, Opportunity, Receipt } from '@/domain/types';
 import { benefitIcon, offerIcon } from '@/domain/visuals';
 import { useData } from '@/lib/data';
@@ -29,6 +30,8 @@ function BenefitLine({ b, card }: { b: CardBenefit; card: Card }) {
   const c = useColors();
   const { icon, tone } = benefitIcon(b.name, b.type);
   const currency = b.currency ?? card.currency;
+  // What the monthly card check found on the bank's page.
+  const check = perkCheck(b);
   const amount =
     b.type === 'protection'
       ? b.max_coverage !== null ? `Up to ${formatMoney(b.max_coverage, { currency })}` : null
@@ -49,10 +52,10 @@ function BenefitLine({ b, card }: { b: CardBenefit; card: Card }) {
           {amount ? <Badge label={amount} tone="good" /> : null}
           {b.type === 'credit' && b.period !== 'per_claim' && b.period_anchor === 'cardmember_year' ? <Badge label="Resets on anniversary" /> : null}
           {b.enrollment_required ? <Badge label="Enroll first" icon="alert-circle" tone="warn" /> : null}
-          <ConfidenceTag value={b.status === 'active' ? 'confirmed' : 'check'} />
+          <ConfidenceTag value={check.tag} />
         </Row>
         {b.terms_summary ? <T variant="caption" muted numberOfLines={2}>{b.terms_summary}</T> : null}
-        {b.status === 'active' && checkedLabel(b.last_verified) ? <T variant="caption" faint>{checkedLabel(b.last_verified)} on the official site</T> : null}
+        {check.note ? <T variant="caption" faint>{check.note}</T> : null}
       </View>
     </Row>
   );

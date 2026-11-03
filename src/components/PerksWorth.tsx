@@ -3,7 +3,7 @@ import { router } from 'expo-router';
 import { useMemo } from 'react';
 import { View } from 'react-native';
 import { formatBag, formatMoney, getHomeCurrency, type MoneyBag } from '@/domain/format';
-import { perksWorth, type PerksWorth } from '@/domain/perkValue';
+import { perksWorth, spentAbroad, type PerksWorth } from '@/domain/perkValue';
 import { useData } from '@/lib/data';
 import { space, useColors } from '@/theme';
 import { IconBubble, Panel, Row, T } from './ui';
@@ -11,12 +11,13 @@ import { IconBubble, Panel, Row, T } from './ui';
 const nonZero = (bag: MoneyBag) => Object.values(bag).some((v) => v > 0);
 
 /** What your cards' and memberships' perks are worth a year, from the issuer's amounts and real prices. */
-export function usePerksWorth(): PerksWorth & { home: string } {
+export function usePerksWorth(): PerksWorth & { home: string; abroad: Map<string, MoneyBag> } {
   const { data } = useData();
   return useMemo(() => {
     const home = data.profile?.home_currency?.trim() || getHomeCurrency();
-    return { ...perksWorth(data.userCards, data.cards, data.benefits, data.flights, new Date()), home };
-  }, [data.userCards, data.cards, data.benefits, data.flights, data.profile?.home_currency]);
+    const now = new Date();
+    return { abroad: spentAbroad(data.cardPurchases, data.userCards, data.cards, now), ...perksWorth(data.userCards, data.cards, data.benefits, data.flights, now, data.cardPurchases), home };
+  }, [data.userCards, data.cards, data.benefits, data.flights, data.cardPurchases, data.profile?.home_currency]);
 }
 
 /**
@@ -61,9 +62,9 @@ export function PerksWorthPanel({ show = 3, linked = true }: { show?: number; li
         <View key={p.key} style={{ gap: 1 }}>
           <Row gap={space.sm}>
             <T variant="body" style={{ flex: 1 }} numberOfLines={1}>{p.title}</T>
-            <T variant="label">≈ {formatMoney(p.worth, { currency: p.currency, home: w.home })} each use</T>
+            <T variant="label">{p.per === 'percent' ? `Saves ${p.worth}% abroad` : `≈ ${formatMoney(p.worth, { currency: p.currency, home: w.home })} each use`}</T>
           </Row>
-          <T variant="caption" faint numberOfLines={2}>{p.from} · {p.basis ?? 'Not used this past year'}</T>
+          <T variant="caption" faint numberOfLines={2}>{p.from} · {p.per === 'percent' ? 'Nothing spent abroad on it this past year.' : (p.basis ?? 'Not used this past year')}</T>
         </View>
       ))}
       {linked && w.lines.length > show ? <T variant="caption" color={c.accent}>+ {w.lines.length - show} more · see every perk</T> : null}
