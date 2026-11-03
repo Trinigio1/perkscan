@@ -163,6 +163,8 @@ export interface Receipt {
   /** Departure / pick-up / check-in date for travel bookings. */
   travel_date?: string | null;
   order_number?: string | null;
+  /** Set when your bank connection brought it in. */
+  bank_txn_id?: string | null;
 }
 
 export type ParseStatus = 'pending' | 'parsing' | 'parsed' | 'failed' | 'ignored';

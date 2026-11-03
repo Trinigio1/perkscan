@@ -52,15 +52,17 @@ async function allPages(provider: BankProvider, token: string, cursor: string | 
   throw new Error('Bank data kept changing while syncing; will retry later');
 }
 
-async function saveTxn(db: SupabaseClient, userId: string, t: BankTxn, accounts: BankAccount[]): Promise<{ id: string; added: boolean } | null> {
-  const p = purchaseFrom(t, accounts);
-  if (!p) return null;
+async function saveTxn(db: SupabaseClient, userId: string, t: BankTxn, accounts: BankAccount[], connectionId: string): Promise<{ id: string; added: boolean } | null> {
+  const found = purchaseFrom(t, accounts);
+  if (!found) return null;
+  // Which connection brought it in, so disconnecting can take it back out.
+  const p = { ...found, bank_connection_id: connectionId };
   // Already here: this transaction, or the pending one it settled.
   const ids = [t.transaction_id, ...(t.pending_transaction_id ? [t.pending_transaction_id] : [])];
   const { data: known } = await db.from('receipts').select('id, kind').eq('user_id', userId).in('bank_txn_id', ids).limit(1).maybeSingle();
   if (known) {
     // A store receipt keeps its own details; a bank row takes the settled amount and date.
-    const patch = known.kind === 'receipt' ? { bank_txn_id: p.bank_txn_id, pending: false, last_four: p.last_four } : p;
+    const patch = known.kind === 'receipt' ? { bank_txn_id: p.bank_txn_id, bank_connection_id: connectionId, pending: false, last_four: p.last_four } : p;
     const { error } = await db.from('receipts').update(patch).eq('id', known.id);
     if (error) throw new Error(`receipts: ${error.message}`);
     return { id: known.id as string, added: false };
@@ -79,7 +81,7 @@ async function saveTxn(db: SupabaseClient, userId: string, t: BankTxn, accounts:
   if (nErr) throw new Error(`receipts: ${nErr.message}`);
   const dup = findDuplicate(asRow(p), (near ?? []).map((r) => ({ ...(r as ExistingReceipt), total: r.total === null ? null : Number(r.total) })));
   if (dup) {
-    const { error } = await db.from('receipts').update({ ...mergeFields(dup, asRow(p)), bank_txn_id: p.bank_txn_id }).eq('id', dup.id);
+    const { error } = await db.from('receipts').update({ ...mergeFields(dup, asRow(found)), bank_txn_id: p.bank_txn_id, bank_connection_id: connectionId }).eq('id', dup.id);
     if (error) throw new Error(`receipts: ${error.message}`);
     return { id: dup.id, added: false };
   }
@@ -113,7 +115,7 @@ export async function syncConnection(db: SupabaseClient, provider: BankProvider,
   let added = 0;
   let updated = 0;
   for (const t of [...page.added, ...page.modified]) {
-    const r = await saveTxn(db, userId, t, accounts);
+    const r = await saveTxn(db, userId, t, accounts, connectionId);
     if (!r) continue;
     touched.push(r.id);
     if (r.added) {
@@ -158,7 +160,7 @@ export async function connect(db: SupabaseClient, provider: BankProvider, key: C
   const { accounts, institutionName } = await provider.accounts(accessToken);
   const { data: conn, error } = await db
     .from('bank_connections')
-    .upsert({ user_id: userId, provider: provider.name, item_id: itemId, institution_name: institutionName, status: 'active', last_error: null }, { onConflict: 'provider,item_id' })
+    .upsert({ user_id: userId, provider: provider.name, item_id: itemId, institution_name: institutionName, status: 'active', last_error: null, environment: provider.env ?? null }, { onConflict: 'provider,item_id' })
     .select('id')
     .single();
   if (error) throw new Error(`bank_connections: ${error.message}`);

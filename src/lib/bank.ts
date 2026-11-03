@@ -11,6 +11,8 @@ export interface BankConnection {
   status: 'active' | 'needs_login' | 'error' | 'revoked';
   last_synced_at: string | null;
   last_error: string | null;
+  /** sandbox: Plaid's test bank, made-up practice transactions. null: connected before this was recorded. */
+  environment?: 'sandbox' | 'production' | null;
   accounts: { name: string; mask: string | null }[];
 }
 
@@ -26,10 +28,11 @@ async function call<T>(body: Record<string, unknown>): Promise<T> {
 }
 
 export async function listConnections(): Promise<BankConnection[]> {
-  const { data, error } = await supabase
-    .from('bank_connections')
-    .select('id, institution_name, status, last_synced_at, last_error, created_at')
-    .order('created_at');
+  const withEnv = await supabase.from('bank_connections').select('id, institution_name, status, last_synced_at, last_error, created_at, environment').order('created_at');
+  // Before the environment column exists, read without it.
+  const { data, error } = withEnv.error
+    ? await supabase.from('bank_connections').select('id, institution_name, status, last_synced_at, last_error, created_at').order('created_at')
+    : withEnv;
   // Before the bank tables exist (database not updated yet), there's simply nothing connected.
   if (error) return [];
   const { data: accts } = await supabase.from('bank_accounts').select('connection_id, name, mask');
@@ -60,7 +63,22 @@ export async function connectBank(): Promise<boolean> {
 
 export const syncBank = (connectionId: string) => call<{ added: number }>({ action: 'sync', connection_id: connectionId });
 
-export async function disconnectBank(connectionId: string) {
-  await call({ action: 'disconnect', connection_id: connectionId });
+/** Stop reading a bank; with removePurchases, also take out the purchases it brought in (ones an email also described stay). */
+export async function disconnectBank(connectionId: string, removePurchases = false): Promise<number> {
+  const r = await call<{ removed?: number }>({ action: 'disconnect', connection_id: connectionId, remove_purchases: removePurchases });
   track('bank_connect', { step: 'disconnected' });
+  return r.removed ?? 0;
+}
+
+/** Purchases brought in by bank connections made before PerkScan recorded which connection they came from. */
+export async function earlierBankPurchases(): Promise<number> {
+  const { count, error } = await supabase.from('receipts').select('id', { count: 'exact', head: true }).not('bank_txn_id', 'is', null).is('bank_connection_id', null);
+  return error ? 0 : (count ?? 0);
+}
+
+/** Remove those purchases (or one connection's); ones an email also described are kept. Returns how many went. */
+export async function removeBankPurchases(connectionId: string | null = null): Promise<number> {
+  const { data, error } = await supabase.rpc('remove_bank_purchases', { p_connection_id: connectionId });
+  if (error) throw new Error(error.message);
+  return Number(data ?? 0);
 }

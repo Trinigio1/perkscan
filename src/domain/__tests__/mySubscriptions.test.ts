@@ -48,12 +48,15 @@ describe('what is not a subscription', () => {
     expect(names([r('United Airlines', 289, '2026-08-10', 'flight'), r('United Airlines', 289, '2026-09-09', 'flight')])).toEqual([]);
   });
 
-  it('needs three charges a month apart for an unknown merchant; two similar purchases are not enough', () => {
+  it('never counts an unknown merchant without proof it bills, however regular (a test bank repeats its made-up purchases monthly)', () => {
     expect(names([r('Fun', 20, '2026-09-05'), r('Fun', 20, '2026-10-05')])).toEqual([]);
-    // Same amount three times, but not monthly.
-    expect(names([r('Tectra Inc', 15, '2026-06-01'), r('Tectra Inc', 15, '2026-06-20'), r('Tectra Inc', 15, '2026-09-30')])).toEqual([]);
-    // Really every month: that is one.
-    expect(names([r('Gym Box', 30, '2026-08-01'), r('Gym Box', 30, '2026-09-01'), r('Gym Box', 30, '2026-10-01')])).toEqual(['Gym Box']);
+    expect(names([r('Tectra Inc', 15, '2026-08-01'), r('Tectra Inc', 15, '2026-09-01'), r('Tectra Inc', 15, '2026-10-01'), r('Tectra Inc', 15, '2026-11-01')])).toEqual([]);
+    // A gym the bank files under gyms (a service): that is one.
+    expect(names([r('Gym Box', 30, '2026-09-01', 'service'), r('Gym Box', 30, '2026-10-01', 'service')])).toEqual(['Gym Box']);
+  });
+  it('says where its charges came from', () => {
+    const [n] = subs([{ ...r('Netflix', 8.99, '2026-09-12'), bank_txn_id: 'tx1', kind: 'card_alert' as const }, { ...r('Netflix', 8.99, '2026-10-12'), kind: 'receipt' as const }], now, false);
+    expect(n!.sources.sort()).toEqual(['bank', 'receipt']);
   });
 
   it('still finds known services and plans from two charges', () => {
@@ -62,8 +65,8 @@ describe('what is not a subscription', () => {
   });
 
   it('counts the same purchase seen twice (receipt and bank alert) once, and keeps currencies apart', () => {
-    // Receipt and alert for one purchase, then one more a month later: only two real charges of an unknown merchant.
-    expect(names([r('Tectra Inc', 15, '2026-09-01'), r('Tectra Inc', 15, '2026-09-02'), r('Tectra Inc', 15, '2026-10-01')])).toEqual([]);
+    // Receipt and alert for one purchase: one charge, so a single Netflix charge isn't monthly yet.
+    expect(subs([r('Netflix', 8.99, '2026-10-01'), r('Netflix', 8.99, '2026-10-02')], now, false).map((x) => x.charges)).toEqual([]);
     // TT$ and US$ charges are never mixed into one.
     const mixed = subs([r('Spotify', 59, '2026-09-10', 'subscription', 'TTD'), r('Spotify', 8.99, '2026-10-10', 'subscription', 'USD')], now, false);
     expect(mixed.map((s) => [s.currency, s.amount])).toEqual([['TTD', 59], ['USD', 8.99]]);

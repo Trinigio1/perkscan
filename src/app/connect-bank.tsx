@@ -1,8 +1,8 @@
 import { router, useFocusEffect } from 'expo-router';
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Alert, Platform, View } from 'react-native';
 import { Badge, Button, ErrorNote, Note, Panel, Row, Screen, T } from '@/components/ui';
-import { connectBank, disconnectBank, listConnections, syncBank, type BankConnection } from '@/lib/bank';
+import { connectBank, disconnectBank, earlierBankPurchases, listConnections, removeBankPurchases, syncBank, type BankConnection } from '@/lib/bank';
 import { useData } from '@/lib/data';
 import { useToast } from '@/lib/toast';
 import { space } from '@/theme';
@@ -52,17 +52,46 @@ export default function ConnectBank() {
     });
 
   const disconnect = (c: BankConnection) => {
-    const go = () => run(c.id, async () => {
-      await disconnectBank(c.id);
-      toast('Disconnected', { tone: 'info' });
-    });
-    const msg = 'PerkScan stops reading this bank right away. Purchases already brought in stay.';
+    const go = (remove: boolean) =>
+      run(c.id, async () => {
+        const removed = await disconnectBank(c.id, remove);
+        toast(remove ? `Disconnected · ${removed} purchase${removed === 1 ? '' : 's'} removed` : 'Disconnected', { tone: 'info' });
+        await refresh();
+      });
+    // A test bank's purchases are made up: remove them by default.
+    const test = c.environment === 'sandbox';
+    const msg = test
+      ? 'This is Plaid’s test bank: its purchases are made-up practice data. Disconnecting removes them too.'
+      : 'PerkScan stops reading this bank right away. Keep the purchases it already brought in, or remove them?';
     if (Platform.OS === 'web') {
-      if (window.confirm(msg)) go();
+      if (test) {
+        if (window.confirm(msg)) go(true);
+      } else if (window.confirm(`${msg}\n\nOK: disconnect and keep them. Cancel: do nothing.`)) {
+        go(window.confirm('Also remove the purchases it brought in? OK: remove them. Cancel: keep them.'));
+      }
     } else {
-      Alert.alert(`Disconnect ${c.institution_name ?? 'this bank'}?`, msg, [{ text: 'Cancel', style: 'cancel' }, { text: 'Disconnect', style: 'destructive', onPress: go }]);
+      Alert.alert(
+        `Disconnect ${c.institution_name ?? 'this bank'}?`,
+        msg,
+        test
+          ? [{ text: 'Cancel', style: 'cancel' }, { text: 'Disconnect and remove', style: 'destructive', onPress: () => go(true) }]
+          : [{ text: 'Cancel', style: 'cancel' }, { text: 'Keep purchases', onPress: () => go(false) }, { text: 'Remove purchases', style: 'destructive', onPress: () => go(true) }],
+      );
     }
   };
+
+  // Purchases from connections made before PerkScan recorded where each came from (e.g. an earlier test bank).
+  const [earlier, setEarlier] = useState(0);
+  useEffect(() => {
+    earlierBankPurchases().then(setEarlier).catch(() => {});
+  }, [list]);
+  const removeEarlier = () =>
+    run('earlier', async () => {
+      const n = await removeBankPurchases(null);
+      setEarlier(0);
+      toast(`${n} earlier bank purchase${n === 1 ? '' : 's'} removed`, { tone: 'info' });
+      await refresh();
+    });
 
   return (
     <Screen edges={[]}>
@@ -81,6 +110,9 @@ export default function ConnectBank() {
             <T variant="subheading" style={{ flex: 1 }}>{c.institution_name ?? 'Your bank'}</T>
             <Badge label={STATUS[c.status].label} tone={STATUS[c.status].tone} />
           </Row>
+          {c.environment === 'sandbox' ? (
+            <Badge label="Test bank (Plaid Sandbox): made-up practice purchases" tone="warn" icon="flask" />
+          ) : null}
           {c.accounts.length ? <T variant="caption" muted>{c.accounts.map((a) => `${a.name}${a.mask ? ` ·· ${a.mask}` : ''}`).join(' · ')}</T> : null}
           <T variant="caption" faint>Last updated {ago(c.last_synced_at)}{c.last_error ? ` · ${c.last_error}` : ''}</T>
           <Row gap={space.sm}>
@@ -90,6 +122,17 @@ export default function ConnectBank() {
           </Row>
         </Panel>
       ))}
+
+      {earlier > 0 ? (
+        <Panel style={{ gap: space.sm }}>
+          <T variant="subheading">{earlier} purchase{earlier === 1 ? '' : 's'} from an earlier bank connection</T>
+          <T variant="caption" muted>
+            Brought in before PerkScan recorded which bank each came from, for example by a test bank (Plaid Sandbox makes up purchases like KFC, United Airlines and
+            Tectra Inc). Remove them if they aren’t yours. Purchases an email also described are kept.
+          </T>
+          <Button title="Remove them" size="sm" kind="secondary" icon="trash-outline" loading={busy === 'earlier'} disabled={!!busy} onPress={removeEarlier} />
+        </Panel>
+      ) : null}
 
       {/* Before Plaid's keys are set on the server, say so plainly and offer email instead. */}
       {error && /set up/i.test(error) ? (

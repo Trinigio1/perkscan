@@ -54,6 +54,8 @@ const TYPES: [RegExp, string][] = [
   [/ELECTRONICS/, 'electronics'],
   [/CLOTHING/, 'clothing'],
   [/TELEPHONE/, 'phone_bill'],
+  // Billed by nature: what a subscription can be when the merchant isn't a known service.
+  [/GYMS_AND_FITNESS|INSURANCE|RENT_AND_UTILITIES|INTERNET_AND_CABLE|SUBSCRIPTION/, 'service'],
   [/TV_AND_MOVIES|MUSIC_AND_AUDIO|DIGITAL_PURCHASE/, 'subscription'],
   [/GENERAL_MERCHANDISE/, 'other_goods'],
 ];

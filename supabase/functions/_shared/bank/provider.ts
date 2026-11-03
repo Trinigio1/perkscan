@@ -20,6 +20,8 @@ export interface SyncPage {
 
 export interface BankProvider {
   name: 'plaid';
+  /** sandbox: Plaid's test bank, made-up practice transactions. */
+  env?: 'sandbox' | 'production';
   createLink(p: { userId: string; webhook: string; completionRedirect?: string | null }): Promise<LinkStart>;
   exchange(publicToken: string): Promise<{ accessToken: string; itemId: string }>;
   accounts(accessToken: string): Promise<{ accounts: BankAccount[]; institutionName: string | null }>;

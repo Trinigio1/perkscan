@@ -60,6 +60,7 @@ export function plaidProvider(cfg: { clientId: string; secret: string; env: 'san
 
   return {
     name: 'plaid',
+    env: cfg.env,
 
     async createLink({ userId, webhook, completionRedirect }): Promise<LinkStart> {
       const r = await call<{ link_token: string; expiration: string; hosted_link_url?: string }>('/link/token/create', {

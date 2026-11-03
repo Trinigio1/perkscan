@@ -36,6 +36,8 @@ export interface Subscription {
   lastCharged: string;
   charges: number;
   service: Service | null;
+  /** Where its charges came from: your bank feed, a card alert (email or text), a store receipt. */
+  sources: ('bank' | 'alert' | 'receipt')[];
   /** A cheaper student price for this exact service, with what it saves a year. */
   student: (StudentPrice & { savesYearly: number }) | null;
 }
@@ -66,16 +68,16 @@ function onePerPurchase<T extends { total: number | null; purchase_date: string 
 
 /**
  * Subscriptions from receipts in the last 13 months, per store and currency (amounts are never compared
- * across currencies):
+ * across currencies). Only with positive proof it's a subscription:
  *   - a known subscription service (Netflix, Spotify...): two charges of the same amount a month or a year
  *     apart, or one charge marked as a subscription;
- *   - something billed by nature (a plan, a service): two charges of the same amount a month or a year apart;
- *   - anything else: at least three charges of the same amount, every one a month (or a year) after the last.
- * Meals, groceries, flights, hotels, rides, fuel and shopping are never subscriptions, however regular.
- * The same purchase seen twice (receipt and bank alert) counts once.
+ *   - something billed by nature (a phone plan, a gym, insurance, a service): two charges of the same amount
+ *     a month or a year apart.
+ * Anything else is never a subscription, however regular: repeat purchases at a store or restaurant (and
+ * a test bank's made-up transactions) look regular too. The same purchase seen twice counts once.
  */
 export function mySubscriptions(
-  receipts: Pick<Receipt, 'merchant' | 'total' | 'currency' | 'purchase_date' | 'purchase_type'>[],
+  receipts: (Pick<Receipt, 'merchant' | 'total' | 'currency' | 'purchase_date' | 'purchase_type'> & Partial<Pick<Receipt, 'kind' | 'bank_txn_id'>>)[],
   now: Date,
   isStudent: boolean,
 ): Subscription[] {
@@ -95,17 +97,16 @@ export function mySubscriptions(
     const types = new Set(sorted.map((r) => r.purchase_type).filter(Boolean) as string[]);
     if (!service && [...types].some((t) => NEVER_SUBSCRIPTION.has(t))) continue;
     const billed = !!service || [...types].some((t) => BILLED.has(t));
+    if (!billed) continue;
     // Charges of the latest amount (a price change keeps the newer price).
     const same = sorted.filter((r) => Math.abs(r.total! - last.total!) <= last.total! * 0.02);
     const gaps = same.slice(1).map((r, i) => days(same[i]!.purchase_date!, r.purchase_date!));
     const monthly = (g: number) => g >= 26 && g <= 35;
     const yearly = (g: number) => g >= 350 && g <= 380;
     let period: Period | null = null;
-    if (billed && same.length >= 2) {
+    if (same.length >= 2) {
       const gap = median(gaps);
       period = monthly(gap) ? 'monthly' : yearly(gap) ? 'yearly' : null;
-    } else if (!billed && same.length >= 3) {
-      period = gaps.every(monthly) ? 'monthly' : gaps.every(yearly) ? 'yearly' : null;
     } else if (service && last.purchase_type === 'subscription') {
       period = 'monthly'; // one charge from a known subscription service: monthly is how these bill by default
     }
@@ -116,7 +117,8 @@ export function mySubscriptions(
       sp && isStudent && last.currency === sp.currency && period === 'monthly' && last.total! > sp.studentMonthly + 0.5
         ? { ...sp, savesYearly: Math.round((last.total! - sp.studentMonthly) * 12 * 100) / 100 }
         : null;
-    out.push({ key, name: service?.name ?? last.merchant, amount: last.total!, currency: last.currency, period, yearly: yearlyCost, lastCharged: last.purchase_date!, charges: same.length, service: service ?? null, student });
+    const sources = [...new Set(same.map((r) => (r.bank_txn_id ? 'bank' : r.kind === 'card_alert' ? 'alert' : 'receipt') as Subscription['sources'][number]))];
+    out.push({ key, name: service?.name ?? last.merchant, amount: last.total!, currency: last.currency, period, yearly: yearlyCost, lastCharged: last.purchase_date!, charges: same.length, service: service ?? null, sources, student });
   }
   return out.sort((a, b) => b.yearly - a.yearly);
 }

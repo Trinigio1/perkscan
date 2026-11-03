@@ -9,7 +9,8 @@ import { CORS, json } from '../_shared/http.ts';
 // { "action": "status" }                        -> whether the last connect finished
 // { "action": "exchange", "public_token": "…" }  -> finish a connect made with the native SDK
 // { "action": "sync", "connection_id": "…" }     -> bring in new transactions now
-// { "action": "disconnect", "connection_id": "…" } -> stop access at the bank and forget the connection
+// { "action": "disconnect", "connection_id": "…", "remove_purchases": true } -> stop access at the bank and forget the connection
+//                                                   (and, if asked, the purchases it brought in that no email also described)
 // PerkScan only reads transactions; it can never move money.
 
 export interface BankDeps {
@@ -29,7 +30,7 @@ export function bankHandler(deps: BankDeps) {
     if (!deps.provider || !deps.key) return json({ error: 'Bank connection isn’t set up yet' }, 503);
     const { provider, key, db } = deps;
 
-    let body: { action?: string; public_token?: unknown; connection_id?: unknown } = {};
+    let body: { action?: string; public_token?: unknown; connection_id?: unknown; remove_purchases?: unknown } = {};
     try {
       body = await req.json();
     } catch {
@@ -76,9 +77,16 @@ export function bankHandler(deps: BankDeps) {
               console.error('bank remove failed', e instanceof Error ? e.message : e);
             }
           }
+          let removed = 0;
+          if (body.remove_purchases === true) {
+            const { count, error: dErr } = await db.from('receipts').delete({ count: 'exact' }).eq('bank_connection_id', id).is('source_message_id', null);
+            if (dErr) throw new Error(dErr.message);
+            removed = count ?? 0;
+            await db.from('receipts').update({ bank_txn_id: null, bank_connection_id: null }).eq('bank_connection_id', id);
+          }
           const { error } = await db.from('bank_connections').delete().eq('id', id);
           if (error) throw new Error(error.message);
-          return json({ disconnected: true });
+          return json({ disconnected: true, removed });
         }
         default:
           return json({ error: 'Unknown action' }, 400);

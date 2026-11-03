@@ -8,6 +8,7 @@ import { useDismissed } from '@/lib/suggestions';
 import { useMySubscriptions, usePayingTwice } from '@/lib/memberships';
 import { space, useColors } from '@/theme';
 
+const SOURCE = { bank: 'your bank connection', alert: 'card alerts (email or text)', receipt: 'emailed receipts' } as const;
 const day = (d: string) => new Date(`${d}T12:00:00Z`).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 
 /** What your receipts show you pay for regularly, what it costs a year, and where you could pay less. */
@@ -35,7 +36,7 @@ export default function Subscriptions() {
         <Empty
           icon="repeat"
           title="No subscriptions found yet"
-          body="PerkScan spots them from receipts: a subscription service or a bill charging the same amount every month or year (at least three times for anything it doesn’t know). Meals, flights and shopping never count."
+          body="PerkScan spots them from receipts: a subscription service, or a bill like a phone plan or gym, charging the same amount every month or year. Repeat purchases at stores and restaurants never count."
         />
       </Screen>
     );
@@ -64,6 +65,7 @@ export default function Subscriptions() {
                   <T variant="caption" muted>
                     {formatMoney(s.amount, { currency: s.currency, home })} a {s.period === 'monthly' ? 'month' : 'year'} · {s.charges} charge{s.charges === 1 ? '' : 's'} · last {day(s.lastCharged)}
                   </T>
+                  <T variant="caption" faint>From {s.sources.map((x) => SOURCE[x]).join(' and ')}</T>
                 </View>
                 <T variant="subheading" style={{ fontVariant: ['tabular-nums'] }}>{formatMoney(s.yearly, { currency: s.currency, home })}/yr</T>
               </Row>
