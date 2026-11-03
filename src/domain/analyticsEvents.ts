@@ -44,6 +44,8 @@ export const EVENTS = {
   // "This is wrong" on any item (kind and reason only).
   reported_wrong: { kind: ['subscription', 'move', 'perk', 'store_item', 'opportunity', 'other'], reason: ['not_mine', 'wrong_amount', 'does_not_apply', 'expired', 'other'] },
   money_move: { kind: ['phone_insurance', 'rental_waiver', 'protection_plan', 'trip_insurance', 'annual_fee', 'recall', 'rebate', 'points'], action: ['done', 'dismissed', 'open'] },
+  // Your stores: an item's offer or official page opened (kind only, never the store).
+  your_stores: { action: ['open'], kind: ['balance', 'card_credit', 'code', 'card_offer', 'deal', 'student', 'membership', 'price_adjust', 'program', 'best_card', 'card_app'] },
   share_opened: {},
   data_exported: {},
   account_deleted: {},

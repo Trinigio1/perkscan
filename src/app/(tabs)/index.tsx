@@ -8,6 +8,7 @@ import { NextUpCard } from '@/components/NextUp';
 import { OpportunityRow } from '@/components/OfferRow';
 import { MonthValueCard } from '@/components/MonthValue';
 import { MovesPanel } from '@/components/Moves';
+import { StoresPanel } from '@/components/Stores';
 import { PerksWorthPanel, usePerksWorth } from '@/components/PerksWorth';
 import { Chip, ErrorNote, Money, Panel, Row, Screen, SectionHeader, T, type IconName } from '@/components/ui';
 import { dealsWorth, discountSummary } from '@/domain/estimate';
@@ -35,6 +36,7 @@ const others = (bag: MoneyBag, shown: string) => {
 
 const EXPLORE: { icon: IconName; label: string; href: Href }[] = [
   { icon: 'flash', label: 'Money moves', href: '/moves' },
+  { icon: 'storefront-outline', label: 'Your stores', href: '/stores' },
   { icon: 'sparkles', label: 'What you’re missing', href: '/scan' },
   { icon: 'storefront', label: 'Before you pay', href: '/checkout' },
   { icon: 'search', label: 'Hidden money', href: '/hidden-money' },
@@ -204,6 +206,8 @@ export default function Home() {
       <NextUpCard />
       {/* Money moves: always here, so it's one tap away even when there's nothing to do. */}
       <MovesPanel />
+      {/* Your stores: where you spend most, and what you already have there. */}
+      <StoresPanel />
       {/* This month: new money for you, what you used, and what PerkScan found that you didn't know about. */}
       <MonthValueCard />
       {/* What your cards and memberships are worth a year, lounges and bags included. */}

@@ -58,7 +58,7 @@ const issuerWords = (s: string) => {
   return w.length === 1 && w[0] === 'amex' ? ['american', 'express'] : w;
 };
 /** A program's issuer ("Citi") matches a card's ("Citi") by whole words, so "Citi" isn't "First Citizens". */
-const issuerMatches = (program: string, card: string) => {
+export const issuerMatches = (program: string, card: string) => {
   const need = issuerWords(program);
   const have = new Set(issuerWords(card));
   return need.length > 0 && need.every((w) => have.has(w));

@@ -894,6 +894,252 @@
       "interests": [],
       "issuers": [],
       "student_only": false
+    },
+    {
+      "id": "bofa_bankamerideals",
+      "kind": "free_perk",
+      "name": "BankAmeriDeals",
+      "provider": "Bank of America",
+      "countries": [
+        "US"
+      ],
+      "summary": "Cash back offers at stores and restaurants for Bank of America card holders, on top of your card's own rewards. Most offers must be activated before you buy.",
+      "how_to": "In the Bank of America app or Online Banking, open Deals, activate the offer, then pay with your Bank of America card.",
+      "url": "https://www.bankofamerica.com/online-banking/mobile-and-online-banking-features/bankamerideals-cash-back-deals/",
+      "merchants": [],
+      "window_days": null,
+      "interests": [
+        "shopping"
+      ],
+      "issuers": [
+        "Bank of America"
+      ],
+      "student_only": false,
+      "status": "active",
+      "source_url": "https://www.bankofamerica.com/online-banking/mobile-and-online-banking-features/bankamerideals-cash-back-deals/",
+      "last_verified": "2026-11-03"
+    },
+    {
+      "id": "club_publix",
+      "kind": "free_perk",
+      "name": "Club Publix",
+      "provider": "Publix",
+      "countries": [
+        "US"
+      ],
+      "summary": "Free to join. Digital coupons you clip and redeem with your phone number, deals picked for you, and a free birthday treat (add your birthday at least 10 days before).",
+      "how_to": "Sign up at publix.com, clip coupons in the app, and enter your phone number at checkout.",
+      "url": "https://www.publix.com/publix-app/faqs/club-publix",
+      "merchants": [
+        "publix"
+      ],
+      "window_days": null,
+      "interests": [
+        "groceries"
+      ],
+      "issuers": [],
+      "student_only": false,
+      "status": "active",
+      "source_url": "https://www.publix.com/publix-app/faqs/club-publix",
+      "last_verified": "2026-11-03"
+    },
+    {
+      "id": "mywalgreens",
+      "kind": "free_perk",
+      "name": "myWalgreens",
+      "provider": "Walgreens",
+      "countries": [
+        "US"
+      ],
+      "summary": "Free to join. 1% back in Walgreens Cash on most purchases and 5% on Walgreens-brand products; rewards expire 12 months after they're earned.",
+      "how_to": "Join in the Walgreens app or at checkout with your phone number.",
+      "url": "https://www.walgreens.com/topic/promotion/mywalgreens.jsp",
+      "merchants": [
+        "walgreens"
+      ],
+      "window_days": null,
+      "interests": [
+        "beauty",
+        "shopping"
+      ],
+      "issuers": [],
+      "student_only": false,
+      "status": "active",
+      "source_url": "https://www.walgreens.com/topic/promotion/mywalgreens.jsp",
+      "last_verified": "2026-11-03"
+    },
+    {
+      "id": "mymcdonalds_rewards",
+      "kind": "free_perk",
+      "name": "MyMcDonald's Rewards",
+      "provider": "McDonald's",
+      "countries": [
+        "US"
+      ],
+      "summary": "Free in the McDonald's app: 100 points per $1 on eligible items, redeemable for free food. Points expire about six months after they're earned.",
+      "how_to": "Order in the app, or scan the app's code at the counter, kiosk or drive-thru.",
+      "url": "https://www.mcdonalds.com/us/en-us/mymcdonalds.html",
+      "merchants": [
+        "mcdonald's",
+        "mcdonalds"
+      ],
+      "window_days": null,
+      "interests": [
+        "dining"
+      ],
+      "issuers": [],
+      "student_only": false,
+      "status": "active",
+      "source_url": "https://www.mcdonalds.com/us/en-us/mymcdonalds.html",
+      "last_verified": "2026-11-03"
+    },
+    {
+      "id": "chick_fil_a_one",
+      "kind": "free_perk",
+      "name": "Chick-fil-A One",
+      "provider": "Chick-fil-A",
+      "countries": [
+        "US"
+      ],
+      "summary": "Free to join: 10 points per $1 on qualifying orders (more at higher tiers), rewards from 200 points, and reward points don't expire.",
+      "how_to": "Join in the Chick-fil-A app and scan it or order in the app.",
+      "url": "https://www.chick-fil-a.com/one",
+      "merchants": [
+        "chick-fil-a",
+        "chickfila",
+        "chick fil a"
+      ],
+      "window_days": null,
+      "interests": [
+        "dining"
+      ],
+      "issuers": [],
+      "student_only": false,
+      "status": "active",
+      "source_url": "https://www.chick-fil-a.com/customer-support/chick-fil-a-one-membership-program/creating-and-managing-your-account/what-is-chick-fil-a-one",
+      "last_verified": "2026-11-03"
+    },
+    {
+      "id": "taco_bell_rewards",
+      "kind": "free_perk",
+      "name": "Taco Bell Rewards",
+      "provider": "Taco Bell",
+      "countries": [
+        "US"
+      ],
+      "summary": "Free to join: a free item when you sign up (in the app, within 14 days), then 10 points per $1; 250 points gets a reward.",
+      "how_to": "Join in the Taco Bell app and order or check in with it.",
+      "url": "https://www.tacobell.com/rewards",
+      "merchants": [
+        "taco bell"
+      ],
+      "window_days": null,
+      "interests": [
+        "dining"
+      ],
+      "issuers": [],
+      "student_only": false,
+      "status": "active",
+      "source_url": "https://www.tacobell.com/rewards",
+      "last_verified": "2026-11-03"
+    },
+    {
+      "id": "kohls_rewards",
+      "kind": "free_perk",
+      "name": "Kohl's Rewards",
+      "provider": "Kohl's",
+      "countries": [
+        "US"
+      ],
+      "summary": "Free to join: 5% back on purchases, issued as Kohl's Cash in $5 amounts on the 1st of each month; each $5 is good for 30 days.",
+      "how_to": "Join at kohls.com or in the Kohl's app and give your phone number at checkout.",
+      "url": "https://www.kohls.com/feature/rewards.jsp",
+      "merchants": [
+        "kohl's",
+        "kohls"
+      ],
+      "window_days": null,
+      "interests": [
+        "fashion",
+        "home"
+      ],
+      "issuers": [],
+      "student_only": false,
+      "status": "active",
+      "source_url": "https://www.kohls.com/faq/article/2614",
+      "last_verified": "2026-11-03"
+    },
+    {
+      "id": "dominos_rewards",
+      "kind": "free_perk",
+      "name": "Domino's Rewards",
+      "provider": "Domino's",
+      "countries": [
+        "US"
+      ],
+      "summary": "Free for US residents 13+: 10 points for an order of $5 or more (one a day); 60 points gets a free medium 2-topping pizza.",
+      "how_to": "Create a Domino's profile, join Rewards, and order with the email or phone number on it.",
+      "url": "https://www.dominos.com/rewards",
+      "merchants": [
+        "domino's",
+        "dominos"
+      ],
+      "window_days": null,
+      "interests": [
+        "dining",
+        "delivery"
+      ],
+      "issuers": [],
+      "student_only": false,
+      "status": "active",
+      "source_url": "https://www.dominos.com/rewards",
+      "last_verified": "2026-11-03"
+    },
+    {
+      "id": "old_navy_price_adjustment",
+      "kind": "price_adjust",
+      "name": "Old Navy price adjustment",
+      "provider": "Old Navy",
+      "countries": [
+        "US"
+      ],
+      "summary": "If an item you bought goes on sale within 14 days of your order, you can ask once for the difference. Items bought with a promo code and Final Sale items usually don't qualify.",
+      "how_to": "Contact Old Navy customer service with your order; refunds go to your original payment method.",
+      "url": "https://oldnavy.gap.com/customerService/info.do?cid=83041",
+      "merchants": [
+        "old navy",
+        "oldnavy"
+      ],
+      "window_days": 14,
+      "interests": [],
+      "issuers": [],
+      "student_only": false,
+      "status": "active",
+      "source_url": "https://www.gap.com/customer-service/getting-a-price-adjustment?cid=1192378",
+      "last_verified": "2026-11-03"
+    },
+    {
+      "id": "home_depot_price_adjustment",
+      "kind": "price_adjust",
+      "name": "Home Depot price adjustment",
+      "provider": "The Home Depot",
+      "countries": [
+        "US"
+      ],
+      "summary": "If the price drops within 30 days of your purchase, you can ask for the difference (Home Depot's price or a competitor it matches). Marketplace and membership sites don't count.",
+      "how_to": "Call, chat, or go to a store's customer service with your receipt or order number.",
+      "url": "https://www.homedepot.com/c/price-match-and-price-check",
+      "merchants": [
+        "home depot",
+        "homedepot"
+      ],
+      "window_days": 30,
+      "interests": [],
+      "issuers": [],
+      "student_only": false,
+      "status": "active",
+      "source_url": "https://www.homedepot.com/c/price-match-and-price-check",
+      "last_verified": "2026-11-03"
     }
   ]
 }

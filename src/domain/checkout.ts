@@ -3,7 +3,7 @@
 // the kind of purchase, and currency. Earn rates (points / cash back) aren't in the
 // catalog yet, so they're never guessed.
 
-import { matchStore, storeKey } from './deals';
+import { domainStoreKey, matchStore, storeKey } from './deals';
 import { sameMerchant } from './merchant';
 import type { Program } from './programs';
 import { remainingValue } from './score';
@@ -201,7 +201,10 @@ export function checkoutStack(merchant: string, category: SpendCategory, d: Chec
   // Only a credit or a protection makes a card "best"; currency alone doesn't.
   const best = top && top.reasons.some((r) => r.kind !== 'currency') && (picks.length === 1 || top.score > picks[1]!.score) ? top : null;
 
-  const atStore = (o: Opportunity) => !!o.merchant && sameMerchant(o.merchant, merchant) && live(o, d.now);
+  // At this store: named for it, or (when the email didn't name a store) sent from its domain.
+  const key = storeKey(merchant);
+  const atStore = (o: Opportunity) =>
+    live(o, d.now) && (o.merchant ? sameMerchant(o.merchant, merchant) : !!o.sender_domain && key.length >= 3 && domainStoreKey(o.sender_domain) === key);
 
   // Memberships that belong to this store (Uber One at Uber Eats, DashPass at DoorDash): their verified perks.
   const memberships: CheckoutStack['memberships'] = [];
