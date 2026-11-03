@@ -35,6 +35,8 @@ export interface Move {
   url: string | null;
   /** Act by: the pickup date, the fee date, the expiry. */
   by: string | null;
+  /** Where this came from, in plain words: "Your Verizon bill from Oct 24". */
+  source: string;
   /** Points are marked used on the item itself (the usual "used" flow), not as a saving. */
   opportunityId?: string;
 }
@@ -121,6 +123,7 @@ export function phoneInsuranceMoves(receipts: ItemReceipt[], covers: Cover[], no
       confirmLabel: 'I dropped it',
       url: cover.benefit.source_url,
       by: null,
+      source: `Your ${f.merchant} bill from ${longDate(f.date)}, and your ${cover.label}’s terms`,
     } satisfies Move;
   });
 }
@@ -149,6 +152,7 @@ export function rentalWaiverMoves(receipts: ItemReceipt[], covers: Cover[], now:
         confirmLabel: 'I declined it',
         url: cover.benefit.source_url,
         by: r.travel_date!,
+        source: `Your ${r.merchant} booking${r.purchase_date ? ` from ${longDate(r.purchase_date)}` : ''}, and your ${cover.label}’s terms`,
       } satisfies Move;
     });
 }
@@ -182,6 +186,7 @@ export function protectionPlanMoves(receipts: ItemReceipt[], covers: Cover[], no
         confirmLabel: 'I cancelled it',
         url: cover.benefit.source_url,
         by: null,
+        source: `Your ${r.merchant} receipt from ${longDate(r.purchase_date!)}: “${line.name}”`,
       });
     });
   }
@@ -214,6 +219,7 @@ export function tripInsuranceMoves(receipts: ItemReceipt[], covers: Cover[], now
         confirmLabel: 'I cancelled it',
         url: covers[0]!.benefit.source_url,
         by: null,
+        source: `Your ${r.merchant} receipt from ${longDate(r.purchase_date!)}: “${line.name}”`,
       });
     });
   }
@@ -237,6 +243,7 @@ export function expiringPointsMoves(opportunities: Pick<Opportunity, 'id' | 'typ
       confirmLabel: 'I used them',
       url: null,
       by: o.expires_at!.slice(0, 10),
+      source: `An email${o.merchant ? ` from ${o.merchant}` : ''} with your points and their expiry date`,
       opportunityId: o.id,
     }));
 }
@@ -294,6 +301,7 @@ export function feeDayMoves(
       confirmLabel: 'Fee waived, offer or switch',
       url: null,
       by: due.toISOString().slice(0, 10),
+      source: `The open date you gave for this card (${longDate(uc.open_date)}) and its ${money(fee)} fee in PerkScan’s card list`,
     });
   }
   return out;
@@ -350,6 +358,7 @@ export function recallMoves(recalls: ProductRecall[], receipts: ItemReceipt[]): 
           confirmLabel: refund ? 'Got my refund' : 'Got it sorted',
           url: rc.url,
           by: null,
+          source: `The U.S. CPSC recall from ${longDate(rc.recall_date)}, matched to your ${r.merchant} receipt`,
         });
       }
     }
@@ -378,6 +387,7 @@ export function rebateMoves(receipts: ItemReceipt[], now: Date): Move[] {
       confirmLabel: 'Got a rebate',
       url: REBATE_FINDER,
       by: null,
+      source: `Your ${r.merchant} receipt${r.purchase_date ? ` from ${longDate(r.purchase_date)}` : ''}`,
     }));
 }
 

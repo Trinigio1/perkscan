@@ -63,6 +63,8 @@ export interface AppData {
   /** This year's receipts that took money off (membership savings, codes), with those lines. */
   /** Flight bookings from the last 12 months, for what lounge and bag perks were worth to you. */
   flights: { merchant: string; purchase_type: string | null; purchase_date: string | null; order_number: string | null }[];
+  /** What you said is wrong ("kind:key"): hidden for you everywhere. */
+  wrong: Set<string>;
   /** Money you kept by acting on money moves (confirmed by you). */
   savings: Saving[];
   /** Product recalls (CPSC) from the last 18 months, matched against your receipts on your phone. */
@@ -99,7 +101,7 @@ interface DataState {
 // Before the free-perks columns exist (database not updated yet), the catalog still loads without them.
 const OLD_PROGRAM_COLUMNS = 'id, kind, name, provider, countries, summary, how_to, url, merchants, window_days, status, last_verified, sort_order';
 
-const empty: AppData = { profile: null, cards: [], benefits: [], userCards: [], opportunities: [], recovered: [], usage: [], receipts: [], studentOffers: [], studentClaims: [], school: null, myPerks: [], programs: [], senderDomains: [], schoolHints: [], events: [], deals: [], dealFeedback: [], cardSightings: [], perkFeedback: [], perkSetup: [], flights: [], cardPurchases: [], savings: [], recalls: [], itemReceipts: [], discountReceipts: [], earnRates: [], cardRewards: [], memberEmails: [], storeMutes: [], scout: { sources: 0, lastChecked: null }, storeStats: [], storePairs: [] };
+const empty: AppData = { profile: null, cards: [], benefits: [], userCards: [], opportunities: [], recovered: [], usage: [], receipts: [], studentOffers: [], studentClaims: [], school: null, myPerks: [], programs: [], senderDomains: [], schoolHints: [], events: [], deals: [], dealFeedback: [], cardSightings: [], perkFeedback: [], perkSetup: [], flights: [], cardPurchases: [], wrong: new Set(), savings: [], recalls: [], itemReceipts: [], discountReceipts: [], earnRates: [], cardRewards: [], memberEmails: [], storeMutes: [], scout: { sources: 0, lastChecked: null }, storeStats: [], storePairs: [] };
 const DataContext = createContext<DataState>({ data: empty, loading: true, error: null, refresh: async () => ({ data: null, error: null }) });
 
 function must<T>(what: string, res: { data: T | null; error: { message: string; code?: string } | null }): T {
@@ -123,7 +125,7 @@ async function load(userId: string): Promise<AppData> {
   const since = new Date(Date.now() - 180 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
   const yearAgo = new Date(Date.now() - 365 * 24 * 60 * 60 * 1000).toISOString();
   const today = new Date().toISOString().slice(0, 10);
-  const [profile, cards, benefits, userCards, opportunities, recovered, usage, receipts, studentOffers, studentClaims, myPerks, programs, senders, events, dealFeedback, cardSightings, mutes, perkFeedback, perkSetup, discountReceipts, earnRates, cardRewards, flights, cardPurchases, savings, recalls, itemReceipts] = await Promise.all([
+  const [profile, cards, benefits, userCards, opportunities, recovered, usage, receipts, studentOffers, studentClaims, myPerks, programs, senders, events, dealFeedback, cardSightings, mutes, perkFeedback, perkSetup, discountReceipts, earnRates, cardRewards, flights, cardPurchases, savings, recalls, itemReceipts, wrongRows] = await Promise.all([
     supabase
       .from('profiles')
       .select('*')
@@ -169,7 +171,10 @@ async function load(userId: string): Promise<AppData> {
     supabase.from('savings').select('id, key, kind, title, amount, currency, per, started_on, ended_on').order('started_on', { ascending: false }),
     supabase.from('product_recalls').select('id, recall_date, title, url, products, manufacturers, remedies').gte('recall_date', new Date(Date.now() - 548 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10)).order('recall_date', { ascending: false }).limit(1500),
     supabase.from('receipts').select('id, merchant, total, currency, purchase_date, purchase_type, matched_user_card_id, travel_date, items').gte('purchase_date', yearAgo.slice(0, 10)).order('purchase_date', { ascending: false }).limit(600),
+    supabase.from('wrong_reports').select('kind, item_key'),
   ]);
+  // What you said is wrong. A perk your card doesn't have is hidden for you everywhere (lists, values, totals).
+  const wrong = new Set(((wrongRows.data ?? []) as { kind: string; item_key: string }[]).map((w) => `${w.kind}:${w.item_key}`));
 
   // numeric columns arrive as numbers from PostgREST; normalize defensively.
   const num = (v: unknown) => (v === null || v === undefined ? null : Number(v));
@@ -234,7 +239,7 @@ async function load(userId: string): Promise<AppData> {
   return {
     profile: prof,
     cards: must('cards', cards).map((c: Card) => ({ ...c, annual_fee: num(c.annual_fee) })),
-    benefits: must('card_benefits', benefits).map((b: CardBenefit) => ({ ...b, amount: num(b.amount), max_coverage: num(b.max_coverage), worth: num(b.worth) })),
+    benefits: must('card_benefits', benefits).map((b: CardBenefit) => ({ ...b, amount: num(b.amount), max_coverage: num(b.max_coverage), worth: num(b.worth) })).filter((b: CardBenefit) => !wrong.has(`perk:${b.id}`)),
     userCards: must('user_cards', userCards),
     opportunities: must('opportunities', opportunities).map(({ inbound_messages: msg, ...o }: Opportunity & { inbound_messages?: { from_domain: string | null; sent_at?: string | null } | null }) => ({
       ...o,
@@ -290,6 +295,7 @@ async function load(userId: string): Promise<AppData> {
     cardRewards: ((cardRewards.data ?? []) as CardReward[]).map((r) => ({ ...r, cents_per_unit: num(r.cents_per_unit) })),
     flights: (flights.data ?? []) as AppData['flights'],
     // Optional: before these tables exist, money moves just have less to go on.
+    wrong,
     savings: ((savings.data ?? []) as Saving[]).map((x) => ({ ...x, amount: Number(x.amount) })),
     recalls: (recalls.data ?? []) as ProductRecall[],
     itemReceipts: ((itemReceipts.data ?? []) as ItemReceipt[]).map((r) => ({

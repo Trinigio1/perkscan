@@ -67,7 +67,8 @@
     "schools:us": "tsx scripts/import-us-schools.ts",
     "perks:review": "tsx scripts/review-perks.ts",
     "catalog:review": "tsx scripts/review-catalog.ts",
-    "metrics:value": "tsx scripts/value-report.ts"
+    "metrics:value": "tsx scripts/value-report.ts",
+    "quality:report": "tsx scripts/quality-report.ts"
   },
   "private": true,
   "jest": {

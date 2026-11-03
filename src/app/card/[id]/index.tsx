@@ -7,6 +7,7 @@ import { CardDetailsForm } from '@/components/CardDetailsForm';
 import { ConfidenceTag } from '@/components/ConfidenceTag';
 import { Disclaimer } from '@/components/Disclaimer';
 import { MoveCard, useMoves } from '@/components/Moves';
+import { WrongButton } from '@/components/Wrong';
 import { Badge, Button, ErrorNote, IconBubble, Panel, Row, Screen, Segmented, T } from '@/components/ui';
 import { draftToRow, siblingCards, validateDraft, type CardDraft } from '@/domain/cardDraft';
 import { formatMoney, PERIOD_LABELS } from '@/domain/format';
@@ -57,6 +58,7 @@ function BenefitLine({ b, card }: { b: CardBenefit; card: Card }) {
         </Row>
         {b.terms_summary ? <T variant="caption" muted numberOfLines={2}>{b.terms_summary}</T> : null}
         {check.note ? <T variant="caption" faint>{check.note}</T> : null}
+        {b.type !== 'credit' ? <WrongButton kind="perk" itemKey={b.id} catalogRef={b.id} reasons={['not_mine', 'does_not_apply', 'expired']} /> : null}
       </View>
     </Row>
   );

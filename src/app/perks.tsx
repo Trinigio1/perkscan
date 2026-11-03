@@ -4,6 +4,7 @@ import { useMemo } from 'react';
 import { Linking, Pressable, View } from 'react-native';
 import { ConfidenceTag } from '@/components/ConfidenceTag';
 import { PerksWorthPanel } from '@/components/PerksWorth';
+import { WrongButton } from '@/components/Wrong';
 import { Badge, Button, Empty, IconBubble, Panel, Row, Screen, T } from '@/components/ui';
 import { merchantSite } from '@/domain/claimTarget';
 import { formatMoney } from '@/domain/format';
@@ -115,11 +116,11 @@ function PerkLineView({ b, cards }: { b: CardBenefit; cards: string[] }) {
       </Row>
       {worth && b.worth_basis ? <T variant="caption" faint>{b.worth_basis}</T> : null}
       {check.note ? <T variant="caption" faint>{check.note}</T> : null}
-      {use ? (
-        <View style={{ alignItems: 'flex-start', marginTop: 4 }}>
-          <Button title={use.label} icon="open-outline" size="sm" onPress={() => Linking.openURL(use.url)} />
-        </View>
-      ) : null}
+      <Row gap={space.sm} style={{ flexWrap: 'wrap', marginTop: 4, alignItems: 'center' }}>
+        {use ? <Button title={use.label} icon="open-outline" size="sm" onPress={() => Linking.openURL(use.url)} /> : null}
+        {/* "My card doesn't have this": hidden for you everywhere, and the catalog entry is flagged for review. */}
+        <WrongButton kind="perk" itemKey={b.id} catalogRef={b.id} reasons={['not_mine', 'does_not_apply', 'expired']} />
+      </Row>
     </View>
   );
 }

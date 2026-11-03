@@ -31,5 +31,8 @@ export function useMySubscriptions(): Subscription[] {
   const { data } = useData();
   const [dismissed] = useDismissed();
   const student = !!data.profile?.is_student || !!data.school;
-  return useMemo(() => mySubscriptions(data.receipts, new Date(), student).filter((x) => !dismissed.has(`notsub:${x.key}`)), [data.receipts, student, dismissed]);
+  return useMemo(
+    () => mySubscriptions(data.receipts, new Date(), student).filter((x) => !dismissed.has(`notsub:${x.key}`) && !data.wrong.has(`subscription:${x.key}`)),
+    [data.receipts, data.wrong, student, dismissed],
+  );
 }

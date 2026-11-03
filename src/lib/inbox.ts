@@ -133,3 +133,17 @@ export async function endSaving(key: string) {
   const { error } = await supabase.rpc('end_saving', { p_key: key });
   if (error) throw new Error(error.message);
 }
+
+export type WrongKind = 'subscription' | 'move' | 'perk' | 'store_item' | 'opportunity' | 'other';
+export type WrongReason = 'not_mine' | 'wrong_amount' | 'does_not_apply' | 'expired' | 'other';
+
+/** "This is wrong": hides it for you and tells the team (catalogRef: a card benefit, program or deal id). */
+export async function reportWrong(kind: WrongKind, key: string, reason: WrongReason, opts: { note?: string; catalogRef?: string } = {}) {
+  const { error } = await supabase.rpc('report_wrong', { p_kind: kind, p_key: key.slice(0, 200), p_reason: reason, p_note: opts.note ?? null, p_catalog_ref: opts.catalogRef ?? null });
+  if (error) throw new Error(error.message);
+}
+
+export async function undoWrong(kind: WrongKind, key: string) {
+  const { error } = await supabase.rpc('undo_wrong', { p_kind: kind, p_key: key.slice(0, 200) });
+  if (error) throw new Error(error.message);
+}

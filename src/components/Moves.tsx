@@ -10,6 +10,7 @@ import { useDismissed } from '@/lib/suggestions';
 import { useToast } from '@/lib/toast';
 import { space, useColors } from '@/theme';
 import { Button, Field, IconBubble, Panel, Row, T, type IconName } from './ui';
+import { WrongButton } from './Wrong';
 
 const ICON: Record<MoveKind, { icon: IconName; tone: 'blue' | 'teal' | 'purple' | 'green' | 'orange' | 'gray' }> = {
   phone_insurance: { icon: 'phone-portrait', tone: 'blue' },
@@ -28,7 +29,11 @@ export function useMoves(): Move[] {
   const [dismissed, , loaded] = useDismissed();
   return useMemo(() => {
     if (!loaded) return [];
-    const done = new Set([...data.savings.map((s) => s.key), ...[...dismissed].filter((k) => k.startsWith('move:')).map((k) => k.slice(5))]);
+    const done = new Set([
+      ...data.savings.map((s) => s.key),
+      ...[...dismissed].filter((k) => k.startsWith('move:')).map((k) => k.slice(5)),
+      ...[...data.wrong].filter((k) => k.startsWith('move:')).map((k) => k.slice(5)),
+    ]);
     return moneyMoves(
       { userCards: data.userCards, cards: data.cards, benefits: data.benefits, opportunities: data.opportunities, recovered: data.recovered, receipts: data.itemReceipts, recalls: data.recalls, done },
       new Date(),
@@ -76,6 +81,7 @@ export function MoveCard({ move, compact = false }: { move: Move; compact?: bool
           <T variant="caption" muted numberOfLines={compact ? 2 : 4}>{move.why}</T>
         </View>
       </Row>
+      {compact ? null : <T variant="caption" faint>From: {move.source}</T>}
       {compact ? null : (
         <View style={{ gap: 4 }}>
           {move.steps.map((s, i) => (
@@ -130,6 +136,7 @@ export function MoveCard({ move, compact = false }: { move: Move; compact?: bool
           )}
         </Row>
       )}
+      {!compact && !asking ? <WrongButton kind="move" itemKey={move.key} reasons={['does_not_apply', 'not_mine', 'wrong_amount', 'expired']} /> : null}
     </Panel>
   );
 }

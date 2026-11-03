@@ -2,9 +2,9 @@ import { router } from 'expo-router';
 import { useMemo } from 'react';
 import { Linking, View } from 'react-native';
 import { Badge, Button, Empty, IconBubble, Panel, Row, Screen, T } from '@/components/ui';
+import { WrongButton } from '@/components/Wrong';
 import { addToBag, formatBag, formatMoney, getHomeCurrency, type MoneyBag } from '@/domain/format';
 import { useData } from '@/lib/data';
-import { useDismissed } from '@/lib/suggestions';
 import { useMySubscriptions, usePayingTwice } from '@/lib/memberships';
 import { space, useColors } from '@/theme';
 
@@ -17,7 +17,6 @@ export default function Subscriptions() {
   const subs = useMySubscriptions();
   const twice = usePayingTwice();
   const { data } = useData();
-  const [, dismiss] = useDismissed();
   // Each currency on its own, your home currency first: TT$ and US$ are never added together.
   const home = data.profile?.home_currency?.trim() || getHomeCurrency();
   const { yearly, saves } = useMemo(() => {
@@ -82,9 +81,9 @@ export default function Subscriptions() {
                   <Badge tone="warn" icon="copy" label={`Also included with your ${covered.covers[0]!.by}`} />
                 </View>
               ) : null}
-              {/* Wrong? One tap and it's gone from here and from every total that uses it. */}
+              {/* Wrong? It's gone from here and every total that uses it, and the team sees why. */}
               <View style={{ marginLeft: 36 + space.md, alignItems: 'flex-start' }}>
-                <Button title="Not a subscription" size="sm" kind="ghost" icon="close-circle-outline" onPress={() => dismiss(`notsub:${s.key}`)} />
+                <WrongButton kind="subscription" itemKey={s.key} reasons={['does_not_apply', 'not_mine', 'wrong_amount']} label="Not a subscription?" />
               </View>
             </View>
           );

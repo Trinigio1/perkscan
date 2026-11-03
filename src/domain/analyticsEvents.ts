@@ -41,6 +41,8 @@ export const EVENTS = {
   // "Did you already know about this?" on money you got back: PerkScan found it, or you already knew.
   knew_before: { answer: ['found', 'knew'] },
   // Money moves: done (with an amount), dismissed, or its official page opened.
+  // "This is wrong" on any item (kind and reason only).
+  reported_wrong: { kind: ['subscription', 'move', 'perk', 'store_item', 'opportunity', 'other'], reason: ['not_mine', 'wrong_amount', 'does_not_apply', 'expired', 'other'] },
   money_move: { kind: ['phone_insurance', 'rental_waiver', 'protection_plan', 'trip_insurance', 'annual_fee', 'recall', 'rebate', 'points'], action: ['done', 'dismissed', 'open'] },
   share_opened: {},
   data_exported: {},
