@@ -76,7 +76,8 @@ export function coversFor(
   for (const uc of userCards) {
     const card = cards.find((c) => c.id === uc.card_id);
     if (!card || card.kind === 'membership') continue;
-    const b = benefits.find((x) => x.card_id === card.id && x.status === 'active' && kinds.includes(key(x)));
+    // The most relevant cover first: kinds are listed in order of preference.
+    const b = kinds.map((k) => benefits.find((x) => x.card_id === card.id && x.status === 'active' && key(x) === k)).find(Boolean);
     if (!b) continue;
     out.push({ userCardId: uc.id, label: uc.nickname || `${shortCardName(card.product_name)}${uc.last_four ? ` ·· ${uc.last_four}` : ''}`, benefit: b });
   }
@@ -358,10 +359,13 @@ export function recallMoves(recalls: ProductRecall[], receipts: ItemReceipt[]): 
 
 export const REBATE_FINDER = 'https://www.energystar.gov/rebate-finder';
 
-/** 5b. A new appliance: utilities and makers often pay rebates for efficient ones. */
+/** Kinds of appliance ENERGY STAR certifies (and that rebates are commonly offered for). */
+const ENERGY_STAR = /refrigerator|fridge|freezer|dishwasher|washer|washing machine|dryer|air conditioner|\bac unit\b|heat pump|water heater|dehumidifier|air purifier|thermostat/i;
+
+/** 5b. A new appliance of a kind ENERGY STAR certifies: utilities and makers often pay rebates for efficient ones. */
 export function rebateMoves(receipts: ItemReceipt[], now: Date): Move[] {
   return receipts
-    .filter((r) => r.purchase_type === 'appliance' && r.purchase_date && daysBetween(now, r.purchase_date) >= -120)
+    .filter((r) => r.purchase_date && daysBetween(now, r.purchase_date) >= -120 && r.items.some((i) => ENERGY_STAR.test(i.name)))
     .map((r) => ({
       key: `rebate:${r.id}`,
       kind: 'rebate',

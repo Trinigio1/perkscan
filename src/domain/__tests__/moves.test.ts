@@ -105,8 +105,22 @@ describe('recalls and rebates', () => {
       ['recall:R1:b', 39, 'Got my refund'],
     ]);
   });
-  it('suggests a rebate check for a new appliance', () => {
-    expect(rebateMoves([r('fridge', { purchase_type: 'appliance', merchant: 'Lowe’s' }), r('old', { purchase_type: 'appliance', purchase_date: '2026-01-01' })], now).map((x) => x.key)).toEqual(['rebate:fridge']);
+  it('suggests a rebate check only for appliances ENERGY STAR certifies', () => {
+    expect(
+      rebateMoves(
+        [
+          r('fridge', { purchase_type: 'appliance', merchant: 'Lowe’s', items: [{ name: 'Whirlpool refrigerator WRF555', price: 1299 }] }),
+          r('vacuum', { purchase_type: 'appliance', merchant: 'Target', items: [{ name: 'Dyson V8 vacuum', price: 399.99 }] }),
+          r('none', { purchase_type: 'appliance', items: [] }),
+          r('old', { purchase_type: 'appliance', purchase_date: '2026-01-01', items: [{ name: 'Dishwasher', price: 600 }] }),
+        ],
+        now,
+      ).map((x) => x.key),
+    ).toEqual(['rebate:fridge']);
+  });
+  it('uses the most relevant cover: extended warranty before purchase protection', () => {
+    const both = [...benefits, b('csp__purchase_protection', 'csp', 'Purchase protection')].sort((x, y) => (x.id < y.id ? -1 : 1));
+    expect(coversFor(['extended_warranty', 'purchase_protection'], userCards, cards, both).map((c) => c.benefit.name)).toEqual(['Extended warranty']);
   });
 });
 

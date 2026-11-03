@@ -7,7 +7,8 @@ All six are built on what PerkScan already knows (cards, memberships, receipts w
 
 ## Where people see it
 
-- **Money moves screen** (`/moves`, Explore → "Money moves"): every move with why (in the card's own terms), numbered steps, a link (card terms, recall page, rebate finder), a confirm button ("I dropped it", "I declined it", "I cancelled it"…) that asks for the amount, and "Not for me". Below it, **What you've kept**, with "Stopped?" for savings that repeat.
+- **Home: a Money moves card**, always shown near the top. It lists how many moves are waiting, the money at stake, and the top two, or a calm "nothing to do right now". Tapping it opens the screen.
+- **Money moves screen** (`/moves`, also Explore → "Money moves"): every move with why (in the card's own terms), numbered steps, a link (card terms, recall page, rebate finder), a confirm button ("I dropped it", "I declined it", "I cancelled it"…) that asks for the amount, and "Not for me". Below it, **What you've kept**, with "Stopped?" for savings that repeat.
 - **Next up** on Home shows the most pressing move.
 - **Before you pay** (feature 3) and the **card screen** (feature 4) show theirs in place.
 - **Found by PerkScan** (the This-month card on Home, the recap, and `npm run metrics:value`) counts confirmed savings:
@@ -64,7 +65,7 @@ Confirming records what the user kept (a waived fee, a credit, or a switch). Car
   - deliberately cautious, so a vague "space heater" never matches.
 
   The move shows the recall page and the maker's remedy. For a refund, the receipt price is pre-filled.
-- **Rebates:** an appliance bought in the last 120 days links to ENERGY STAR's Rebate Finder. No amount until the user confirms one.
+- **Rebates:** an appliance of a kind ENERGY STAR certifies, bought in the last 120 days, links to ENERGY STAR's Rebate Finder. Kinds covered: fridge, freezer, dishwasher, washer, dryer, AC, heat pump, water heater, dehumidifier, air purifier, thermostat. They're read from the receipt lines, so a vacuum never triggers it. No amount until the user confirms one.
 
 ### 6. Money you qualify for (`seed/programs.json`)
 

@@ -1,6 +1,6 @@
 import { router } from 'expo-router';
 import { useMemo, useState } from 'react';
-import { Linking, Pressable, View } from 'react-native';
+import { Linking, View } from 'react-native';
 import { formatMoney } from '@/domain/format';
 import { moneyMoves, type Move, type MoveKind } from '@/domain/moves';
 import { track } from '@/lib/analytics';
@@ -134,14 +134,35 @@ export function MoveCard({ move, compact = false }: { move: Move; compact?: bool
   );
 }
 
-/** Home's Explore shortcut and the count of moves waiting. */
-export function MovesLink() {
+/**
+ * Home: always there, so Money moves is one tap away. How many moves are waiting, the money at stake
+ * where PerkScan knows it, and the top two; or a calm line when there's nothing to do.
+ */
+export function MovesPanel() {
   const c = useColors();
   const moves = useMoves();
-  if (!moves.length) return null;
+  const stake: Record<string, number> = {};
+  for (const m of moves) if (m.amount) stake[m.currency] = (stake[m.currency] ?? 0) + m.amount * (m.per === 'month' ? 12 : 1);
+  const stakeText = Object.entries(stake).map(([cur, n]) => formatMoney(n, { currency: cur })).join(' + ');
   return (
-    <Pressable onPress={() => router.push('/moves')} accessibilityRole="button" hitSlop={6}>
-      <T variant="label" color={c.accent}>{moves.length} money move{moves.length === 1 ? '' : 's'} ›</T>
-    </Pressable>
+    <Panel onPress={() => router.push('/moves')} style={{ gap: space.sm }}>
+      <Row gap={space.sm}>
+        <IconBubble icon="flash" tone="green" size={32} />
+        <T variant="label" color={c.accentStrong} style={{ flex: 1 }}>Money moves</T>
+        <T variant="label" color={c.accent}>{moves.length ? `${moves.length} ›` : '›'}</T>
+      </Row>
+      {moves.length ? (
+        <>
+          <T variant="subheading">
+            {moves.length} thing{moves.length === 1 ? '' : 's'} to do{stakeText ? ` · ${stakeText} at stake this year` : ''}
+          </T>
+          {moves.slice(0, 2).map((m) => (
+            <T key={m.key} variant="caption" muted numberOfLines={1}>• {m.title}</T>
+          ))}
+        </>
+      ) : (
+        <T variant="caption" muted>Nothing to do right now. PerkScan checks your bills, trips, purchases and cards and adds moves here when there’s money to keep.</T>
+      )}
+    </Panel>
   );
 }
