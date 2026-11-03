@@ -1,7 +1,7 @@
 import { confidenceOf, type BenefitStatusOf } from './confidence';
 import { addToBag, type MoneyBag } from './format';
 import { KIND_LABELS, kindOf, type MoneyKind } from './money';
-import type { Opportunity, Recovered } from './types';
+import type { Opportunity, Recovered, Saving } from './types';
 
 // Proof, month by month: what PerkScan put in front of you, what you used, and how much of that you
 // didn't know about before PerkScan (your own answer: nothing is assumed). Pure, so it's tested.
@@ -32,6 +32,9 @@ export interface MonthValue {
   knewCount: number;
   /** Used, not answered yet. */
   unanswered: number;
+  /** Money you kept by acting on a money move this month (confirmed by you); part of found. */
+  saved: MoneyBag;
+  savedCount: number;
   /** What PerkScan found ÷ the plan's monthly price (its currency only), or null when nothing was found. */
   paidFor: number | null;
 }
@@ -45,8 +48,17 @@ const within = (iso: string | null | undefined, from: Date, to: Date) => {
 /** When an item became usable: a credit when its period starts, anything else when PerkScan found it. */
 export const becameUsable = (o: Pick<Opportunity, 'type' | 'period_start' | 'created_at'>) => (o.type === 'card_credit' && o.period_start ? o.period_start : o.created_at ?? null);
 
-export function monthValue(opportunities: Opportunity[], recovered: Recovered[], from: Date, to: Date, statusOf?: BenefitStatusOf): MonthValue {
-  const out: MonthValue = { newValue: {}, newCount: 0, newBySource: [], used: {}, usedCount: 0, found: {}, foundCount: 0, knew: {}, knewCount: 0, unanswered: 0, paidFor: null };
+/** Whether a confirmed saving counts in a month: one-offs once, monthly ones every month they run, yearly ones in their month. */
+export function savingInMonth(s: Pick<Saving, 'per' | 'started_on' | 'ended_on'>, from: Date, to: Date): boolean {
+  const start = new Date(`${s.started_on.slice(0, 10)}T12:00:00`);
+  const end = s.ended_on ? new Date(`${s.ended_on.slice(0, 10)}T12:00:00`) : null;
+  if (s.per === 'once') return start >= from && start < to;
+  if (start >= to || (end && end < from)) return false;
+  return s.per === 'month' || start.getMonth() === from.getMonth();
+}
+
+export function monthValue(opportunities: Opportunity[], recovered: Recovered[], from: Date, to: Date, statusOf?: BenefitStatusOf, savings: Saving[] = []): MonthValue {
+  const out: MonthValue = { newValue: {}, newCount: 0, newBySource: [], used: {}, usedCount: 0, found: {}, foundCount: 0, knew: {}, knewCount: 0, unanswered: 0, saved: {}, savedCount: 0, paidFor: null };
   const sources = new Map<MoneyKind, SourceTotal>();
   for (const o of opportunities) {
     if (!(o.value_estimate && o.value_estimate > 0) || o.status === 'dismissed') continue;
@@ -75,6 +87,14 @@ export function monthValue(opportunities: Opportunity[], recovered: Recovered[],
     } else if (r.knew_before === null) {
       out.unanswered += 1;
     }
+  }
+  // Money moves you acted on: PerkScan pointed them out, so they're found, and kept money counts as used.
+  for (const sv of savings) {
+    if (!(sv.amount > 0) || !savingInMonth(sv, from, to)) continue;
+    addToBag(out.saved, sv.currency, sv.amount);
+    addToBag(out.found, sv.currency, sv.amount);
+    addToBag(out.used, sv.currency, sv.amount);
+    out.savedCount += 1;
   }
   const foundInPlan = out.found[PLAN.currency] ?? 0;
   out.paidFor = foundInPlan > 0 ? Math.round((foundInPlan / PLAN.monthly) * 10) / 10 : null;

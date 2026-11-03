@@ -17,6 +17,7 @@ import { space, useColors } from '@/theme';
 import { ArrivalCheck, UsedCheck } from './Claims';
 import { Found, NextStep } from './FirstRun';
 import { KnewCheck } from './MonthValue';
+import { MoveCard, useMoves } from './Moves';
 import { TurnOnPanel } from './PaidFor';
 import { MembershipNudge, PayingTwicePanel } from './PayingTwice';
 import { SpottedCardPanel, useSpottedCards } from './SpottedCards';
@@ -40,6 +41,7 @@ export function useNextUp(): NextUpItem[] {
   const hints = useMembershipHints();
   const subs = useMySubscriptions();
   const toTurnOn = allSetup(usePaidFor());
+  const moves = useMoves();
   const statusOf = useCallback((id: string) => data.benefits.find((b) => b.id === id)?.status, [data.benefits]);
 
   return useMemo(() => {
@@ -54,6 +56,9 @@ export function useNextUp(): NextUpItem[] {
     // Money that came back: did you know about it before PerkScan? (The honest measure of what it found.)
     const knew = knewQuestions(data.recovered, data.opportunities, now)[0];
     if (knew) items.push({ key: `knew:${knew.recovered.id}`, node: <KnewCheck q={knew} /> });
+    // The most pressing money move: a pickup this week, a fee coming up, insurance you already have.
+    const move = moves[0];
+    if (move) items.push({ key: `move:${move.key}`, node: <MoveCard move={move} compact /> });
     // 2. Setup still to finish.
     const step = nextStep(setupSteps(data));
     if (step) items.push({ key: 'step', node: <NextStep step={step} /> });
@@ -84,7 +89,7 @@ export function useNextUp(): NextUpItem[] {
     const nudgeKey = `memberships:${hints[0]?.membershipId ?? 'general'}`;
     if (data.profile?.onboarded_at && (hints.length > 0 || !hasMembership) && !dismissed.has(nudgeKey)) items.push({ key: 'membership', node: <MembershipNudge onHide={() => dismiss(nudgeKey)} /> });
     return items;
-  }, [c, data, loaded, dismissed, dismiss, spotted, twice, hints, subs, toTurnOn, statusOf]);
+  }, [c, data, loaded, dismissed, dismiss, spotted, twice, hints, subs, toTurnOn, statusOf, moves]);
 }
 
 /** Home: the most important thing to do, and how many more are waiting. */

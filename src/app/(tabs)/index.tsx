@@ -33,6 +33,7 @@ const others = (bag: MoneyBag, shown: string) => {
 };
 
 const EXPLORE: { icon: IconName; label: string; href: Href }[] = [
+  { icon: 'flash', label: 'Money moves', href: '/moves' },
   { icon: 'sparkles', label: 'What you’re missing', href: '/scan' },
   { icon: 'storefront', label: 'Before you pay', href: '/checkout' },
   { icon: 'search', label: 'Hidden money', href: '/hidden-money' },

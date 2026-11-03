@@ -7,7 +7,8 @@ import { matchStore, storeKey } from './deals';
 import { sameMerchant } from './merchant';
 import type { Program } from './programs';
 import { remainingValue } from './score';
-import type { Card, CardBenefit, Opportunity, Receipt, UserCard } from './types';
+import { shortCardName } from './format';
+import type { Card, CardBenefit, Opportunity, Receipt, StudentOffer, UserCard } from './types';
 
 export type SpendCategory =
   | 'delivery_rides' | 'dining' | 'groceries' | 'gas' | 'drugstores' | 'travel' | 'car_rental'
@@ -228,4 +229,65 @@ export function checkoutStack(merchant: string, category: SpendCategory, d: Chec
     promos: d.opportunities.filter((o) => o.type === 'promo' && atStore(o)),
     storeCredit: d.opportunities.filter((o) => (o.type === 'gift_card' || o.type === 'store_credit' || o.type === 'travel_credit') && atStore(o)),
   };
+}
+
+// ---------------------------------------------------------------------------
+// The stack: everything that works at this store, in the order to use it, with the money you're sure of.
+// ---------------------------------------------------------------------------
+
+/** Card companies' own domains: a "spend $50, get $10" email from them is a card offer to activate. */
+export const ISSUER_DOMAINS = /(^|\.)(americanexpress\.com|aexp\.com|chase\.com|bankofamerica\.com|capitalone\.com|citi\.com|citibank\.com|wellsfargo\.com|discover\.com|usbank\.com|barclaycardus\.com|synchronybank\.com)$/i;
+
+export interface StackStep {
+  kind: 'balance' | 'code' | 'card_offer' | 'student' | 'membership' | 'skip_plan' | 'pay';
+  text: string;
+  /** A stated amount off or a balance; null when it's a percent or a perk. */
+  amount: number | null;
+  currency: string | null;
+}
+
+export interface StackPlanInput {
+  studentOffers?: Pick<StudentOffer, 'id' | 'provider' | 'name' | 'summary'>[];
+  /** "Pay with your Amex Gold ·· 4242: 4x points here", from the earn pick, if any. */
+  payLine?: string | null;
+  /** A card of yours that extends warranties, for electronics and appliances. */
+  warranty?: { cardLabel: string; terms: string | null } | null;
+  money: (amount: number, currency: string) => string;
+}
+
+/** The order to use what you have here: balances first, then the best code, card offers, student and membership prices, then the card. */
+export function stackPlan(merchant: string, stack: CheckoutStack, d: StackPlanInput): { steps: StackStep[]; sure: Record<string, number> } {
+  const steps: StackStep[] = [];
+  const sure: Record<string, number> = {};
+  const add = (cur: string | null, n: number | null) => {
+    if (cur && n && n > 0) sure[cur] = Math.round(((sure[cur] ?? 0) + n) * 100) / 100;
+  };
+  for (const o of stack.storeCredit) {
+    steps.push({ kind: 'balance', text: `Use your ${o.title}${o.code ? ` (${o.code})` : ''}`, amount: o.value_estimate, currency: o.currency });
+    add(o.currency, o.value_estimate);
+  }
+  const cardOffers = stack.promos.filter((o) => o.sender_domain && ISSUER_DOMAINS.test(o.sender_domain));
+  const codes = stack.promos.filter((o) => !cardOffers.includes(o));
+  // Codes usually don't combine: the one worth the most, or the first with a percent.
+  const best = [...codes].sort((a, b) => (b.value_estimate ?? 0) - (a.value_estimate ?? 0) || (b.percent_off ?? 0) - (a.percent_off ?? 0))[0];
+  if (best) {
+    steps.push({ kind: 'code', text: `${best.code ? `Enter code ${best.code}: ` : ''}${best.title}${codes.length > 1 ? ` (best of ${codes.length}; codes rarely combine)` : ''}`, amount: best.value_estimate, currency: best.currency });
+    add(best.currency, best.value_estimate);
+  }
+  for (const o of cardOffers) {
+    steps.push({ kind: 'card_offer', text: `Card offer: ${o.title}. Activate it in your bank’s app first, then pay with that card.`, amount: o.value_estimate, currency: o.currency });
+    add(o.currency, o.value_estimate);
+  }
+  for (const s of (d.studentOffers ?? []).filter((x) => sameMerchant(x.provider, merchant)).slice(0, 2)) {
+    steps.push({ kind: 'student', text: `Student price: ${s.name}. ${s.summary}`, amount: null, currency: null });
+  }
+  for (const m of stack.memberships) {
+    steps.push({ kind: 'membership', text: `${m.name}: ${m.perks.map((p) => p.name).slice(0, 2).join(', ')}`, amount: null, currency: null });
+  }
+  if (d.warranty && stack.category === 'electronics') {
+    steps.push({ kind: 'skip_plan', text: `Skip the store’s protection plan if you pay with your ${d.warranty.cardLabel}: it extends the warranty${d.warranty.terms ? ` (${d.warranty.terms})` : ''}. Compare first: store plans can cover accidents.`, amount: null, currency: null });
+  }
+  if (d.payLine) steps.push({ kind: 'pay', text: d.payLine, amount: null, currency: null });
+  else if (stack.best) steps.push({ kind: 'pay', text: `Pay with your ${shortCardName(stack.best.card.product_name)}: ${stack.best.reasons.filter((r) => r.kind !== 'currency').map((r) => r.text).slice(0, 2).join('; ')}`, amount: null, currency: null });
+  return { steps, sure };
 }

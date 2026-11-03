@@ -23,8 +23,8 @@ export function useMonthValue(offset = 0): MonthValue & { from: Date; to: Date; 
     const from = new Date(now.getFullYear(), now.getMonth() + offset, 1);
     const to = new Date(from.getFullYear(), from.getMonth() + 1, 1);
     const home = data.profile?.home_currency?.trim() || getHomeCurrency();
-    return { ...monthValue(data.opportunities, data.recovered, from, to, statusOf), from, to, home, plan: data.profile?.plan ?? 'free' };
-  }, [data.opportunities, data.recovered, data.profile, offset, statusOf]);
+    return { ...monthValue(data.opportunities, data.recovered, from, to, statusOf, data.savings), from, to, home, plan: data.profile?.plan ?? 'free' };
+  }, [data.opportunities, data.recovered, data.savings, data.profile, offset, statusOf]);
 }
 
 /** Home: "November so far" — new money PerkScan put in front of you, what you used, and what it found. */

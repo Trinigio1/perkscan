@@ -204,6 +204,20 @@ export interface Recovered {
   knew_before?: boolean | null;
 }
 
+/** Money PerkScan helped you keep that you confirmed yourself (dropped phone insurance, a declined waiver). */
+export interface Saving {
+  id: string;
+  key: string;
+  kind: 'phone_insurance' | 'rental_waiver' | 'protection_plan' | 'trip_insurance' | 'annual_fee' | 'recall' | 'rebate' | 'other';
+  title: string;
+  amount: number;
+  currency: string;
+  /** once, or saved again every month / year until ended_on. */
+  per: 'once' | 'month' | 'year';
+  started_on: string;
+  ended_on: string | null;
+}
+
 export interface BenefitUsage {
   id: string;
   user_card_id: string;

@@ -852,6 +852,48 @@
       "status": "active",
       "source_url": "https://www.irs.gov/newsroom/use-irs-free-file-to-conveniently-file-your-return-at-no-cost",
       "last_verified": "2026-10-25"
+    },
+    {
+      "id": "us_aotc",
+      "kind": "unclaimed",
+      "name": "American Opportunity Tax Credit",
+      "provider": "IRS",
+      "countries": [
+        "US"
+      ],
+      "summary": "Up to $2,500 a year per eligible student for tuition, fees and course materials in the first four years of college; up to $1,000 of it can come back as a refund even with no tax owed. Income limits apply, and only one person (you or a parent who claims you) can claim it.",
+      "how_to": "Your school sends Form 1098-T. Claim it on Form 8863 with your tax return (or make sure the parent who claims you does). Check the IRS page for who qualifies.",
+      "url": "https://www.irs.gov/credits-deductions/individuals/aotc",
+      "merchants": [],
+      "window_days": null,
+      "status": "active",
+      "source_url": "https://www.irs.gov/credits-deductions/individuals/aotc",
+      "last_verified": "2026-11-03",
+      "interests": [
+        "education"
+      ],
+      "issuers": [],
+      "student_only": true
+    },
+    {
+      "id": "us_lifeline",
+      "kind": "unclaimed",
+      "name": "Lifeline phone or internet discount",
+      "provider": "FCC",
+      "countries": [
+        "US"
+      ],
+      "summary": "A federal discount of up to $9.25 a month on a phone or internet plan (more on Tribal lands) for households on SNAP, Medicaid, SSI, federal housing aid or a Veterans Pension, or with income at or below 135% of the federal poverty guidelines.",
+      "how_to": "Check eligibility and apply through the National Verifier at lifelinesupport.org, then pick a participating phone or internet company.",
+      "url": "https://www.lifelinesupport.org/",
+      "merchants": [],
+      "window_days": null,
+      "status": "active",
+      "source_url": "https://www.fcc.gov/lifeline-consumers",
+      "last_verified": "2026-11-03",
+      "interests": [],
+      "issuers": [],
+      "student_only": false
     }
   ]
 }

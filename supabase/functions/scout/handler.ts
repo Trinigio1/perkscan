@@ -3,6 +3,7 @@ import { json } from '../_shared/http.ts';
 import type { ModelCall } from '../_shared/inbox/parse.ts';
 import { runCardCheck, type CardCheckReport } from '../_shared/cardcheck/run.ts';
 import { runPerkScout, type PerkScoutReport } from '../_shared/perkscout/run.ts';
+import { runRecallFetch } from '../_shared/recalls/cpsc.ts';
 import { runPriceWatch, type PriceWatchReport } from '../_shared/pricewatch/run.ts';
 import { discoverStores, type DiscoverReport } from '../_shared/scout/discover.ts';
 import { runScout, type ScoutOptions } from '../_shared/scout/run.ts';
@@ -85,8 +86,17 @@ export function scoutHandler(deps: ScoutDeps) {
         console.error('card check failed', e);
       }
     }
+    // Product recalls (CPSC), once a day: matched against receipts on each person's phone.
+    let recalls: unknown = null;
+    if (!only) {
+      try {
+        recalls = await runRecallFetch(deps.db, { fetch: deps.options.fetch });
+      } catch (e) {
+        console.error('recall fetch failed', e);
+      }
+    }
     try {
-      return json({ discovered, prices, perks, cards, sources: await runScout(deps.db, deps.model, { ...deps.options, only }) });
+      return json({ discovered, prices, perks, cards, recalls, sources: await runScout(deps.db, deps.model, { ...deps.options, only }) });
     } catch (e) {
       console.error('scout failed', e);
       return json({ error: 'Scout run failed' }, 500);

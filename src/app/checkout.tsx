@@ -6,7 +6,8 @@ import { CardArt } from '@/components/CardArt';
 import { Disclaimer } from '@/components/Disclaimer';
 import { OfferRow } from '@/components/OfferRow';
 import { Button, Chip, Empty, Panel, Row, Screen, T } from '@/components/ui';
-import { checkoutStack, guessCategory, knownMerchants, SPEND_LABELS, type CardPick, type Reason, type SpendCategory } from '@/domain/checkout';
+import { checkoutStack, guessCategory, knownMerchants, SPEND_LABELS, stackPlan, type CardPick, type Reason, type SpendCategory } from '@/domain/checkout';
+import { coversFor } from '@/domain/moves';
 import { bestEarn, capLabel, type EarnPick } from '@/domain/earn';
 import { formatMoney } from '@/domain/format';
 import { track } from '@/lib/analytics';
@@ -21,7 +22,9 @@ export default function Checkout() {
   const params = useLocalSearchParams<{ merchant?: string }>();
   const [query, setQuery] = useState(params.merchant ?? '');
   const [merchant, setMerchant] = useState<string | null>(params.merchant ?? null);
-  const [category, setCategory] = useState<SpendCategory | null>(null);
+  const [picked, setCategory] = useState<SpendCategory | null>(null);
+  // Opened with a store already chosen (a link from elsewhere in the app): guess what's being bought, too.
+  const category = picked ?? (merchant ? guessCategory(merchant, data.receipts) : null);
 
   const suggestions = useMemo(() => knownMerchants(data.receipts, data.opportunities, data.benefits), [data]);
   const q = query.trim().toLowerCase();
@@ -59,6 +62,17 @@ export default function Checkout() {
     () => (merchant && category ? bestEarn(merchant, category, { userCards: data.userCards, cards: data.cards, rates: data.earnRates, rewards: data.cardRewards }) : null),
     [merchant, category, data.userCards, data.cards, data.earnRates, data.cardRewards],
   );
+  // Everything that works here, in the order to use it, with the money you're sure of.
+  const plan = useMemo(() => {
+    if (!stack || !merchant) return null;
+    const warranty = coversFor(['extended_warranty'], data.userCards, data.cards, data.benefits)[0];
+    return stackPlan(merchant, stack, {
+      money: (n, cur) => formatMoney(n, { currency: cur }),
+      studentOffers: data.profile?.is_student ? data.studentOffers : [],
+      warranty: warranty ? { cardLabel: warranty.label, terms: warranty.benefit.terms_summary } : null,
+      payLine: earn?.best ? `Pay with your ${userCardLabel(earn.best.userCardId)}: ${earn.best.label}${earn.best.valueLabel ? ` (${earn.best.valueLabel})` : ''} here` : null,
+    });
+  }, [stack, merchant, data, earn, userCardLabel]);
   const now = new Date();
 
   return (
@@ -110,6 +124,23 @@ export default function Checkout() {
             ))}
           </Row>
         </View>
+      ) : null}
+
+      {plan && plan.steps.length > 1 ? (
+        <Panel style={{ gap: space.sm }}>
+          <T variant="label" color={c.accentStrong}>Your stack here</T>
+          {Object.keys(plan.sure).length ? (
+            <T variant="title">{Object.entries(plan.sure).map(([cur, n]) => formatMoney(n, { currency: cur })).join(' + ')} off for sure</T>
+          ) : null}
+          {plan.steps.map((st, i) => (
+            <Row key={i} gap={space.sm} style={{ alignItems: 'flex-start' }}>
+              <T variant="label" color={c.accentStrong}>{i + 1}.</T>
+              <T style={{ flex: 1 }}>{st.text}</T>
+              {st.amount ? <T variant="label">{formatMoney(st.amount, { currency: st.currency ?? undefined })}</T> : null}
+            </Row>
+          ))}
+          <T variant="caption" faint>In this order. “For sure” only counts stated amounts and balances you have.</T>
+        </Panel>
       ) : null}
 
       {stack ? (

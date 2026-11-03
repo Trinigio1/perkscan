@@ -40,6 +40,8 @@ export const EVENTS = {
   recap_viewed: {},
   // "Did you already know about this?" on money you got back: PerkScan found it, or you already knew.
   knew_before: { answer: ['found', 'knew'] },
+  // Money moves: done (with an amount), dismissed, or its official page opened.
+  money_move: { kind: ['phone_insurance', 'rental_waiver', 'protection_plan', 'trip_insurance', 'annual_fee', 'recall', 'rebate', 'points'], action: ['done', 'dismissed', 'open'] },
   share_opened: {},
   data_exported: {},
   account_deleted: {},

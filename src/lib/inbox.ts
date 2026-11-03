@@ -121,3 +121,15 @@ export async function markOpportunity(id: string, action: 'used' | 'dismiss' | '
   const { error } = await supabase.rpc('mark_opportunity', { p_opportunity_id: id, p_action: action, p_amount: amount });
   if (error) throw new Error(error.message);
 }
+
+/** Record money you kept by acting on a money move, with the amount you saw. */
+export async function confirmSaving(s: { key: string; kind: string; title: string; amount: number; currency: string; per: 'once' | 'month' | 'year' }) {
+  const { error } = await supabase.rpc('confirm_saving', { p_key: s.key, p_kind: s.kind, p_title: s.title, p_amount: s.amount, p_currency: s.currency, p_per: s.per });
+  if (error) throw new Error(error.message);
+}
+
+/** A repeating saving that stopped (you started paying again): it stops counting from today. */
+export async function endSaving(key: string) {
+  const { error } = await supabase.rpc('end_saving', { p_key: key });
+  if (error) throw new Error(error.message);
+}

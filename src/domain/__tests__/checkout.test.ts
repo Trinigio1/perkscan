@@ -104,3 +104,38 @@ describe('knownMerchants', () => {
     expect(knownMerchants([receipt({ merchant: 'Courts' })], [opp({ merchant: 'courts' })], benefits)).toEqual(['Courts', 'Uber', 'Uber Eats']);
   });
 });
+
+describe('stackPlan', () => {
+  const { stackPlan } = jest.requireActual('../checkout') as typeof import('../checkout');
+  const { opp } = jest.requireActual('../__fixtures__/opportunities') as typeof import('../__fixtures__/opportunities');
+  const money = (n: number, c: string) => `${c === 'USD' ? '$' : c}${n}`;
+  const base = { category: 'electronics' as const, merchantCurrency: 'USD', cards: [], best: null, memberships: [], programs: [] };
+  it('puts balances first, then the best single code, card offers, student price, the protection-plan tip and the card', () => {
+    const plan = stackPlan(
+      'Best Buy',
+      {
+        ...base,
+        storeCredit: [opp({ id: 'gc', type: 'gift_card', title: 'Best Buy gift card', value_estimate: 25, currency: 'USD' })],
+        promos: [
+          opp({ id: 'c1', type: 'promo', title: '$10 off $100', value_estimate: 10, code: 'SAVE10' }),
+          opp({ id: 'c2', type: 'promo', title: '$20 off $200', value_estimate: 20, code: 'SAVE20' }),
+          opp({ id: 'co', type: 'promo', title: 'Spend $250, get $50 back', value_estimate: 50, sender_domain: 'welcome.americanexpress.com' }),
+        ],
+      },
+      {
+        money,
+        studentOffers: [{ id: 's1', provider: 'Best Buy', name: 'Student deals', summary: 'Extra savings for students.' }],
+        warranty: { cardLabel: 'Chase Sapphire Preferred ·· 2222', terms: '1 extra year' },
+        payLine: 'Pay with your Chase Sapphire Preferred: 1x here',
+      },
+    );
+    expect(plan.steps.map((s) => s.kind)).toEqual(['balance', 'code', 'card_offer', 'student', 'skip_plan', 'pay']);
+    expect(plan.steps[1]!.text).toBe('Enter code SAVE20: $20 off $200 (best of 2; codes rarely combine)');
+    // Sure money: the gift card, the best code and the card offer (25 + 20 + 50).
+    expect(plan.sure).toEqual({ USD: 95 });
+  });
+  it('only suggests skipping a protection plan for electronics', () => {
+    const plan = stackPlan('Chipotle', { ...base, category: 'dining', storeCredit: [], promos: [] }, { money, warranty: { cardLabel: 'X', terms: null } });
+    expect(plan.steps).toEqual([]);
+  });
+});

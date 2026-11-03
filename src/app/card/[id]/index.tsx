@@ -6,6 +6,7 @@ import { CardArt } from '@/components/CardArt';
 import { CardDetailsForm } from '@/components/CardDetailsForm';
 import { ConfidenceTag } from '@/components/ConfidenceTag';
 import { Disclaimer } from '@/components/Disclaimer';
+import { MoveCard, useMoves } from '@/components/Moves';
 import { Badge, Button, ErrorNote, IconBubble, Panel, Row, Screen, Segmented, T } from '@/components/ui';
 import { draftToRow, siblingCards, validateDraft, type CardDraft } from '@/domain/cardDraft';
 import { formatMoney, PERIOD_LABELS } from '@/domain/format';
@@ -138,6 +139,8 @@ export default function CardScreen() {
   const [draft, setDraft] = useState<CardDraft | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // Annual fee day for this card, when it's coming up.
+  const feeMove = useMoves().find((m) => m.key.startsWith(`annual_fee:${id}:`));
 
   if (!uc || !card) {
     return (
@@ -230,6 +233,10 @@ export default function CardScreen() {
         </>
       ) : null}
       {error ? <ErrorNote message={error} /> : null}
+      {!editing && feeMove ? <MoveCard move={feeMove} /> : null}
+      {!editing && !membership && card.annual_fee && !uc.open_date ? (
+        <T variant="caption" muted>Add when you opened this card (Edit) and PerkScan will show what it gave you back before the {formatMoney(card.annual_fee, { currency: card.currency })} fee posts.</T>
+      ) : null}
       {!editing && siblings.length ? (
         <Panel style={{ gap: space.sm }}>
           <T variant="label">Not the right card?</T>

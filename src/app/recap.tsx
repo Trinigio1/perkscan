@@ -71,7 +71,7 @@ export default function Recap() {
         ) : null}
       </Hero>
 
-      {nonZero(v.used) || nonZero(v.newValue) ? (
+      {nonZero(v.used) || nonZero(v.newValue) || nonZero(v.saved) ? (
         <Panel style={{ gap: space.sm }}>
           <T variant="subheading">Found by PerkScan</T>
           <Row>
@@ -82,6 +82,12 @@ export default function Recap() {
             <T style={{ flex: 1 }}>You didn’t know about</T>
             <T variant="label" color={c.accentStrong}>{formatBag(v.found, home)}</T>
           </Row>
+          {nonZero(v.saved) ? (
+            <Row>
+              <T style={{ flex: 1 }}>Kept with money moves</T>
+              <T variant="label" color={c.accentStrong}>{formatBag(v.saved, home)}</T>
+            </Row>
+          ) : null}
           <Row>
             <T style={{ flex: 1 }} muted>You already knew about</T>
             <T variant="label" color={c.textMuted}>{formatBag(v.knew, home)}</T>

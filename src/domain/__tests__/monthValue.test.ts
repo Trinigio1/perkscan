@@ -60,3 +60,14 @@ describe('knewQuestions', () => {
     ]);
   });
 });
+
+describe('savings in the month', () => {
+  const s = (per: 'once' | 'month' | 'year', started_on: string, ended_on: string | null = null) => ({ id: per, key: `other:${per}`, kind: 'other' as const, title: per, amount: 20, currency: 'USD', per, started_on, ended_on });
+  it('counts one-offs once, monthly ones every month they run, yearly ones in their month; all as found', () => {
+    const v = monthValue([], [], from, to, undefined, [s('once', '2026-11-04'), s('month', '2026-09-15'), s('month', '2026-08-01', '2026-10-31'), s('year', '2025-11-20'), s('year', '2026-03-01'), s('once', '2026-10-30')]);
+    expect(v.saved).toEqual({ USD: 60 });
+    expect(v.found).toEqual({ USD: 60 });
+    expect(v.used).toEqual({ USD: 60 });
+    expect(v.savedCount).toBe(3);
+  });
+});
