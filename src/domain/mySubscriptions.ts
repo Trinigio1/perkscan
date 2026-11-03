@@ -48,10 +48,31 @@ const median = (xs: number[]) => {
   return s.length % 2 ? s[m]! : (s[m - 1]! + s[m]!) / 2;
 };
 
+/** What people buy again and again without it being a subscription: never one, unless it's a known service. */
+const NEVER_SUBSCRIPTION = new Set(['restaurant', 'food_delivery', 'groceries', 'flight', 'hotel', 'car_rental', 'travel_other', 'rideshare', 'fuel', 'pharmacy', 'clothing', 'electronics', 'appliance', 'phone', 'other_goods']);
+/** Purchase types that are billing by nature: two charges a month apart are enough. */
+const BILLED = new Set(['subscription', 'service', 'phone_bill']);
+
+/** The same purchase seen twice (a store receipt and the bank's alert, or two alerts): one charge. */
+function onePerPurchase<T extends { total: number | null; purchase_date: string | null }>(sorted: T[]): T[] {
+  const out: T[] = [];
+  for (const r of sorted) {
+    const prev = out[out.length - 1];
+    if (prev && Math.abs(prev.total! - r.total!) <= 0.01 && Math.abs(days(prev.purchase_date!, r.purchase_date!)) <= 3) continue;
+    out.push(r);
+  }
+  return out;
+}
+
 /**
- * Subscriptions from receipts in the last 13 months: the same store charging the same amount (within
- * 2%) about every month or every year — or one charge from a service known to be a subscription.
- * Food orders and shopping vary too much to look like one.
+ * Subscriptions from receipts in the last 13 months, per store and currency (amounts are never compared
+ * across currencies):
+ *   - a known subscription service (Netflix, Spotify...): two charges of the same amount a month or a year
+ *     apart, or one charge marked as a subscription;
+ *   - something billed by nature (a plan, a service): two charges of the same amount a month or a year apart;
+ *   - anything else: at least three charges of the same amount, every one a month (or a year) after the last.
+ * Meals, groceries, flights, hotels, rides, fuel and shopping are never subscriptions, however regular.
+ * The same purchase seen twice (receipt and bank alert) counts once.
  */
 export function mySubscriptions(
   receipts: Pick<Receipt, 'merchant' | 'total' | 'currency' | 'purchase_date' | 'purchase_type'>[],
@@ -68,26 +89,34 @@ export function mySubscriptions(
 
   const out: Subscription[] = [];
   for (const [key, list] of byStore) {
-    const sorted = [...list].sort((a, b) => a.purchase_date!.localeCompare(b.purchase_date!));
+    const sorted = onePerPurchase([...list].sort((a, b) => a.purchase_date!.localeCompare(b.purchase_date!)));
     const last = sorted[sorted.length - 1]!;
     const service = serviceOf(last.merchant);
+    const types = new Set(sorted.map((r) => r.purchase_type).filter(Boolean) as string[]);
+    if (!service && [...types].some((t) => NEVER_SUBSCRIPTION.has(t))) continue;
+    const billed = !!service || [...types].some((t) => BILLED.has(t));
     // Charges of the latest amount (a price change keeps the newer price).
     const same = sorted.filter((r) => Math.abs(r.total! - last.total!) <= last.total! * 0.02);
+    const gaps = same.slice(1).map((r, i) => days(same[i]!.purchase_date!, r.purchase_date!));
+    const monthly = (g: number) => g >= 26 && g <= 35;
+    const yearly = (g: number) => g >= 350 && g <= 380;
     let period: Period | null = null;
-    if (same.length >= 2) {
-      const gap = median(same.slice(1).map((r, i) => days(same[i]!.purchase_date!, r.purchase_date!)));
-      period = gap >= 26 && gap <= 35 ? 'monthly' : gap >= 350 && gap <= 380 ? 'yearly' : null;
+    if (billed && same.length >= 2) {
+      const gap = median(gaps);
+      period = monthly(gap) ? 'monthly' : yearly(gap) ? 'yearly' : null;
+    } else if (!billed && same.length >= 3) {
+      period = gaps.every(monthly) ? 'monthly' : gaps.every(yearly) ? 'yearly' : null;
     } else if (service && last.purchase_type === 'subscription') {
       period = 'monthly'; // one charge from a known subscription service: monthly is how these bill by default
     }
     if (!period) continue;
-    const yearly = Math.round(last.total! * (period === 'monthly' ? 12 : 1) * 100) / 100;
+    const yearlyCost = Math.round(last.total! * (period === 'monthly' ? 12 : 1) * 100) / 100;
     const sp = service ? STUDENT_PRICES[service.key] : undefined;
     const student =
       sp && isStudent && last.currency === sp.currency && period === 'monthly' && last.total! > sp.studentMonthly + 0.5
         ? { ...sp, savesYearly: Math.round((last.total! - sp.studentMonthly) * 12 * 100) / 100 }
         : null;
-    out.push({ key, name: service?.name ?? last.merchant, amount: last.total!, currency: last.currency, period, yearly, lastCharged: last.purchase_date!, charges: same.length, service: service ?? null, student });
+    out.push({ key, name: service?.name ?? last.merchant, amount: last.total!, currency: last.currency, period, yearly: yearlyCost, lastCharged: last.purchase_date!, charges: same.length, service: service ?? null, student });
   }
   return out.sort((a, b) => b.yearly - a.yearly);
 }

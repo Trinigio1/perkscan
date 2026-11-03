@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
 import { membershipHints, membershipsSeen, payingTwice, recentCharges, type MembershipHint, type PayingTwice } from '@/domain/subscriptions';
 import { mySubscriptions, type Subscription } from '@/domain/mySubscriptions';
+import { useDismissed } from './suggestions';
 import { useData, useLookups } from './data';
 
 const daysAgo = (n: number) => new Date(Date.now() - n * 86_400_000).toISOString().slice(0, 10);
@@ -25,9 +26,10 @@ export function usePayingTwice(): PayingTwice[] {
   );
 }
 
-/** Subscriptions the receipts show, with student prices where they'd save. */
+/** Subscriptions the receipts show, with student prices where they'd save, minus the ones you said aren't. */
 export function useMySubscriptions(): Subscription[] {
   const { data } = useData();
+  const [dismissed] = useDismissed();
   const student = !!data.profile?.is_student || !!data.school;
-  return useMemo(() => mySubscriptions(data.receipts, new Date(), student), [data.receipts, student]);
+  return useMemo(() => mySubscriptions(data.receipts, new Date(), student).filter((x) => !dismissed.has(`notsub:${x.key}`)), [data.receipts, student, dismissed]);
 }

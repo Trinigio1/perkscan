@@ -2,7 +2,9 @@ import { router } from 'expo-router';
 import { useMemo } from 'react';
 import { Linking, View } from 'react-native';
 import { Badge, Button, Empty, IconBubble, Panel, Row, Screen, T } from '@/components/ui';
-import { addToBag, formatBag, formatMoney, type MoneyBag } from '@/domain/format';
+import { addToBag, formatBag, formatMoney, getHomeCurrency, type MoneyBag } from '@/domain/format';
+import { useData } from '@/lib/data';
+import { useDismissed } from '@/lib/suggestions';
 import { useMySubscriptions, usePayingTwice } from '@/lib/memberships';
 import { space, useColors } from '@/theme';
 
@@ -13,6 +15,10 @@ export default function Subscriptions() {
   const c = useColors();
   const subs = useMySubscriptions();
   const twice = usePayingTwice();
+  const { data } = useData();
+  const [, dismiss] = useDismissed();
+  // Each currency on its own, your home currency first: TT$ and US$ are never added together.
+  const home = data.profile?.home_currency?.trim() || getHomeCurrency();
   const { yearly, saves } = useMemo(() => {
     const y: MoneyBag = {};
     const s: MoneyBag = {};
@@ -29,7 +35,7 @@ export default function Subscriptions() {
         <Empty
           icon="repeat"
           title="No subscriptions found yet"
-          body="PerkScan spots them from receipts: the same amount from the same company about every month or year. They show up here as your receipts come in."
+          body="PerkScan spots them from receipts: a subscription service or a bill charging the same amount every month or year (at least three times for anything it doesn’t know). Meals, flights and shopping never count."
         />
       </Screen>
     );
@@ -39,10 +45,10 @@ export default function Subscriptions() {
     <Screen edges={[]}>
       <Panel style={{ gap: space.xs }}>
         <T variant="caption" muted>From your receipts</T>
-        <T variant="heading">About {formatBag(yearly)} a year</T>
+        <T variant="heading">About {formatBag(yearly, home)} a year</T>
         <T variant="caption" muted>
           {subs.length} subscription{subs.length === 1 ? '' : 's'}
-          {Object.keys(saves).length ? ` · you could save ${formatBag(saves)} a year with student prices` : ''}
+          {Object.keys(saves).length ? ` · you could save ${formatBag(saves, home)} a year with student prices` : ''}
         </T>
       </Panel>
 
@@ -56,10 +62,10 @@ export default function Subscriptions() {
                 <View style={{ flex: 1, gap: 2 }}>
                   <T variant="subheading">{s.name}</T>
                   <T variant="caption" muted>
-                    {formatMoney(s.amount, { currency: s.currency })} a {s.period === 'monthly' ? 'month' : 'year'} · last charged {day(s.lastCharged)}
+                    {formatMoney(s.amount, { currency: s.currency, home })} a {s.period === 'monthly' ? 'month' : 'year'} · {s.charges} charge{s.charges === 1 ? '' : 's'} · last {day(s.lastCharged)}
                   </T>
                 </View>
-                <T variant="subheading" style={{ fontVariant: ['tabular-nums'] }}>{formatMoney(s.yearly, { currency: s.currency })}/yr</T>
+                <T variant="subheading" style={{ fontVariant: ['tabular-nums'] }}>{formatMoney(s.yearly, { currency: s.currency, home })}/yr</T>
               </Row>
               {s.student ? (
                 <View style={{ marginLeft: 36 + space.md, gap: 6 }}>
@@ -74,6 +80,10 @@ export default function Subscriptions() {
                   <Badge tone="warn" icon="copy" label={`Also included with your ${covered.covers[0]!.by}`} />
                 </View>
               ) : null}
+              {/* Wrong? One tap and it's gone from here and from every total that uses it. */}
+              <View style={{ marginLeft: 36 + space.md, alignItems: 'flex-start' }}>
+                <Button title="Not a subscription" size="sm" kind="ghost" icon="close-circle-outline" onPress={() => dismiss(`notsub:${s.key}`)} />
+              </View>
             </View>
           );
         })}
